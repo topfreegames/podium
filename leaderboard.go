@@ -2,6 +2,7 @@ package leaderboard
 
 import (
 	"fmt"
+	"math"
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -9,6 +10,7 @@ type User struct {
 	name string
 	score int
 	rank int
+
 }
 
 type Team struct {
@@ -39,7 +41,7 @@ func NewLeaderboard(name string, pageSize int) Leaderboard {
 	return l
 }
 
-func (l *Leaderboard) rankMember(username string, score int) (User, error) {
+func (l *Leaderboard) RankMember(username string, score int) (User, error) {
 	conn := getConnection()
 	defer conn.Close()
 	_, err := conn.Do("ZADD", l.name, score, username)
@@ -51,7 +53,7 @@ func (l *Leaderboard) rankMember(username string, score int) (User, error) {
 		fmt.Printf("error on get user rank Leaderboard:%s - Username:%s", l.name, username)
 		rank = -1
 	}
-	nUser := User{name: username, score: score, rank: rank}
+	nUser := User{name: username, score: score, rank: rank + 1 }
 	return nUser, err
 }
 
@@ -64,4 +66,41 @@ func (l *Leaderboard) TotalMembers() int {
 		return 0
 	}
 	return total
+}
+
+func (l *Leaderboard) RemoveMember(username string) (User, error) {
+	conn := getConnection()
+	defer conn.Close()
+	nUser, err := l.GetMember(username)
+	_, err = conn.Do("ZREM", l.name, username)
+	if err != nil {
+		fmt.Printf("error on remove user from leaderboard")
+	}
+	return nUser, err
+}
+
+func (l *Leaderboard) TotalPages() int {
+	conn := getConnection()
+	defer conn.Close()
+	pages := 0
+	total, err := redis.Int(conn.Do("ZCOUNT", l.name, "-inf", "+inf"))
+	if err == nil {
+		pages = int(math.Ceil(float64(total) / float64(l.pageSize)))
+	}
+	return pages
+}
+
+func (l *Leaderboard) GetMember(username string) (User, error) {
+	conn := getConnection()
+	defer conn.Close()
+	rank, err := redis.Int(conn.Do("ZREVRANK", l.name, username))
+	if err != nil {
+		rank = 0
+	}
+	score, err := redis.Int(conn.Do("ZSCORE", l.name, username))
+	if err != nil {
+		score = 0
+	}
+	nUser := User{name: username, score: score, rank: rank+1}
+	return nUser, err
 }

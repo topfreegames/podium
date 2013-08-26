@@ -58,9 +58,9 @@ func (s *S) TestGetUser( c *gocheck.C) {
 	c.Assert(dayvson.rank, gocheck.Equals, 1)
 	c.Assert(felipe.rank, gocheck.Equals, 2)
 	friendScore.RankMember("felipe", 12346)
-	ffelipe, _ := friendScore.GetUser("felipe")
-	fdayvson, _ := friendScore.GetUser("dayvson")
-	c.Assert(ffelipe.rank, gocheck.Equals, 1)
-	c.Assert(fdayvson.rank, gocheck.Equals, 2)
+	felipe, _ = friendScore.GetMember("felipe")
+	dayvson, _ = friendScore.GetMember("dayvson")
+	c.Assert(felipe.rank, gocheck.Equals, 1)
+	c.Assert(dayvson.rank, gocheck.Equals, 2)
 
 }
