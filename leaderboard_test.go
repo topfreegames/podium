@@ -14,6 +14,15 @@ type S struct{}
 
 var _ = gocheck.Suite(&S{})
 
+func (s *S) TearDownSuite(c *gocheck.C) {
+	conn := getConnection()
+	conn.Do("DEL", "highscore")
+	conn.Do("DEL", "bestTime")
+	conn.Do("DEL", "bestWeek")
+	conn.Do("DEL", "friendScore")
+
+}
+
 func (s *S) TestRankMember(c *gocheck.C) {
 	highScore := NewLeaderboard("highscore", 10)
 	dayvson, err := highScore.RankMember("dayvson",  481516)
@@ -32,9 +41,8 @@ func (s *S) TestTotalMembers(c *gocheck.C) {
 	c.Assert(bestTime.TotalMembers(), gocheck.Equals, 10)
 }
 
-
 func (s *S) TestRemoveMember(c *gocheck.C) {
-	bestTime := NewLeaderboard("bestTime", 10)
+	bestTime := NewLeaderboard("bestWeek", 10)
 	for i := 0; i<10; i++ {
 		bestTime.RankMember("member_" + strconv.Itoa(i),  1234 * i)	
 	}
