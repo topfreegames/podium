@@ -1,7 +1,7 @@
 Leaderboard
 ===========
 
-A leaderboard write in [Go](http://golang.org/) using [Redis](http://redis.io/) database.
+A leaderboard written in [Go](http://golang.org/) using [Redis](http://redis.io/) database.
 
 Features
 --------
@@ -78,7 +78,9 @@ Testing
 
 Dependencies
 ------------
+Go language distribution
 redigo (github.com/garyburd/redigo/redis)
+
 
 
 Contributing
