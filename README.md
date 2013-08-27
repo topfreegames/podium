@@ -22,30 +22,41 @@ Create a new leaderboard or attach to an existing leaderboard named 'highscores'
     //return a Leaderboard: Leaderboard{name:"highscores", pageSize:10}
 
 Adding members to highscores using RankMember(username, score):
+<pre>
     highScore.RankMember("dayvson", 9876)
     highScore.RankMember("arthur", 2000123)
     highScore.RankMember("felipe", 100000)
+</pre>
 
-You can call RankMember with the same member and the leaderboard will be updated automatically.
+You can call RankMember with the same member and the leaderboard will be updated automatically:
+<pre>
 	highScore.RankMember("dayvson", 7481523)
 	//return an user: User{name:"dayvson", score:7481523, rank:1}
+</pre>
 
 Getting a total members on highscores:
+<pre>
 	highScore.TotalMembers()
 	//return an int: 3
+</pre>
 
 Getting the rank from a member:
+<pre>
 	highScore.GetRank("dayvson")
 	//return an int: 1
+</pre>
 
 Getting a member from a rank position:
+<pre>
 	highScore.GetMemberByRank(2)
 	//return an user: User{name:"felipe", score:100000, rank:2}
+</pre>
 
 Getting members around you:
+<pre>
 	highScore.GetAroundMe("felipe")
 	//return an array of users around you [pageSize]User:
-
+</pre>
 
 Installation
 ------------
