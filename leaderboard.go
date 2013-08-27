@@ -68,26 +68,26 @@ func NewLeaderboard(name string, pageSize int) Leaderboard {
 	return l
 }
 
-func (l *Leaderboard) RankMember(username string, score int) (User, error) {
+func (self *Leaderboard) RankMember(username string, score int) (User, error) {
 	conn := getConnection()
 	defer conn.Close()
-	_, err := conn.Do("ZADD", l.name, score, username)
+	_, err := conn.Do("ZADD", self.name, score, username)
 	if err != nil {
-		fmt.Printf("error on store in redis in rankMember Leaderboard:%s - Username:%s - Score:%d", l.name, username, score)
+		fmt.Printf("error on store in redis in rankMember Leaderboard:%s - Username:%s - Score:%d", self.name, username, score)
 	}
-	rank, err := redis.Int(conn.Do("ZREVRANK", l.name, username))
+	rank, err := redis.Int(conn.Do("ZREVRANK", self.name, username))
 	if err != nil {
-		fmt.Printf("error on get user rank Leaderboard:%s - Username:%s", l.name, username)
+		fmt.Printf("error on get user rank Leaderboard:%s - Username:%s", self.name, username)
 		rank = -1
 	}
 	nUser := User{name: username, score: score, rank: rank + 1 }
 	return nUser, err
 }
 
-func (l *Leaderboard) TotalMembers() int {
+func (self *Leaderboard) TotalMembers() int {
 	conn := getConnection()
 	defer conn.Close()
-	total, err := redis.Int(conn.Do("ZCARD", l.name))
+	total, err := redis.Int(conn.Do("ZCARD", self.name))
 	if err != nil {
 		fmt.Printf("error on get leaderboard total members")
 		return 0
@@ -95,36 +95,36 @@ func (l *Leaderboard) TotalMembers() int {
 	return total
 }
 
-func (l *Leaderboard) RemoveMember(username string) (User, error) {
+func (self *Leaderboard) RemoveMember(username string) (User, error) {
 	conn := getConnection()
 	defer conn.Close()
-	nUser, err := l.GetMember(username)
-	_, err = conn.Do("ZREM", l.name, username)
+	nUser, err := self.GetMember(username)
+	_, err = conn.Do("ZREM", self.name, username)
 	if err != nil {
 		fmt.Printf("error on remove user from leaderboard")
 	}
 	return nUser, err
 }
 
-func (l *Leaderboard) TotalPages() int {
+func (self *Leaderboard) TotalPages() int {
 	conn := getConnection()
 	defer conn.Close()
 	pages := 0
-	total, err := redis.Int(conn.Do("ZCOUNT", l.name, "-inf", "+inf"))
+	total, err := redis.Int(conn.Do("ZCOUNT", self.name, "-inf", "+inf"))
 	if err == nil {
-		pages = int(math.Ceil(float64(total) / float64(l.pageSize)))
+		pages = int(math.Ceil(float64(total) / float64(self.pageSize)))
 	}
 	return pages
 }
 
-func (l *Leaderboard) GetMember(username string) (User, error) {
+func (self *Leaderboard) GetMember(username string) (User, error) {
 	conn := getConnection()
 	defer conn.Close()
-	rank, err := redis.Int(conn.Do("ZREVRANK", l.name, username))
+	rank, err := redis.Int(conn.Do("ZREVRANK", self.name, username))
 	if err != nil {
 		rank = 0
 	}
-	score, err := redis.Int(conn.Do("ZSCORE", l.name, username))
+	score, err := redis.Int(conn.Do("ZSCORE", self.name, username))
 	if err != nil {
 		score = 0
 	}
@@ -132,47 +132,47 @@ func (l *Leaderboard) GetMember(username string) (User, error) {
 	return nUser, err
 }
 
-func (l *Leaderboard) GetAroundMe(username string) []User {
-	currentUser, _ := l.GetMember(username)
-	startOffset := currentUser.rank - (l.pageSize / 2)
+func (self *Leaderboard) GetAroundMe(username string) []User {
+	currentUser, _ := self.GetMember(username)
+	startOffset := currentUser.rank - (self.pageSize / 2)
     if startOffset < 0 {
     	startOffset = 0
     }
-    endOffset := (startOffset + l.pageSize) - 1
-    return getMembersByRange(l.name, l.pageSize, startOffset, endOffset)
+    endOffset := (startOffset + self.pageSize) - 1
+    return getMembersByRange(self.name, self.pageSize, startOffset, endOffset)
 }
 
-func (l *Leaderboard) GetRank(username string) int {
+func (self *Leaderboard) GetRank(username string) int {
 	conn := getConnection()
 	defer conn.Close()
-	rank, _ := redis.Int(conn.Do("ZREVRANK", l.name, username))
+	rank, _ := redis.Int(conn.Do("ZREVRANK", self.name, username))
 	return rank + 1
 }
 
-func (l *Leaderboard) GetLeaders(page int) []User {
+func (self *Leaderboard) GetLeaders(page int) []User {
 	if page < 1 {
 		page = 1
 	}
-	if page > l.TotalPages() {
-		page = l.TotalPages()
+	if page > self.TotalPages() {
+		page = self.TotalPages()
 	}
     redisIndex := page - 1
-    startOffset := redisIndex * l.pageSize
+    startOffset := redisIndex * self.pageSize
     if startOffset < 0 {
     	startOffset = 0
     }
-	endOffset := (startOffset + l.pageSize) - 1
+	endOffset := (startOffset + self.pageSize) - 1
 	
-	return getMembersByRange(l.name, l.pageSize, startOffset, endOffset)
+	return getMembersByRange(self.name, self.pageSize, startOffset, endOffset)
 }
 
-func (l *Leaderboard) GetMemberByRank(position int) User {
+func (self *Leaderboard) GetMemberByRank(position int) User {
 	conn := getConnection()
 	defer conn.Close()
-	if position <= l.TotalMembers() {
-		currentPage := int(math.Ceil(float64(position) / float64(l.pageSize)))
-		offset := (position - 1) % l.pageSize
-		leaders := l.GetLeaders(currentPage)
+	if position <= self.TotalMembers() {
+		currentPage := int(math.Ceil(float64(position) / float64(self.pageSize)))
+		offset := (position - 1) % self.pageSize
+		leaders := self.GetLeaders(currentPage)
 		if leaders[offset].rank == position {
 			return leaders[offset]
 		}
