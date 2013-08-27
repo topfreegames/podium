@@ -78,10 +78,10 @@ redigo (github.com/garyburd/redigo/redis)
 Contributing
 ------------
 
-Contributions are welcome.
-Take care to maintain the existing coding style. 
-Add unit tests for any new or changed functionality. 
-Open a pull request :)
+* Contributions are welcome.
+* Take care to maintain the existing coding style.
+* Add unit tests for any new or changed functionality.
+* Open a pull request :)
 
 
 License
