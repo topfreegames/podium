@@ -59,7 +59,7 @@ func (s *S) TestTotalPages(c *gocheck.C) {
 	c.Assert(bestTime.TotalPages(), gocheck.Equals, 5)
 }
 
-func (s *S) TestGetUser( c *gocheck.C) {
+func (s *S) TestGetUser(c *gocheck.C) {
 	friendScore := NewLeaderboard("friendScore", 10)
 	dayvson, _ := friendScore.RankMember("dayvson",  12345)
 	felipe, _ := friendScore.RankMember("felipe",  12344)
@@ -70,5 +70,17 @@ func (s *S) TestGetUser( c *gocheck.C) {
 	dayvson, _ = friendScore.GetMember("dayvson")
 	c.Assert(felipe.rank, gocheck.Equals, 1)
 	c.Assert(dayvson.rank, gocheck.Equals, 2)
+}
 
+func (s *S) TestGetAroundMe(c *gocheck.C) {
+	bestTime := NewLeaderboard("BestAllTime", 25)
+	for i := 0; i<101; i++ {
+		bestTime.RankMember("member_" + strconv.Itoa(i),  1234 * i)	
+	}
+	users := bestTime.GetAroundMe("member_20")
+	firstAroundMe := users[0]
+	lastAroundMe := users[bestTime.pageSize-1]
+	c.Assert(len(users), gocheck.Equals, bestTime.pageSize);
+	c.Assert(firstAroundMe.name, gocheck.Equals, "member_31")
+	c.Assert(lastAroundMe.name, gocheck.Equals, "member_7")
 }

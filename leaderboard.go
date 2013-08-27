@@ -104,3 +104,28 @@ func (l *Leaderboard) GetMember(username string) (User, error) {
 	nUser := User{name: username, score: score, rank: rank+1}
 	return nUser, err
 }
+
+func (l *Leaderboard) GetAroundMe(username string) []User {
+	conn := getConnection()
+	defer conn.Close()
+	currentUser, _ := l.GetMember(username)
+	startOffset := currentUser.rank - (l.pageSize / 2)
+    if startOffset < 0 {
+    	startOffset = 0
+    }
+
+    endOffset := (startOffset + l.pageSize) - 1
+	users := make([]User, l.pageSize)
+    values, _ := redis.Values(conn.Do("ZREVRANGE", l.name, startOffset, endOffset, "WITHSCORES"))
+    var i = 0
+    for len(values) > 0 {
+    	name := ""
+    	score := -1
+    	values, _ = redis.Scan(values, &name, &score)
+    	rank, _ := redis.Int(conn.Do("ZREVRANK", l.name, name))
+    	nUser := User{name: name, score: score, rank: rank + 1}
+    	users[i] = nUser
+    	i+= 1
+    }
+    return users
+}
