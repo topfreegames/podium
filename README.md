@@ -78,8 +78,8 @@ Testing
 
 Dependencies
 ------------
-Go language distribution
-redigo (github.com/garyburd/redigo/redis)
+* Go language distribution
+* redigo (github.com/garyburd/redigo/redis)
 
 
 
