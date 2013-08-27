@@ -58,6 +58,12 @@ Getting members around you:
 	//return an array of users around you [pageSize]User:
 </pre>
 
+Getting Leaders by page:
+<pre>
+	highScore.GetLeaders(1)
+	//return an array of users with highest score in a first page (you can specify any page): [pageSize]User
+</pre>
+
 Installation
 ------------
 
