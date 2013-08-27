@@ -20,6 +20,9 @@ func (s *S) TearDownSuite(c *gocheck.C) {
 	conn.Do("DEL", "bestTime")
 	conn.Do("DEL", "bestWeek")
 	conn.Do("DEL", "friendScore")
+	conn.Do("DEL", "7days")
+	conn.Do("DEL", "bestYear")
+	conn.Do("DEL", "week")
 
 }
 
@@ -92,4 +95,32 @@ func (s *S) TestGetRank(c *gocheck.C) {
 	}
 	sevenDays.RankMember("member_6", 1000); 
 	c.Assert(sevenDays.GetRank("member_6"), gocheck.Equals, 100)
+}
+
+func (s *S) TestGetLeaders(c *gocheck.C) {
+	bestYear := NewLeaderboard("bestYear", 25)
+	for i := 0; i<1000; i++ {
+		bestYear.RankMember("member_" + strconv.Itoa(i + 1),  1234 * i)	
+	}
+	var users = bestYear.GetLeaders(1)
+
+	firstOnPage := users[0]
+	lastOnPage := users[len(users) -1]
+	c.Assert(len(users), gocheck.Equals, bestYear.pageSize);
+	c.Assert(firstOnPage.name, gocheck.Equals, "member_1000")
+	c.Assert(firstOnPage.rank, gocheck.Equals, 1)
+	c.Assert(lastOnPage.name, gocheck.Equals, "member_976")
+	c.Assert(lastOnPage.rank, gocheck.Equals, 25)
+
+}
+
+func (s *S) TestGetUserByRank(c *gocheck.C) {
+	sevenDays := NewLeaderboard("week", 25)
+	for i := 0; i<101; i++ {
+		sevenDays.RankMember("member_" + strconv.Itoa(i),  1234 * i)	
+	}
+	member := sevenDays.GetMemberByRank(10)
+	c.Assert(member.name, gocheck.Equals, "member_91")
+	c.Assert(member.rank, gocheck.Equals, 10)
+
 }

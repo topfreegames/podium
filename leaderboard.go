@@ -6,6 +6,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+/* Structs model */
 type User struct {
 	name string
 	score int
@@ -24,7 +25,11 @@ type Leaderboard struct {
 	pageSize int
 }
 
+/* End Structs model */
+
 var pool *redis.Pool
+
+/* Private functions */
 
 func getConnection() redis.Conn {
 	if pool == nil {
@@ -35,6 +40,28 @@ func getConnection() redis.Conn {
 	}
 	return pool.Get()
 }
+
+func getMembersByRange(leaderboard string, pageSize int, startOffset int, endOffset int) []User {
+	conn := getConnection()
+	defer conn.Close()
+	users := make([]User, pageSize)
+    values, _ := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
+    var i = 0
+    for len(values) > 0 {
+    	name := ""
+    	score := -1
+    	values, _ = redis.Scan(values, &name, &score)
+    	rank, _ := redis.Int(conn.Do("ZREVRANK", leaderboard, name))
+    	nUser := User{name: name, score: score, rank: rank + 1}
+    	users[i] = nUser
+    	i+= 1
+    }
+    return users
+}
+/* End Private functions */
+
+
+/* Public functions */
 
 func NewLeaderboard(name string, pageSize int) Leaderboard {
 	l := Leaderboard{name: name, pageSize: pageSize}
@@ -106,28 +133,13 @@ func (l *Leaderboard) GetMember(username string) (User, error) {
 }
 
 func (l *Leaderboard) GetAroundMe(username string) []User {
-	conn := getConnection()
-	defer conn.Close()
 	currentUser, _ := l.GetMember(username)
 	startOffset := currentUser.rank - (l.pageSize / 2)
     if startOffset < 0 {
     	startOffset = 0
     }
-
     endOffset := (startOffset + l.pageSize) - 1
-	users := make([]User, l.pageSize)
-    values, _ := redis.Values(conn.Do("ZREVRANGE", l.name, startOffset, endOffset, "WITHSCORES"))
-    var i = 0
-    for len(values) > 0 {
-    	name := ""
-    	score := -1
-    	values, _ = redis.Scan(values, &name, &score)
-    	rank, _ := redis.Int(conn.Do("ZREVRANK", l.name, name))
-    	nUser := User{name: name, score: score, rank: rank + 1}
-    	users[i] = nUser
-    	i+= 1
-    }
-    return users
+    return getMembersByRange(l.name, l.pageSize, startOffset, endOffset)
 }
 
 func (l *Leaderboard) GetRank(username string) int {
@@ -136,3 +148,35 @@ func (l *Leaderboard) GetRank(username string) int {
 	rank, _ := redis.Int(conn.Do("ZREVRANK", l.name, username))
 	return rank + 1
 }
+
+func (l *Leaderboard) GetLeaders(page int) []User {
+	if page < 1 {
+		page = 1
+	}
+	if page > l.TotalPages() {
+		page = l.TotalPages()
+	}
+    redisIndex := page - 1
+    startOffset := redisIndex * l.pageSize
+    if startOffset < 0 {
+    	startOffset = 0
+    }
+	endOffset := (startOffset + l.pageSize) - 1
+	
+	return getMembersByRange(l.name, l.pageSize, startOffset, endOffset)
+}
+
+func (l *Leaderboard) GetMemberByRank(position int) User {
+	conn := getConnection()
+	defer conn.Close()
+	if position <= l.TotalMembers() {
+		currentPage := int(math.Ceil(float64(position) / float64(l.pageSize)))
+		offset := (position - 1) % l.pageSize
+		leaders := l.GetLeaders(currentPage)
+		if leaders[offset].rank == position {
+			return leaders[offset]
+		}
+	}
+	return User{}
+}
+/* End Public functions */
