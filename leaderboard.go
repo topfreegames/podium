@@ -129,3 +129,10 @@ func (l *Leaderboard) GetAroundMe(username string) []User {
     }
     return users
 }
+
+func (l *Leaderboard) GetRank(username string) int {
+	conn := getConnection()
+	defer conn.Close()
+	rank, _ := redis.Int(conn.Do("ZREVRANK", l.name, username))
+	return rank + 1
+}

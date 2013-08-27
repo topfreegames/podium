@@ -84,3 +84,12 @@ func (s *S) TestGetAroundMe(c *gocheck.C) {
 	c.Assert(firstAroundMe.name, gocheck.Equals, "member_31")
 	c.Assert(lastAroundMe.name, gocheck.Equals, "member_7")
 }
+
+func (s *S) TestGetRank(c *gocheck.C) {
+	sevenDays := NewLeaderboard("7days", 25)
+	for i := 0; i<101; i++ {
+		sevenDays.RankMember("member_" + strconv.Itoa(i),  1234 * i)	
+	}
+	sevenDays.RankMember("member_6", 1000); 
+	c.Assert(sevenDays.GetRank("member_6"), gocheck.Equals, 100)
+}
