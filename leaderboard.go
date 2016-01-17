@@ -2,26 +2,25 @@ package leaderboard
 
 import (
 	"fmt"
-	"math"
 	"github.com/garyburd/redigo"
+	"math"
 )
 
 /* Structs model */
 type User struct {
-	name string
+	name  string
 	score int
-	rank int
-
+	rank  int
 }
 
 type Team struct {
-	name string
+	name    string
 	members map[string]User
-	rank int
+	rank    int
 }
 
 type Leaderboard struct {
-	name string
+	name     string
 	pageSize int
 }
 
@@ -45,21 +44,21 @@ func getMembersByRange(leaderboard string, pageSize int, startOffset int, endOff
 	conn := getConnection()
 	defer conn.Close()
 	users := make([]User, pageSize)
-    values, _ := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
-    var i = 0
-    for len(values) > 0 {
-    	name := ""
-    	score := -1
-    	values, _ = redis.Scan(values, &name, &score)
-    	rank, _ := redis.Int(conn.Do("ZREVRANK", leaderboard, name))
-    	nUser := User{name: name, score: score, rank: rank + 1}
-    	users[i] = nUser
-    	i+= 1
-    }
-    return users
+	values, _ := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
+	var i = 0
+	for len(values) > 0 {
+		name := ""
+		score := -1
+		values, _ = redis.Scan(values, &name, &score)
+		rank, _ := redis.Int(conn.Do("ZREVRANK", leaderboard, name))
+		nUser := User{name: name, score: score, rank: rank + 1}
+		users[i] = nUser
+		i += 1
+	}
+	return users
 }
-/* End Private functions */
 
+/* End Private functions */
 
 /* Public functions */
 
@@ -80,7 +79,7 @@ func (l *Leaderboard) RankMember(username string, score int) (User, error) {
 		fmt.Printf("error on get user rank Leaderboard:%s - Username:%s", l.name, username)
 		rank = -1
 	}
-	nUser := User{name: username, score: score, rank: rank + 1 }
+	nUser := User{name: username, score: score, rank: rank + 1}
 	return nUser, err
 }
 
@@ -128,18 +127,18 @@ func (l *Leaderboard) GetMember(username string) (User, error) {
 	if err != nil {
 		score = 0
 	}
-	nUser := User{name: username, score: score, rank: rank+1}
+	nUser := User{name: username, score: score, rank: rank + 1}
 	return nUser, err
 }
 
 func (l *Leaderboard) GetAroundMe(username string) []User {
 	currentUser, _ := l.GetMember(username)
 	startOffset := currentUser.rank - (l.pageSize / 2)
-    if startOffset < 0 {
-    	startOffset = 0
-    }
-    endOffset := (startOffset + l.pageSize) - 1
-    return getMembersByRange(l.name, l.pageSize, startOffset, endOffset)
+	if startOffset < 0 {
+		startOffset = 0
+	}
+	endOffset := (startOffset + l.pageSize) - 1
+	return getMembersByRange(l.name, l.pageSize, startOffset, endOffset)
 }
 
 func (l *Leaderboard) GetRank(username string) int {
@@ -156,13 +155,13 @@ func (l *Leaderboard) GetLeaders(page int) []User {
 	if page > l.TotalPages() {
 		page = l.TotalPages()
 	}
-    redisIndex := page - 1
-    startOffset := redisIndex * l.pageSize
-    if startOffset < 0 {
-    	startOffset = 0
-    }
+	redisIndex := page - 1
+	startOffset := redisIndex * l.pageSize
+	if startOffset < 0 {
+		startOffset = 0
+	}
 	endOffset := (startOffset + l.pageSize) - 1
-	
+
 	return getMembersByRange(l.name, l.pageSize, startOffset, endOffset)
 }
 
@@ -179,4 +178,5 @@ func (l *Leaderboard) GetMemberByRank(position int) User {
 	}
 	return User{}
 }
+
 /* End Public functions */
