@@ -18,7 +18,7 @@ How to use
 ----------
 
 Create a new leaderboard or attach to an existing leaderboard named 'highscores': 
-    highScore := NewLeaderboard("highscores", 10)
+    highScore := NewLeaderboard("localhost:6379", "highscores", 10)
     //return a Leaderboard: Leaderboard{name:"highscores", pageSize:10}
 
 Adding members to highscores using RankMember(username, score):
