@@ -15,7 +15,7 @@ type S struct{}
 var _ = gocheck.Suite(&S{})
 
 func (s *S) TearDownSuite(c *gocheck.C) {
-	conn := getConnection()
+	conn := getConnection("localhost:6379")
 	conn.Do("DEL", "highscore")
 	conn.Do("DEL", "bestTime")
 	conn.Do("DEL", "bestWeek")
@@ -23,11 +23,10 @@ func (s *S) TearDownSuite(c *gocheck.C) {
 	conn.Do("DEL", "7days")
 	conn.Do("DEL", "bestYear")
 	conn.Do("DEL", "week")
-
 }
 
 func (s *S) TestRankMember(c *gocheck.C) {
-	highScore := NewLeaderboard("highscore", 10)
+	highScore := NewLeaderboard("localhost:6379", "highscore", 10)
 	dayvson, err := highScore.RankMember("dayvson", 481516)
 	c.Assert(err, gocheck.IsNil)
 	arthur, err := highScore.RankMember("arthur", 1000)
@@ -37,7 +36,7 @@ func (s *S) TestRankMember(c *gocheck.C) {
 }
 
 func (s *S) TestTotalMembers(c *gocheck.C) {
-	bestTime := NewLeaderboard("bestTime", 10)
+	bestTime := NewLeaderboard("localhost:6379", "bestTime", 10)
 	for i := 0; i < 10; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -45,7 +44,7 @@ func (s *S) TestTotalMembers(c *gocheck.C) {
 }
 
 func (s *S) TestRemoveMember(c *gocheck.C) {
-	bestTime := NewLeaderboard("bestWeek", 10)
+	bestTime := NewLeaderboard("localhost:6379", "bestWeek", 10)
 	for i := 0; i < 10; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -55,7 +54,7 @@ func (s *S) TestRemoveMember(c *gocheck.C) {
 }
 
 func (s *S) TestTotalPages(c *gocheck.C) {
-	bestTime := NewLeaderboard("All", 25)
+	bestTime := NewLeaderboard("localhost:6379", "All", 25)
 	for i := 0; i < 101; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -63,7 +62,7 @@ func (s *S) TestTotalPages(c *gocheck.C) {
 }
 
 func (s *S) TestGetUser(c *gocheck.C) {
-	friendScore := NewLeaderboard("friendScore", 10)
+	friendScore := NewLeaderboard("localhost:6379", "friendScore", 10)
 	dayvson, _ := friendScore.RankMember("dayvson", 12345)
 	felipe, _ := friendScore.RankMember("felipe", 12344)
 	c.Assert(dayvson.rank, gocheck.Equals, 1)
@@ -76,7 +75,7 @@ func (s *S) TestGetUser(c *gocheck.C) {
 }
 
 func (s *S) TestGetAroundMe(c *gocheck.C) {
-	bestTime := NewLeaderboard("BestAllTime", 25)
+	bestTime := NewLeaderboard("localhost:6379", "BestAllTime", 25)
 	for i := 0; i < 101; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -89,7 +88,7 @@ func (s *S) TestGetAroundMe(c *gocheck.C) {
 }
 
 func (s *S) TestGetRank(c *gocheck.C) {
-	sevenDays := NewLeaderboard("7days", 25)
+	sevenDays := NewLeaderboard("localhost:6379", "7days", 25)
 	for i := 0; i < 101; i++ {
 		sevenDays.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -98,7 +97,7 @@ func (s *S) TestGetRank(c *gocheck.C) {
 }
 
 func (s *S) TestGetLeaders(c *gocheck.C) {
-	bestYear := NewLeaderboard("bestYear", 25)
+	bestYear := NewLeaderboard("localhost:6379", "bestYear", 25)
 	for i := 0; i < 1000; i++ {
 		bestYear.RankMember("member_"+strconv.Itoa(i+1), 1234*i)
 	}
@@ -111,16 +110,14 @@ func (s *S) TestGetLeaders(c *gocheck.C) {
 	c.Assert(firstOnPage.rank, gocheck.Equals, 1)
 	c.Assert(lastOnPage.name, gocheck.Equals, "member_976")
 	c.Assert(lastOnPage.rank, gocheck.Equals, 25)
-
 }
 
 func (s *S) TestGetUserByRank(c *gocheck.C) {
-	sevenDays := NewLeaderboard("week", 25)
+	sevenDays := NewLeaderboard("localhost:6379", "week", 25)
 	for i := 0; i < 101; i++ {
 		sevenDays.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
 	member := sevenDays.GetMemberByRank(10)
 	c.Assert(member.name, gocheck.Equals, "member_91")
 	c.Assert(member.rank, gocheck.Equals, 10)
-
 }
