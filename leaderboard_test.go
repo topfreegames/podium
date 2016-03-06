@@ -1,9 +1,10 @@
 package leaderboard
 
 import (
-	"launchpad.net/gocheck"
 	"strconv"
 	"testing"
+
+	"launchpad.net/gocheck"
 )
 
 func Test(t *testing.T) {
@@ -13,9 +14,14 @@ func Test(t *testing.T) {
 type S struct{}
 
 var _ = gocheck.Suite(&S{})
+var redisSettings = RedisSettings{
+	Host:     "localhost:6379",
+	Password: "",
+}
 
 func (s *S) TearDownSuite(c *gocheck.C) {
-	conn := getConnection("localhost:6379")
+
+	conn := getConnection(redisSettings)
 	conn.Do("DEL", "highscore")
 	conn.Do("DEL", "bestTime")
 	conn.Do("DEL", "bestWeek")
@@ -26,17 +32,17 @@ func (s *S) TearDownSuite(c *gocheck.C) {
 }
 
 func (s *S) TestRankMember(c *gocheck.C) {
-	highScore := NewLeaderboard("localhost:6379", "highscore", 10)
+	highScore := NewLeaderboard(redisSettings, "highscore", 10)
 	dayvson, err := highScore.RankMember("dayvson", 481516)
 	c.Assert(err, gocheck.IsNil)
 	arthur, err := highScore.RankMember("arthur", 1000)
 	c.Assert(err, gocheck.IsNil)
-	c.Assert(dayvson.rank, gocheck.Equals, 1)
-	c.Assert(arthur.rank, gocheck.Equals, 2)
+	c.Assert(dayvson.Rank, gocheck.Equals, 1)
+	c.Assert(arthur.Rank, gocheck.Equals, 2)
 }
 
 func (s *S) TestTotalMembers(c *gocheck.C) {
-	bestTime := NewLeaderboard("localhost:6379", "bestTime", 10)
+	bestTime := NewLeaderboard(redisSettings, "bestTime", 10)
 	for i := 0; i < 10; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -44,7 +50,7 @@ func (s *S) TestTotalMembers(c *gocheck.C) {
 }
 
 func (s *S) TestRemoveMember(c *gocheck.C) {
-	bestTime := NewLeaderboard("localhost:6379", "bestWeek", 10)
+	bestTime := NewLeaderboard(redisSettings, "bestWeek", 10)
 	for i := 0; i < 10; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -54,7 +60,7 @@ func (s *S) TestRemoveMember(c *gocheck.C) {
 }
 
 func (s *S) TestTotalPages(c *gocheck.C) {
-	bestTime := NewLeaderboard("localhost:6379", "All", 25)
+	bestTime := NewLeaderboard(redisSettings, "All", 25)
 	for i := 0; i < 101; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -62,33 +68,33 @@ func (s *S) TestTotalPages(c *gocheck.C) {
 }
 
 func (s *S) TestGetUser(c *gocheck.C) {
-	friendScore := NewLeaderboard("localhost:6379", "friendScore", 10)
+	friendScore := NewLeaderboard(redisSettings, "friendScore", 10)
 	dayvson, _ := friendScore.RankMember("dayvson", 12345)
 	felipe, _ := friendScore.RankMember("felipe", 12344)
-	c.Assert(dayvson.rank, gocheck.Equals, 1)
-	c.Assert(felipe.rank, gocheck.Equals, 2)
+	c.Assert(dayvson.Rank, gocheck.Equals, 1)
+	c.Assert(felipe.Rank, gocheck.Equals, 2)
 	friendScore.RankMember("felipe", 12346)
 	felipe, _ = friendScore.GetMember("felipe")
 	dayvson, _ = friendScore.GetMember("dayvson")
-	c.Assert(felipe.rank, gocheck.Equals, 1)
-	c.Assert(dayvson.rank, gocheck.Equals, 2)
+	c.Assert(felipe.Rank, gocheck.Equals, 1)
+	c.Assert(dayvson.Rank, gocheck.Equals, 2)
 }
 
 func (s *S) TestGetAroundMe(c *gocheck.C) {
-	bestTime := NewLeaderboard("localhost:6379", "BestAllTime", 25)
+	bestTime := NewLeaderboard(redisSettings, "BestAllTime", 25)
 	for i := 0; i < 101; i++ {
 		bestTime.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
 	users := bestTime.GetAroundMe("member_20")
 	firstAroundMe := users[0]
-	lastAroundMe := users[bestTime.pageSize-1]
-	c.Assert(len(users), gocheck.Equals, bestTime.pageSize)
-	c.Assert(firstAroundMe.name, gocheck.Equals, "member_31")
-	c.Assert(lastAroundMe.name, gocheck.Equals, "member_7")
+	lastAroundMe := users[bestTime.PageSize-1]
+	c.Assert(len(users), gocheck.Equals, bestTime.PageSize)
+	c.Assert(firstAroundMe.Name, gocheck.Equals, "member_31")
+	c.Assert(lastAroundMe.Name, gocheck.Equals, "member_7")
 }
 
 func (s *S) TestGetRank(c *gocheck.C) {
-	sevenDays := NewLeaderboard("localhost:6379", "7days", 25)
+	sevenDays := NewLeaderboard(redisSettings, "7days", 25)
 	for i := 0; i < 101; i++ {
 		sevenDays.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
@@ -97,7 +103,7 @@ func (s *S) TestGetRank(c *gocheck.C) {
 }
 
 func (s *S) TestGetLeaders(c *gocheck.C) {
-	bestYear := NewLeaderboard("localhost:6379", "bestYear", 25)
+	bestYear := NewLeaderboard(redisSettings, "bestYear", 25)
 	for i := 0; i < 1000; i++ {
 		bestYear.RankMember("member_"+strconv.Itoa(i+1), 1234*i)
 	}
@@ -105,19 +111,19 @@ func (s *S) TestGetLeaders(c *gocheck.C) {
 
 	firstOnPage := users[0]
 	lastOnPage := users[len(users)-1]
-	c.Assert(len(users), gocheck.Equals, bestYear.pageSize)
-	c.Assert(firstOnPage.name, gocheck.Equals, "member_1000")
-	c.Assert(firstOnPage.rank, gocheck.Equals, 1)
-	c.Assert(lastOnPage.name, gocheck.Equals, "member_976")
-	c.Assert(lastOnPage.rank, gocheck.Equals, 25)
+	c.Assert(len(users), gocheck.Equals, bestYear.PageSize)
+	c.Assert(firstOnPage.Name, gocheck.Equals, "member_1000")
+	c.Assert(firstOnPage.Rank, gocheck.Equals, 1)
+	c.Assert(lastOnPage.Name, gocheck.Equals, "member_976")
+	c.Assert(lastOnPage.Rank, gocheck.Equals, 25)
 }
 
 func (s *S) TestGetUserByRank(c *gocheck.C) {
-	sevenDays := NewLeaderboard("localhost:6379", "week", 25)
+	sevenDays := NewLeaderboard(redisSettings, "week", 25)
 	for i := 0; i < 101; i++ {
 		sevenDays.RankMember("member_"+strconv.Itoa(i), 1234*i)
 	}
 	member := sevenDays.GetMemberByRank(10)
-	c.Assert(member.name, gocheck.Equals, "member_91")
-	c.Assert(member.rank, gocheck.Equals, 10)
+	c.Assert(member.Name, gocheck.Equals, "member_91")
+	c.Assert(member.Rank, gocheck.Equals, 10)
 }
