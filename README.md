@@ -18,8 +18,13 @@ How to use
 ----------
 
 Create a new leaderboard or attach to an existing leaderboard named 'highscores': 
-    highScore := NewLeaderboard("localhost:6379", "highscores", 10)
+<pre>
+    highScore := NewLeaderboard(RedisSettings{
+    	Host: "localhost:6379", 
+    	Password: "mypassword",
+    }, "highscores", 10)
     //return a Leaderboard: Leaderboard{name:"highscores", pageSize:10}
+</pre>  
 
 Adding members to highscores using RankMember(username, score):
 <pre>
