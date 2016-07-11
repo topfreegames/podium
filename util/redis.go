@@ -6,6 +6,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+// RedisSettings identifies uniquely one redis connection
 type RedisSettings struct {
 	Host     string
 	Password string
@@ -23,9 +24,9 @@ func newPool(server string, password string) *redis.Pool {
 				return nil, err
 			}
 			if password != "" {
-				if _, err := c.Do("AUTH", password); err != nil {
+				if _, authErr := c.Do("AUTH", password); authErr != nil {
 					c.Close()
-					return nil, err
+					return nil, authErr
 				}
 			}
 			return c, err
@@ -37,6 +38,7 @@ func newPool(server string, password string) *redis.Pool {
 	}
 }
 
+// GetConnection creates and returns a new redis connection pool based on the given settings
 func GetConnection(settings RedisSettings) redis.Conn {
 	if pool == nil {
 		pool = newPool(settings.Host, settings.Password)
