@@ -40,7 +40,8 @@ var _ = Describe("Leaderboard", func() {
 	It("TestTotalMembers", func() {
 		testLeaderboard := NewLeaderboard(testRedisSettings, "testleaderbord", 10)
 		for i := 0; i < 10; i++ {
-			testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			Expect(err).To(BeNil())
 		}
 		Expect(testLeaderboard.TotalMembers()).To(Equal(10))
 	})
@@ -48,7 +49,8 @@ var _ = Describe("Leaderboard", func() {
 	It("TestRemoveMember", func() {
 		testLeaderboard := NewLeaderboard(testRedisSettings, "testleaderbord", 10)
 		for i := 0; i < 10; i++ {
-			testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			Expect(err).To(BeNil())
 		}
 		Expect(testLeaderboard.TotalMembers()).To(Equal(10))
 		testLeaderboard.RemoveMember("member_5")
@@ -58,20 +60,25 @@ var _ = Describe("Leaderboard", func() {
 	It("TestTotalPages", func() {
 		testLeaderboard := NewLeaderboard(testRedisSettings, "testleaderbord", 25)
 		for i := 0; i < 101; i++ {
-			testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			Expect(err).To(BeNil())
 		}
 		Expect(testLeaderboard.TotalPages()).To(Equal(5))
 	})
 
 	It("TestGetUser", func() {
 		friendScore := NewLeaderboard(testRedisSettings, "testleaderbord", 10)
-		dayvson, _ := friendScore.SetUserScore("dayvson", 12345)
-		felipe, _ := friendScore.SetUserScore("felipe", 12344)
+		dayvson, err := friendScore.SetUserScore("dayvson", 12345)
+		Expect(err).To(BeNil())
+		felipe, err := friendScore.SetUserScore("felipe", 12344)
+		Expect(err).To(BeNil())
 		Expect(dayvson.Rank).To(Equal(1))
 		Expect(felipe.Rank).To(Equal(2))
 		friendScore.SetUserScore("felipe", 12346)
-		felipe, _ = friendScore.GetMember("felipe")
-		dayvson, _ = friendScore.GetMember("dayvson")
+		felipe, err = friendScore.GetMember("felipe")
+		Expect(err).To(BeNil())
+		dayvson, err = friendScore.GetMember("dayvson")
+		Expect(err).To(BeNil())
 		Expect(felipe.Rank).To(Equal(1))
 		Expect(dayvson.Rank).To(Equal(2))
 	})
@@ -79,7 +86,8 @@ var _ = Describe("Leaderboard", func() {
 	It("TestGetAroundMe", func() {
 		testLeaderboard := NewLeaderboard(testRedisSettings, "testleaderbord", 25)
 		for i := 0; i < 101; i++ {
-			testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			Expect(err).To(BeNil())
 		}
 		users := testLeaderboard.GetAroundMe("member_20")
 		firstAroundMe := users[0]
@@ -92,7 +100,8 @@ var _ = Describe("Leaderboard", func() {
 	It("TestGetRank", func() {
 		testLeaderboard := NewLeaderboard(testRedisSettings, "testleaderbord", 25)
 		for i := 0; i < 101; i++ {
-			testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			Expect(err).To(BeNil())
 		}
 		testLeaderboard.SetUserScore("member_6", 1000)
 		Expect(testLeaderboard.GetRank("member_6")).To(Equal(100))
@@ -101,7 +110,8 @@ var _ = Describe("Leaderboard", func() {
 	It("TestGetLeaders", func() {
 		testLeaderboard := NewLeaderboard(testRedisSettings, "testleaderbord", 25)
 		for i := 0; i < 1000; i++ {
-			testLeaderboard.SetUserScore("member_"+strconv.Itoa(i+1), 1234*i)
+			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i+1), 1234*i)
+			Expect(err).To(BeNil())
 		}
 		var users = testLeaderboard.GetLeaders(1)
 
@@ -117,7 +127,8 @@ var _ = Describe("Leaderboard", func() {
 	It("TestGetUserByRank", func() {
 		testLeaderboard := NewLeaderboard(testRedisSettings, "testleaderbord", 25)
 		for i := 0; i < 101; i++ {
-			testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
+			Expect(err).To(BeNil())
 		}
 		member := testLeaderboard.GetMemberByRank(10)
 		Expect(member.PublicID).To(Equal("member_91"))
