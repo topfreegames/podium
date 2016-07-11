@@ -1,0 +1,13 @@
+hash: e69c21381524d6f65b8238c5039f6b34ba80b795d5909ce3a3bf98c8b8163295
+updated: 2016-07-11T14:39:11.798681652-03:00
+imports:
+- name: github.com/garyburd/redigo
+  version: b8dc90050f24c1a73a52f107f3f575be67b21b7c
+  subpackages:
+  - redis
+  - internal
+- name: github.com/onsi/ginkgo
+  version: 16c38793d41b07a5f9ae77d573af7836a994bf27
+- name: github.com/onsi/gomega
+  version: fcb0f1276bbd7cf097f5a7fd86cc68b50da9376f
+devImports: []

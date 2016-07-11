@@ -1,4 +1,11 @@
+PACKAGES = $(shell glide novendor)
+GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/go-leaderboard@.@g | egrep -v "^[.]$$")
+
+setup:
+	@go get -u github.com/Masterminds/glide/...
+	@go get -u github.com/onsi/ginkgo/ginkgo
+	@go get github.com/gordonklaus/ineffassign
+	@glide install
+
 test:
-	@printf "\033[0;32mRUNNING TESTS\033[0m\n"
-	@printf "\033[1;30m..................................\033[0m\n"
-	@GOPATH=$(GOPATH):`pwd` go test -gocheck.vv
+	@ginkgo --cover $(GODIRS)
