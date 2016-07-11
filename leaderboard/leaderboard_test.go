@@ -12,13 +12,13 @@ import (
 
 var _ = Describe("Leaderboard", func() {
 
-	redisSettings := util.RedisSettings{
-		Host:     "localhost:6379",
+	testRedisSettings := util.RedisSettings{
+		Host:     "localhost:1234",
 		Password: "",
 	}
 
 	BeforeSuite(func() {
-		conn := util.GetConnection(redisSettings)
+		conn := util.GetConnection(testRedisSettings)
 		conn.Do("DEL", "highscore")
 		conn.Do("DEL", "bestTime")
 		conn.Do("DEL", "bestWeek")
@@ -29,7 +29,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestSetUserScore", func() {
-		highScore := NewLeaderboard(redisSettings, "highscore", 10)
+		highScore := NewLeaderboard(testRedisSettings, "highscore", 10)
 		dayvson, err := highScore.SetUserScore("dayvson", 481516)
 		Expect(err).To(BeNil())
 		arthur, err := highScore.SetUserScore("arthur", 1000)
@@ -39,7 +39,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestTotalMembers", func() {
-		bestTime := NewLeaderboard(redisSettings, "bestTime", 10)
+		bestTime := NewLeaderboard(testRedisSettings, "bestTime", 10)
 		for i := 0; i < 10; i++ {
 			bestTime.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 		}
@@ -47,7 +47,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestRemoveMember", func() {
-		bestTime := NewLeaderboard(redisSettings, "bestWeek", 10)
+		bestTime := NewLeaderboard(testRedisSettings, "bestWeek", 10)
 		for i := 0; i < 10; i++ {
 			bestTime.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 		}
@@ -57,7 +57,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestTotalPages", func() {
-		bestTime := NewLeaderboard(redisSettings, "All", 25)
+		bestTime := NewLeaderboard(testRedisSettings, "All", 25)
 		for i := 0; i < 101; i++ {
 			bestTime.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 		}
@@ -65,7 +65,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetUser", func() {
-		friendScore := NewLeaderboard(redisSettings, "friendScore", 10)
+		friendScore := NewLeaderboard(testRedisSettings, "friendScore", 10)
 		dayvson, _ := friendScore.SetUserScore("dayvson", 12345)
 		felipe, _ := friendScore.SetUserScore("felipe", 12344)
 		Expect(dayvson.Rank).To(Equal(1))
@@ -78,7 +78,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetAroundMe", func() {
-		bestTime := NewLeaderboard(redisSettings, "BestAllTime", 25)
+		bestTime := NewLeaderboard(testRedisSettings, "BestAllTime", 25)
 		for i := 0; i < 101; i++ {
 			bestTime.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 		}
@@ -91,7 +91,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetRank", func() {
-		sevenDays := NewLeaderboard(redisSettings, "7days", 25)
+		sevenDays := NewLeaderboard(testRedisSettings, "7days", 25)
 		for i := 0; i < 101; i++ {
 			sevenDays.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 		}
@@ -100,7 +100,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetLeaders", func() {
-		bestYear := NewLeaderboard(redisSettings, "bestYear", 25)
+		bestYear := NewLeaderboard(testRedisSettings, "bestYear", 25)
 		for i := 0; i < 1000; i++ {
 			bestYear.SetUserScore("member_"+strconv.Itoa(i+1), 1234*i)
 		}
@@ -116,7 +116,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetUserByRank", func() {
-		sevenDays := NewLeaderboard(redisSettings, "week", 25)
+		sevenDays := NewLeaderboard(testRedisSettings, "week", 25)
 		for i := 0; i < 101; i++ {
 			sevenDays.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 		}
