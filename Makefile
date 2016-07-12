@@ -1,3 +1,12 @@
+# go-leaderboard
+# https://github.com/topfreegames/go-leaderboard
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license
+# Copyright © 2016 Top Free Games <backend@tfgco.com>
+# Forked from
+# https://github.com/dayvson/go-leaderboard
+# Copyright © 2013 Maxwell Dayvson da Silva
+
 PACKAGES = $(shell glide novendor)
 GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/go-leaderboard@.@g | egrep -v "^[.]$$")
 
