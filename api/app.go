@@ -100,12 +100,21 @@ func (app *App) configureApplication() {
 	if app.Debug {
 		a.Use(logger.New(iris.Logger))
 	}
-	a.Use(recovery.New(os.Stderr))
 
+	a.Use(recovery.New(os.Stderr))
 	a.Use(&RecoveryMiddleware{OnError: app.onErrorHandler})
 	a.Use(&VersionMiddleware{App: app})
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
+	a.Put("/:leaderboardID/users/:userPublicID/score", UpsertUserScoreHandler(app))
+	// a.Del("/:leaderboardID/users/:userPublicID", DeleteUserHandler(app))
+	// a.Get("/:leaderboardID/users/:userPublicID", GetUserHandler(app))
+	// a.Get("/:leaderboardID/users/:userPublicID/around", GetAroundUserHandler(app))
+	// a.Get("/:leaderboardID/users/:userPublicID/rank", GetUserRankHandler(app))
+	// a.Get("/:leaderboardID/users-count", GetTotalMembersHandler(app))
+	// a.Get("/:leaderboardID/pages", GetTotalPagesHandler(app))
+	// a.Get("/:leaderboardID/top", GetLeaderboardTopUsersHandler(app))
+	// a.Get("/:leaderboardID/rank/:rank", GetPlayerByRankHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 	redisSettings := util.RedisSettings{

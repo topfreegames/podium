@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// GetDefaultTestApp returns a new arkadiko API Application bound to 0.0.0.0:8888 for test
+// GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
 func GetDefaultTestApp() *App {
 	app := GetApp("0.0.0.0", 8890, "../config/test.yaml", true)
 	app.Configure()

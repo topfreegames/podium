@@ -23,9 +23,9 @@ func Test(t *testing.T) {
 	Describe("Root Cmd", func() {
 		It("Should run command", func() {
 			var rootCmd = &cobra.Command{
-				Use:   "arkadiko",
-				Short: "arkadiko bridges http to mqtt",
-				Long:  `arkadiko bridges http to mqtt.`,
+				Use:   "podium",
+				Short: "podium handles redis backed leaderboards",
+				Long:  `podium handles redis backed leaderboards.`,
 			}
 			Execute(rootCmd)
 		})
