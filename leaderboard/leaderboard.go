@@ -31,15 +31,15 @@ type Team struct {
 	Rank     int
 }
 
-// Leaderboard identifies a leaderboard with given settings
+// Leaderboard identifies a leaderboard with given redis client
 type Leaderboard struct {
-	Settings util.RedisSettings
-	PublicID string
-	PageSize int
+	RedisClient *util.RedisClient
+	PublicID    string
+	PageSize    int
 }
 
-func getMembersByRange(settings util.RedisSettings, leaderboard string, pageSize int, startOffset int, endOffset int) []User {
-	conn := util.GetConnection(settings)
+func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int) []User {
+	conn := redisClient.GetConnection()
 	defer conn.Close()
 	users := make([]User, pageSize)
 	values, _ := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
@@ -57,13 +57,13 @@ func getMembersByRange(settings util.RedisSettings, leaderboard string, pageSize
 }
 
 // NewLeaderboard creates a new Leaderboard with given settings, ID and pageSize
-func NewLeaderboard(settings util.RedisSettings, publicID string, pageSize int) Leaderboard {
-	return Leaderboard{Settings: settings, PublicID: publicID, PageSize: pageSize}
+func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int) Leaderboard {
+	return Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize}
 }
 
 // SetUserScore sets the score to the user with the given ID
 func (l *Leaderboard) SetUserScore(userID string, score int) (User, error) {
-	conn := util.GetConnection(l.Settings)
+	conn := l.RedisClient.GetConnection()
 	defer conn.Close()
 	_, err := conn.Do("ZADD", l.PublicID, score, userID)
 	if err != nil {
@@ -80,7 +80,7 @@ func (l *Leaderboard) SetUserScore(userID string, score int) (User, error) {
 
 // TotalMembers returns the total number of members in a given leaderboard
 func (l *Leaderboard) TotalMembers() int {
-	conn := util.GetConnection(l.Settings)
+	conn := l.RedisClient.GetConnection()
 	total, err := redis.Int(conn.Do("ZCARD", l.PublicID))
 	if err != nil {
 		fmt.Printf("error on get leaderboard total members")
@@ -92,7 +92,7 @@ func (l *Leaderboard) TotalMembers() int {
 
 // RemoveMember removes the member with the given publicID from the leaderboard
 func (l *Leaderboard) RemoveMember(userID string) (User, error) {
-	conn := util.GetConnection(l.Settings)
+	conn := l.RedisClient.GetConnection()
 	nUser, err := l.GetMember(userID)
 	_, err = conn.Do("ZREM", l.PublicID, userID)
 	if err != nil {
@@ -104,7 +104,7 @@ func (l *Leaderboard) RemoveMember(userID string) (User, error) {
 
 // TotalPages returns the number of pages of the leaderboard
 func (l *Leaderboard) TotalPages() int {
-	conn := util.GetConnection(l.Settings)
+	conn := l.RedisClient.GetConnection()
 	pages := 0
 	total, err := redis.Int(conn.Do("ZCOUNT", l.PublicID, "-inf", "+inf"))
 	if err == nil {
@@ -116,7 +116,7 @@ func (l *Leaderboard) TotalPages() int {
 
 // GetMember returns the score and the rank of the user with the given ID
 func (l *Leaderboard) GetMember(userID string) (User, error) {
-	conn := util.GetConnection(l.Settings)
+	conn := l.RedisClient.GetConnection()
 	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
 	if err != nil {
 		rank = 0
@@ -138,12 +138,12 @@ func (l *Leaderboard) GetAroundMe(userID string) []User {
 		startOffset = 0
 	}
 	endOffset := (startOffset + l.PageSize) - 1
-	return getMembersByRange(l.Settings, l.PublicID, l.PageSize, startOffset, endOffset)
+	return getMembersByRange(l.RedisClient, l.PublicID, l.PageSize, startOffset, endOffset)
 }
 
 // GetRank returns the rank of the user with the given ID
 func (l *Leaderboard) GetRank(userID string) int {
-	conn := util.GetConnection(l.Settings)
+	conn := l.RedisClient.GetConnection()
 	rank, _ := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
 	defer conn.Close()
 	return rank + 1
@@ -163,12 +163,12 @@ func (l *Leaderboard) GetLeaders(page int) []User {
 		startOffset = 0
 	}
 	endOffset := (startOffset + l.PageSize) - 1
-	return getMembersByRange(l.Settings, l.PublicID, l.PageSize, startOffset, endOffset)
+	return getMembersByRange(l.RedisClient, l.PublicID, l.PageSize, startOffset, endOffset)
 }
 
 // GetMemberByRank returns a user that has the given rank
 func (l *Leaderboard) GetMemberByRank(position int) User {
-	conn := util.GetConnection(l.Settings)
+	conn := l.RedisClient.GetConnection()
 
 	if position <= l.TotalMembers() {
 		currentPage := int(math.Ceil(float64(position) / float64(l.PageSize)))

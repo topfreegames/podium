@@ -10,47 +10,61 @@
 package util
 
 import (
-	"time"
+	"fmt"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/spf13/viper"
+	"github.com/uber-go/zap"
 )
 
-// RedisSettings identifies uniquely one redis connection
+// RedisSettings identifies uniquely the settings of a redis client
 type RedisSettings struct {
 	Host     string
+	Port     int
 	Password string
 }
 
-var pool *redis.Pool
-
-func newPool(server string, password string) *redis.Pool {
-	return &redis.Pool{
-		MaxIdle:     10,
-		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", server)
-			if err != nil {
-				return nil, err
-			}
-			if password != "" {
-				if _, authErr := c.Do("AUTH", password); authErr != nil {
-					c.Close()
-					return nil, authErr
-				}
-			}
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
-	}
+// RedisClient identifies uniquely one redis client with a pool of connections
+type RedisClient struct {
+	Logger zap.Logger
+	Pool   *redis.Pool
 }
 
-// GetConnection creates and returns a new redis connection pool based on the given settings
-func GetConnection(settings RedisSettings) redis.Conn {
-	if pool == nil {
-		pool = newPool(settings.Host, settings.Password)
+var client *RedisClient
+
+func newPool(host string, port int, password string) *redis.Pool {
+	redisAddress := fmt.Sprintf("%s:%d", host, port)
+	return redis.NewPool(func() (redis.Conn, error) {
+		if viper.GetString("redis.password") != "" {
+			c, err := redis.Dial("tcp", fmt.Sprintf("%s:%d", viper.GetString("redis.host"),
+				viper.GetInt("redis.port")), redis.DialPassword(viper.GetString("redis.password")))
+			if err != nil {
+				client.Logger.Error(err.Error())
+			}
+			return c, err
+		}
+		c, err := redis.Dial("tcp", redisAddress)
+		if err != nil {
+			if err != nil {
+				client.Logger.Error(err.Error())
+			}
+		}
+		return c, err
+	}, viper.GetInt("redis.maxPoolSize"))
+}
+
+// GetRedisClient creates and returns a new redis client based on the given settings
+func GetRedisClient(settings RedisSettings) *RedisClient {
+	client = &RedisClient{
+		Logger: zap.NewJSON(zap.WarnLevel),
 	}
-	return pool.Get()
+	if client.Pool == nil {
+		client.Pool = newPool(settings.Host, settings.Port, settings.Password)
+	}
+	return client
+}
+
+// GetConnection return a redis connection
+func (c *RedisClient) GetConnection() redis.Conn {
+	return c.Pool.Get()
 }

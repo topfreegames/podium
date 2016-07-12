@@ -1,0 +1,6 @@
+healthcheck:
+  workingText: WORKING
+redis:
+  host: localhost
+  port: 1234
+  maxPoolSize: 20
