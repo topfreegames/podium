@@ -1,5 +1,5 @@
-# go-leaderboard
-# https://github.com/topfreegames/go-leaderboard
+# podium
+# https://github.com/topfreegames/podium
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2016 Top Free Games <backend@tfgco.com>
@@ -8,7 +8,7 @@
 # Copyright © 2013 Maxwell Dayvson da Silva
 
 PACKAGES = $(shell glide novendor)
-GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/go-leaderboard@.@g | egrep -v "^[.]$$")
+GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/podium@.@g | egrep -v "^[.]$$")
 
 setup:
 	@go get -u github.com/Masterminds/glide/...

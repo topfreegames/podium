@@ -1,5 +1,5 @@
-// go-leaderboard
-// https://github.com/topfreegames/go-leaderboard
+// podium
+// https://github.com/topfreegames/podium
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
@@ -22,7 +22,7 @@ type VersionMiddleware struct {
 
 // Serve automatically adds a version header to response
 func (m *VersionMiddleware) Serve(c *iris.Context) {
-	c.SetHeader("GO-LEADERBOARD-VERSION", VERSION)
+	c.SetHeader("PODIUM-VERSION", VERSION)
 	c.Next()
 }
 

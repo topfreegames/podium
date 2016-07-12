@@ -1,4 +1,4 @@
-package: github.com/topfreegames/go-leaderboard
+package: github.com/topfreegames/podium
 import:
 - package: github.com/garyburd/redigo
   subpackages:

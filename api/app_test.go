@@ -3,7 +3,7 @@ package api_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/topfreegames/go-leaderboard/api"
+	"github.com/topfreegames/podium/api"
 )
 
 var _ = Describe("App", func() {

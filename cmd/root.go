@@ -1,5 +1,5 @@
-// go-leaderboard
-// https://github.com/topfreegames/go-leaderboard
+// podium
+// https://github.com/topfreegames/podium
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
@@ -21,17 +21,17 @@ import (
 // ConfigFile is the configuration file used for running a command
 var ConfigFile string
 
-// Verbose determines how verbose go-leaderboard will run under
+// Verbose determines how verbose podium will run under
 var Verbose int
 
-// RootCmd is the root command for go-leaderboard CLI application
+// RootCmd is the root command for podium CLI application
 var RootCmd = &cobra.Command{
-	Use:   "go-leaderboard",
-	Short: "go-leaderboard handles redis backed leaderboards",
-	Long:  `go-leaderboard handles redis backed leaderboards.`,
+	Use:   "podium",
+	Short: "podium handles redis backed leaderboards",
+	Long:  `podium handles redis backed leaderboards.`,
 }
 
-// Execute runs RootCmd to initialize go-leaderboard CLI application
+// Execute runs RootCmd to initialize podium CLI application
 func Execute(cmd *cobra.Command) {
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -58,10 +58,10 @@ func initConfig() {
 		viper.SetConfigFile(ConfigFile)
 	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.SetEnvPrefix("leaderboard")
-	viper.SetConfigName(".leaderboard") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")        // adding home directory as first search path
-	viper.AutomaticEnv()                // read in environment variables that match
+	viper.SetEnvPrefix("podium")
+	viper.SetConfigName(".podium") // name of config file (without extension)
+	viper.AddConfigPath("$HOME")   // adding home directory as first search path
+	viper.AutomaticEnv()           // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

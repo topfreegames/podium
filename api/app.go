@@ -1,5 +1,5 @@
-// go-leaderboard
-// https://github.com/topfreegames/go-leaderboard
+// podium
+// https://github.com/topfreegames/podium
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
@@ -21,14 +21,14 @@ import (
 	"github.com/kataras/iris/config"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/go-leaderboard/util"
+	"github.com/topfreegames/podium/util"
 	"github.com/uber-go/zap"
 )
 
 // JSON type
 type JSON map[string]interface{}
 
-// App is a struct that represents a go-leaderboard Application
+// App is a struct that represents a podium Application
 type App struct {
 	Debug       bool
 	Port        int
@@ -41,7 +41,7 @@ type App struct {
 	RedisClient *util.RedisClient
 }
 
-// GetApp returns a new go-leaderboard Application
+// GetApp returns a new podium Application
 func GetApp(host string, port int, configPath string, debug bool) *App {
 	app := &App{
 		Host:       host,
@@ -54,7 +54,7 @@ func GetApp(host string, port int, configPath string, debug bool) *App {
 	return app
 }
 
-// Configure instantiates the required dependencies for go-leaderboard Application
+// Configure instantiates the required dependencies for podium Application
 func (app *App) Configure() {
 	app.Logger = zap.NewJSON(zap.WarnLevel)
 
@@ -70,7 +70,7 @@ func (app *App) setConfigurationDefaults() {
 
 func (app *App) loadConfiguration() {
 	app.Config.SetConfigFile(app.ConfigPath)
-	app.Config.SetEnvPrefix("leaderboard")
+	app.Config.SetEnvPrefix("podium")
 	app.Config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	app.Config.AutomaticEnv()
 

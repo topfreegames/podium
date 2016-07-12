@@ -1,5 +1,5 @@
-// go-leaderboard
-// https://github.com/topfreegames/go-leaderboard
+// podium
+// https://github.com/topfreegames/podium
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
@@ -12,8 +12,8 @@ package leaderboard_test
 import (
 	"strconv"
 
-	. "github.com/topfreegames/go-leaderboard/leaderboard"
-	"github.com/topfreegames/go-leaderboard/util"
+	. "github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/util"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

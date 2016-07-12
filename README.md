@@ -1,7 +1,7 @@
-Leaderboard
-===========
+Podium
+=======
 
-A leaderboard written in [Go](http://golang.org/) using [Redis](http://redis.io/) database.
+A leaderboard system written in [Go](http://golang.org/) using [Redis](http://redis.io/) database.
 
 Features
 --------
@@ -19,7 +19,7 @@ Installation
 
 Install Leaderboard using the "go get" command:
 
-    go get github.com/topfreegames/go-leaderboard
+    go get github.com/topfreegames/podium
 
 And then run
 
