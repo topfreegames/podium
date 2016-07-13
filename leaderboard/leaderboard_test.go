@@ -57,7 +57,9 @@ var _ = Describe("Leaderboard", func() {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 			Expect(err).To(BeNil())
 		}
-		Expect(testLeaderboard.TotalMembers()).To(Equal(10))
+		count, err := testLeaderboard.TotalMembers()
+		Expect(err).To(BeNil())
+		Expect(count).To(Equal(10))
 	})
 
 	It("TestRemoveMember", func() {
@@ -138,16 +140,5 @@ var _ = Describe("Leaderboard", func() {
 		Expect(firstOnPage.Rank).To(Equal(1))
 		Expect(lastOnPage.PublicID).To(Equal("member_976"))
 		Expect(lastOnPage.Rank).To(Equal(25))
-	})
-
-	It("TestGetUserByRank", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 25)
-		for i := 0; i < 101; i++ {
-			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
-			Expect(err).To(BeNil())
-		}
-		member := testLeaderboard.GetMemberByRank(10)
-		Expect(member.PublicID).To(Equal("member_91"))
-		Expect(member.Rank).To(Equal(10))
 	})
 })

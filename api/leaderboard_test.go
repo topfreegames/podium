@@ -272,4 +272,28 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal("Invalid limit provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
 	})
+
+	Describe("Get Total Members Handler", func() {
+		It("Should get user score and neighbours from redis if user score exists", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/users-count")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(int(result["count"].(float64))).To(Equal(100))
+		})
+
+		It("Should not fail if leaderboard does not exist", func() {
+			res := api.Get(a, "/l/testkey/users-count")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			Expect(int(result["count"].(float64))).To(Equal(0))
+		})
+	})
 })

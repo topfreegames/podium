@@ -87,15 +87,15 @@ func (l *Leaderboard) SetUserScore(userID string, score int) (User, error) {
 }
 
 // TotalMembers returns the total number of members in a given leaderboard
-func (l *Leaderboard) TotalMembers() int {
+func (l *Leaderboard) TotalMembers() (int, error) {
 	conn := l.RedisClient.GetConnection()
 	total, err := redis.Int(conn.Do("ZCARD", l.PublicID))
 	if err != nil {
 		fmt.Printf("error on get leaderboard total members")
-		return 0
+		return 0, err
 	}
 	defer conn.Close()
-	return total
+	return total, nil
 }
 
 // RemoveMember removes the member with the given publicID from the leaderboard
@@ -178,21 +178,4 @@ func (l *Leaderboard) GetLeaders(page int) ([]User, error) {
 	}
 	endOffset := (startOffset + l.PageSize) - 1
 	return getMembersByRange(l.RedisClient, l.PublicID, l.PageSize, startOffset, endOffset)
-}
-
-// GetMemberByRank returns a user that has the given rank
-func (l *Leaderboard) GetMemberByRank(position int) User {
-	conn := l.RedisClient.GetConnection()
-
-	if position <= l.TotalMembers() {
-		currentPage := int(math.Ceil(float64(position) / float64(l.PageSize)))
-		offset := (position - 1) % l.PageSize
-		leaders, _ := l.GetLeaders(currentPage) // TODO treat error
-		defer conn.Close()
-		if leaders[offset].Rank == position {
-			return leaders[offset]
-		}
-	}
-	defer conn.Close()
-	return User{}
 }

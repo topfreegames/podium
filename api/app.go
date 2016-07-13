@@ -103,10 +103,9 @@ func (app *App) configureApplication() {
 	a.Delete("/l/:leaderboardID/users/:userPublicID", RemoveUserHandler(app))
 	a.Get("/l/:leaderboardID/users/:userPublicID/rank", GetUserRankHandler(app))
 	a.Get("/l/:leaderboardID/users/:userPublicID/around", GetAroundUserHandler(app))
-	// a.Get("/l/:leaderboardID/users-count", GetTotalMembersHandler(app))
+	a.Get("/l/:leaderboardID/users-count", GetTotalMembersHandler(app))
 	// a.Get("/l/:leaderboardID/pages", GetTotalPagesHandler(app))
 	// a.Get("/l/:leaderboardID/top", GetLeaderboardTopUsersHandler(app))
-	// a.Get("/l/:leaderboardID/rank/:rank", GetPlayerByRankHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 	redisSettings := util.RedisSettings{

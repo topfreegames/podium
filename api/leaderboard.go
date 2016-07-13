@@ -102,7 +102,7 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// GetUserRankHandler is the handler responsible for remover a user score
+// GetUserRankHandler is the handler responsible for retrieving a user rank
 func GetUserRankHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
@@ -126,7 +126,7 @@ func GetUserRankHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// GetAroundUserHandler is the handler responsible for remover a user score
+// GetAroundUserHandler retrieves a list of user score and rank centered in the given user
 func GetAroundUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
@@ -152,6 +152,25 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 
 		SucceedWith(map[string]interface{}{
 			"users": serializeUsers(users),
+		}, c)
+	}
+}
+
+// GetTotalMembersHandler is the handler responsible for remover a user score
+func GetTotalMembersHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		leaderboardID := c.Param("leaderboardID")
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		count, err := l.TotalMembers()
+
+		if err != nil {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{
+			"count": count,
 		}, c)
 	}
 }
