@@ -105,7 +105,7 @@ func (app *App) configureApplication() {
 	a.Get("/l/:leaderboardID/users/:userPublicID/around", GetAroundUserHandler(app))
 	a.Get("/l/:leaderboardID/users-count", GetTotalMembersHandler(app))
 	a.Get("/l/:leaderboardID/pages", GetTotalPagesHandler(app))
-	// a.Get("/l/:leaderboardID/top", GetLeaderboardTopUsersHandler(app))
+	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopUsersHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 	redisSettings := util.RedisSettings{

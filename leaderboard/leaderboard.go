@@ -175,7 +175,7 @@ func (l *Leaderboard) GetLeaders(page int) ([]User, error) {
 		return nil, err
 	}
 	if page > totalPages {
-		page = totalPages
+		return make([]User, 0), nil
 	}
 	redisIndex := page - 1
 	startOffset := redisIndex * l.PageSize

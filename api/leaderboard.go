@@ -17,7 +17,8 @@ import (
 )
 
 var notFoundError = "redigo: nil returned"
-var defaultLimit = 20
+var noPageSizeProvidedError = "strconv.ParseInt: parsing \"\": invalid syntax"
+var defaultPageSize = 20
 
 type setScorePayload struct {
 	Score int
@@ -132,8 +133,8 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
 		pageSize, err := c.URLParamInt("pageSize")
-		if err != nil && err.Error() == "strconv.ParseInt: parsing \"\": invalid syntax" {
-			pageSize = defaultLimit
+		if err != nil && err.Error() == noPageSizeProvidedError {
+			pageSize = defaultPageSize
 		} else if err != nil {
 			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
 			return
@@ -180,8 +181,8 @@ func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
 		pageSize, err := c.URLParamInt("pageSize")
-		if err != nil && err.Error() == "strconv.ParseInt: parsing \"\": invalid syntax" {
-			pageSize = defaultLimit
+		if err != nil && err.Error() == noPageSizeProvidedError {
+			pageSize = defaultPageSize
 		} else if err != nil {
 			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
 			return
@@ -197,6 +198,40 @@ func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 
 		SucceedWith(map[string]interface{}{
 			"count": count,
+		}, c)
+	}
+}
+
+// GetTopUsersHandler retrieves onePage of user score and rank
+func GetTopUsersHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		leaderboardID := c.Param("leaderboardID")
+		pageNumber, err := c.ParamInt("pageNumber")
+		if err != nil {
+			FailWith(400, fmt.Sprintf("Invalid pageNumber provided: %s", err.Error()), c)
+			return
+		}
+		pageSize, err := c.URLParamInt("pageSize")
+		if err != nil && err.Error() == noPageSizeProvidedError {
+			pageSize = defaultPageSize
+		} else if err != nil {
+			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
+			return
+		}
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
+		users, err := l.GetLeaders(pageNumber)
+
+		if err != nil && err.Error() == notFoundError {
+			FailWith(404, "User not found.", c)
+			return
+		} else if err != nil {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{
+			"users": serializeUsers(users),
 		}, c)
 	}
 }

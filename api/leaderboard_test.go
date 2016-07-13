@@ -346,4 +346,154 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
 	})
+
+	Describe("Get Top Users Handler", func() {
+		It("Should get one page of top users from redis if leaderboard exists", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/top/1")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(20))
+			for i, userObj := range users {
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(i + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", i+1)))
+				Expect(int(user["score"].(float64))).To(Equal(100 - i))
+
+				dbUser, err := l.GetMember(user["publicID"].(string))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
+				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
+				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
+			}
+		})
+
+		It("Should get one page of top users from redis if leaderboard exists", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/top/2")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(20))
+			start := 20
+			for i, userObj := range users {
+				pos := start + i
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(pos + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", pos+1)))
+				Expect(int(user["score"].(float64))).To(Equal(100 - pos))
+
+				dbUser, err := l.GetMember(user["publicID"].(string))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
+				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
+				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
+			}
+		})
+
+		It("Should get one page of top users from redis if leaderboard exists but less than pageSize neighbours exist", func() {
+			for i := 1; i <= 15; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 16-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/users/user_10/around")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(15))
+			for i, userObj := range users {
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(i + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", i+1)))
+				Expect(int(user["score"].(float64))).To(Equal(15 - i))
+
+				dbUser, err := l.GetMember(user["publicID"].(string))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
+				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
+				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
+			}
+		})
+
+		It("Should get top users from redis if leaderboard exists with custom pageSize", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/top/1", map[string]interface{}{
+				"pageSize": 10,
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(10))
+			for i, userObj := range users {
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(i + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", i+1)))
+				Expect(int(user["score"].(float64))).To(Equal(100 - i))
+
+				dbUser, err := l.GetMember(user["publicID"].(string))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
+				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
+				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
+			}
+		})
+
+		It("Should get empty list if page does not exist", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/top/100000")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			fmt.Println(users)
+			Expect(len(users)).To(Equal(0))
+		})
+
+		It("Should fail with 400 if bad pageNumber provided", func() {
+			res := api.Get(a, "/l/testkey/top/notint")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("Invalid pageNumber provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
+		})
+
+		It("Should fail with 400 if bad pageSize provided", func() {
+			res := api.Get(a, "/l/testkey/top/1", map[string]interface{}{
+				"pageSize": "notint",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
+		})
+	})
 })
