@@ -90,11 +90,11 @@ func (l *Leaderboard) SetUserScore(userID string, score int) (User, error) {
 func (l *Leaderboard) TotalMembers() (int, error) {
 	conn := l.RedisClient.GetConnection()
 	total, err := redis.Int(conn.Do("ZCARD", l.PublicID))
+	defer conn.Close()
 	if err != nil {
 		fmt.Printf("error on get leaderboard total members")
 		return 0, err
 	}
-	defer conn.Close()
 	return total, nil
 }
 
@@ -111,15 +111,17 @@ func (l *Leaderboard) RemoveMember(userID string) (User, error) {
 }
 
 // TotalPages returns the number of pages of the leaderboard
-func (l *Leaderboard) TotalPages() int {
+func (l *Leaderboard) TotalPages() (int, error) {
 	conn := l.RedisClient.GetConnection()
 	pages := 0
-	total, err := redis.Int(conn.Do("ZCOUNT", l.PublicID, "-inf", "+inf"))
-	if err == nil {
-		pages = int(math.Ceil(float64(total) / float64(l.PageSize)))
-	}
+	total, err := redis.Int(conn.Do("ZCARD", l.PublicID))
 	defer conn.Close()
-	return pages
+	if err != nil {
+		fmt.Printf("error on get leaderboard total pages")
+		return 0, err
+	}
+	pages = int(math.Ceil(float64(total) / float64(l.PageSize)))
+	return pages, nil
 }
 
 // GetMember returns the score and the rank of the user with the given ID
@@ -168,8 +170,12 @@ func (l *Leaderboard) GetLeaders(page int) ([]User, error) {
 	if page < 1 {
 		page = 1
 	}
-	if page > l.TotalPages() {
-		page = l.TotalPages()
+	totalPages, err := l.TotalPages()
+	if err != nil {
+		return nil, err
+	}
+	if page > totalPages {
+		page = totalPages
 	}
 	redisIndex := page - 1
 	startOffset := redisIndex * l.PageSize

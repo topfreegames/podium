@@ -228,7 +228,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			res := api.Get(a, "/l/testkey/users/user_50/around", map[string]interface{}{
-				"limit": 10,
+				"pageSize": 10,
 			})
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			var result map[string]interface{}
@@ -261,20 +261,20 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal("User not found."))
 		})
 
-		It("Should fail with 400 if bad limit provided", func() {
+		It("Should fail with 400 if bad pageSize provided", func() {
 			res := api.Get(a, "/l/testkey/users/user_50/around", map[string]interface{}{
-				"limit": "notint",
+				"pageSize": "notint",
 			})
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("Invalid limit provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
+			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
 	})
 
 	Describe("Get Total Members Handler", func() {
-		It("Should get user score and neighbours from redis if user score exists", func() {
+		It("Should get the number of members in a leaderboard it exists", func() {
 			for i := 1; i <= 100; i++ {
 				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
 				Expect(err).NotTo(HaveOccurred())
@@ -294,6 +294,56 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 			Expect(int(result["count"].(float64))).To(Equal(0))
+		})
+	})
+
+	Describe("Get Total Pages Handler", func() {
+		It("Should get the number of pages in an existing leaderboard with default pageSize", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/pages")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(int(result["count"].(float64))).To(Equal(5))
+		})
+
+		It("Should get the number of pages in an existing leaderboard with custom pageSize", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/pages", map[string]interface{}{
+				"pageSize": 10,
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(int(result["count"].(float64))).To(Equal(10))
+		})
+
+		It("Should not fail if leaderboard does not exist", func() {
+			res := api.Get(a, "/l/testkey/pages")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			Expect(int(result["count"].(float64))).To(Equal(0))
+		})
+
+		It("Should fail if leaderboard bad pageSize provided", func() {
+			res := api.Get(a, "/l/testkey/pages", map[string]interface{}{
+				"pageSize": "notint",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
 	})
 })

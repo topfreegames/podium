@@ -131,15 +131,15 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
-		limit, err := c.URLParamInt("limit")
+		pageSize, err := c.URLParamInt("pageSize")
 		if err != nil && err.Error() == "strconv.ParseInt: parsing \"\": invalid syntax" {
-			limit = defaultLimit
+			pageSize = defaultLimit
 		} else if err != nil {
-			FailWith(400, fmt.Sprintf("Invalid limit provided: %s", err.Error()), c)
+			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
 			return
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, limit)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
 		users, err := l.GetAroundMe(userPublicID)
 
 		if err != nil && err.Error() == notFoundError {
@@ -156,13 +156,39 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// GetTotalMembersHandler is the handler responsible for remover a user score
+// GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
 func GetTotalMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
 		count, err := l.TotalMembers()
+
+		if err != nil {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{
+			"count": count,
+		}, c)
+	}
+}
+
+// GetTotalPagesHandler is the handler responsible for returning the total number of pages in a leaderboard given a pageSize
+func GetTotalPagesHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		leaderboardID := c.Param("leaderboardID")
+		pageSize, err := c.URLParamInt("pageSize")
+		if err != nil && err.Error() == "strconv.ParseInt: parsing \"\": invalid syntax" {
+			pageSize = defaultLimit
+		} else if err != nil {
+			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
+			return
+		}
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
+		count, err := l.TotalPages()
 
 		if err != nil {
 			FailWith(500, err.Error(), c)
