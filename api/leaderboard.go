@@ -31,11 +31,7 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
-
-		res, err := l.SetUserScore(
-			userPublicID,
-			payload.Score,
-		)
+		res, err := l.SetUserScore(userPublicID, payload.Score)
 
 		if err != nil {
 			FailWith(500, err.Error(), c)
@@ -47,5 +43,23 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 			"score":    res.Score,
 			"rank":     res.Rank,
 		}, c)
+	}
+}
+
+// RemoveUserHandler is the handler responsible for remover a user score
+func RemoveUserHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		leaderboardID := c.Param("leaderboardID")
+		userPublicID := c.Param("userPublicID")
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		_, err := l.RemoveMember(userPublicID)
+
+		if err != nil && err.Error() != "redigo: nil returned" {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{}, c)
 	}
 }

@@ -11,12 +11,9 @@ package api
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/iris-contrib/middleware/logger"
-	"github.com/iris-contrib/middleware/recovery"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/config"
 	"github.com/rcrowley/go-metrics"
@@ -97,17 +94,12 @@ func (app *App) configureApplication() {
 	app.App = iris.New(c)
 	a := app.App
 
-	if app.Debug {
-		a.Use(logger.New(iris.Logger))
-	}
-
-	a.Use(recovery.New(os.Stderr))
 	a.Use(&RecoveryMiddleware{OnError: app.onErrorHandler})
 	a.Use(&VersionMiddleware{App: app})
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Put("/:leaderboardID/users/:userPublicID/score", UpsertUserScoreHandler(app))
-	// a.Del("/:leaderboardID/users/:userPublicID", DeleteUserHandler(app))
+	a.Delete("/:leaderboardID/users/:userPublicID", RemoveUserHandler(app))
 	// a.Get("/:leaderboardID/users/:userPublicID", GetUserHandler(app))
 	// a.Get("/:leaderboardID/users/:userPublicID/around", GetAroundUserHandler(app))
 	// a.Get("/:leaderboardID/users/:userPublicID/rank", GetUserRankHandler(app))

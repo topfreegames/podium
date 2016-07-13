@@ -57,8 +57,8 @@ func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSi
 }
 
 // NewLeaderboard creates a new Leaderboard with given settings, ID and pageSize
-func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int) Leaderboard {
-	return Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize}
+func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int) *Leaderboard {
+	return &Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize}
 }
 
 // SetUserScore sets the score to the user with the given ID

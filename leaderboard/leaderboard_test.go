@@ -21,15 +21,17 @@ import (
 
 var _ = Describe("Leaderboard", func() {
 
-	redisSettings := util.RedisSettings{
-		Host:     "localhost",
-		Port:     1234,
-		Password: "",
-	}
-
-	redisClient := util.GetRedisClient(redisSettings)
+	var redisSettings util.RedisSettings
+	var redisClient *util.RedisClient
 
 	BeforeEach(func() {
+		redisSettings = util.RedisSettings{
+			Host:     "localhost",
+			Port:     1234,
+			Password: "",
+		}
+
+		redisClient = util.GetRedisClient(redisSettings)
 		conn := redisClient.GetConnection()
 		conn.Do("DEL", "testleaderbord")
 	})

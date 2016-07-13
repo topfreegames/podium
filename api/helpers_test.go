@@ -20,7 +20,7 @@ import (
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
 func GetDefaultTestApp() *App {
-	app := GetApp("0.0.0.0", 8890, "../config/test.yaml", true)
+	app := GetApp("0.0.0.0", 8890, "../config/test.yaml", false)
 	app.Configure()
 	return app
 }
@@ -95,7 +95,7 @@ func sendRequest(app *App, method, url string) *httpexpect.Request {
 		},
 		Reporter: &GinkgoReporter{},
 		Printers: []httpexpect.Printer{
-			httpexpect.NewDebugPrinter(&GinkgoPrinter{}, true),
+		// httpexpect.NewDebugPrinter(&GinkgoPrinter{}, true),
 		},
 	})
 
