@@ -5,7 +5,7 @@ exec 1>&2
 # enable user input
 exec < /dev/tty
 
-forbiddenregexp='[XF](It|Describe)[(]'
+forbiddenregexp='^\+.*[XF](It|Describe)[(]'
 # CHECK
 if test $(git diff --cached | egrep $forbiddenregexp | wc -l) != 0
 then

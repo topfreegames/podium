@@ -35,7 +35,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			payload := map[string]interface{}{
 				"score": 100,
 			}
-			res := api.PutJSON(a, "/testkey/users/userpublicid/score", payload)
+			res := api.PutJSON(a, "/l/testkey/users/userpublicid/score", payload)
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
@@ -55,7 +55,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			payload := map[string]interface{}{
 				"notscore": 100,
 			}
-			res := api.PutJSON(a, "/testkey/users/userpublicid/score", payload)
+			res := api.PutJSON(a, "/l/testkey/users/userpublicid/score", payload)
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
@@ -64,7 +64,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if invalid payload", func() {
-			res := api.PutBody(a, "/testkey/users/userpublicid/score", "invalid")
+			res := api.PutBody(a, "/l/testkey/users/userpublicid/score", "invalid")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
@@ -75,21 +75,21 @@ var _ = Describe("Leaderboard Handler", func() {
 
 	Describe("Remove User Score", func() {
 		It("Should delete user score from redis if score exists", func() {
-			_, err := l.SetUserScore("userpublicid2", 100)
+			_, err := l.SetUserScore("userpublicid", 100)
 			Expect(err).NotTo(HaveOccurred())
 
-			res := api.Delete(a, "/testkey/users/userpublicid2")
+			res := api.Delete(a, "/l/testkey/users/userpublicid")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 
-			_, err = l.GetMember("userpublicid2")
+			_, err = l.GetMember("userpublicid")
 			Expect(err.Error()).To(Equal("redigo: nil returned"))
 		})
 
-		FIt("Should not fail in deleting user score from redis if score does not exist", func() {
-			res := api.Delete(a, "/testkey/users/userpublicid")
+		It("Should not fail in deleting user score from redis if score does not exist", func() {
+			res := api.Delete(a, "/l/testkey/users/userpublicid")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
@@ -97,6 +97,37 @@ var _ = Describe("Leaderboard Handler", func() {
 
 			_, err := l.GetMember("userpublicid")
 			Expect(err.Error()).To(Equal("redigo: nil returned"))
+		})
+	})
+
+	Describe("Get User", func() {
+		It("Should get user score from redis if score exists", func() {
+			_, err := l.SetUserScore("userpublicid", 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			res := api.Get(a, "/l/testkey/users/userpublicid")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["publicID"]).To(Equal("userpublicid"))
+			Expect(int(result["score"].(float64))).To(Equal(100))
+			Expect(int(result["rank"].(float64))).To(Equal(1))
+
+			user, err := l.GetMember("userpublicid")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(user.Rank).To(Equal(1))
+			Expect(user.Score).To(Equal(100))
+			Expect(user.PublicID).To(Equal("userpublicid"))
+		})
+
+		It("Should fail with 404 if score does not exist", func() {
+			res := api.Get(a, "/l/testkey/users/userpublicid")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusNotFound))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("User not found."))
 		})
 	})
 })

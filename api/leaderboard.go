@@ -31,7 +31,7 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
-		res, err := l.SetUserScore(userPublicID, payload.Score)
+		user, err := l.SetUserScore(userPublicID, payload.Score)
 
 		if err != nil {
 			FailWith(500, err.Error(), c)
@@ -39,9 +39,9 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"publicID": res.PublicID,
-			"score":    res.Score,
-			"rank":     res.Rank,
+			"publicID": user.PublicID,
+			"score":    user.Score,
+			"rank":     user.Rank,
 		}, c)
 	}
 }
@@ -61,5 +61,30 @@ func RemoveUserHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{}, c)
+	}
+}
+
+// GetUserHandler is the handler responsible for remover a user score
+func GetUserHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		leaderboardID := c.Param("leaderboardID")
+		userPublicID := c.Param("userPublicID")
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		user, err := l.GetMember(userPublicID)
+
+		if err != nil && err.Error() == "redigo: nil returned" {
+			FailWith(404, "User not found.", c)
+			return
+		} else if err != nil {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{
+			"publicID": user.PublicID,
+			"score":    user.Score,
+			"rank":     user.Rank,
+		}, c)
 	}
 }
