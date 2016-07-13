@@ -14,6 +14,8 @@ import (
 	"github.com/topfreegames/podium/leaderboard"
 )
 
+var notFoundError = "redigo: nil returned"
+
 type setScorePayload struct {
 	Score int
 }
@@ -46,7 +48,7 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// RemoveUserHandler is the handler responsible for remover a user score
+// RemoveUserHandler is the handler responsible for removing a user score
 func RemoveUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
@@ -55,7 +57,7 @@ func RemoveUserHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
 		_, err := l.RemoveMember(userPublicID)
 
-		if err != nil && err.Error() != "redigo: nil returned" {
+		if err != nil && err.Error() != notFoundError {
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -64,7 +66,7 @@ func RemoveUserHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// GetUserHandler is the handler responsible for remover a user score
+// GetUserHandler is the handler responsible for retrieving a user score and rank
 func GetUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
@@ -73,7 +75,7 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
 		user, err := l.GetMember(userPublicID)
 
-		if err != nil && err.Error() == "redigo: nil returned" {
+		if err != nil && err.Error() == notFoundError {
 			FailWith(404, "User not found.", c)
 			return
 		} else if err != nil {
@@ -85,6 +87,30 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 			"publicID": user.PublicID,
 			"score":    user.Score,
 			"rank":     user.Rank,
+		}, c)
+	}
+}
+
+// GetUserRankHandler is the handler responsible for remover a user score
+func GetUserRankHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		leaderboardID := c.Param("leaderboardID")
+		userPublicID := c.Param("userPublicID")
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		rank, err := l.GetRank(userPublicID)
+
+		if err != nil && err.Error() == notFoundError {
+			FailWith(404, "User not found.", c)
+			return
+		} else if err != nil {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{
+			"publicID": userPublicID,
+			"rank":     rank,
 		}, c)
 	}
 }

@@ -119,7 +119,7 @@ func (l *Leaderboard) GetMember(userID string) (User, error) {
 	conn := l.RedisClient.GetConnection()
 	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
 	if err != nil {
-		rank = 0
+		rank = -1
 	}
 	score, err := redis.Int(conn.Do("ZSCORE", l.PublicID, userID))
 	if err != nil {
@@ -142,11 +142,14 @@ func (l *Leaderboard) GetAroundMe(userID string) []User {
 }
 
 // GetRank returns the rank of the user with the given ID
-func (l *Leaderboard) GetRank(userID string) int {
+func (l *Leaderboard) GetRank(userID string) (int, error) {
 	conn := l.RedisClient.GetConnection()
-	rank, _ := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
+	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
+	if err != nil {
+		rank = -1
+	}
 	defer conn.Close()
-	return rank + 1
+	return rank + 1, err
 }
 
 // GetLeaders returns a page of users with rank and score

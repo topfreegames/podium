@@ -101,7 +101,7 @@ func (app *App) configureApplication() {
 	a.Put("/l/:leaderboardID/users/:userPublicID/score", UpsertUserScoreHandler(app))
 	a.Get("/l/:leaderboardID/users/:userPublicID", GetUserHandler(app))
 	a.Delete("/l/:leaderboardID/users/:userPublicID", RemoveUserHandler(app))
-	// a.Get("/l/:leaderboardID/users/:userPublicID/rank", GetUserRankHandler(app))
+	a.Get("/l/:leaderboardID/users/:userPublicID/rank", GetUserRankHandler(app))
 	// a.Get("/l/:leaderboardID/users/:userPublicID/around", GetAroundUserHandler(app))
 	// a.Get("/l/:leaderboardID/users-count", GetTotalMembersHandler(app))
 	// a.Get("/l/:leaderboardID/pages", GetTotalPagesHandler(app))

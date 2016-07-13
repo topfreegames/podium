@@ -130,4 +130,34 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal("User not found."))
 		})
 	})
+
+	Describe("Get User Rank", func() {
+		It("Should get user score from redis if score exists", func() {
+			_, err := l.SetUserScore("userpublicid", 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			res := api.Get(a, "/l/testkey/users/userpublicid/rank")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["publicID"]).To(Equal("userpublicid"))
+			Expect(int(result["rank"].(float64))).To(Equal(1))
+
+			user, err := l.GetMember("userpublicid")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(user.Rank).To(Equal(1))
+			Expect(user.Score).To(Equal(100))
+			Expect(user.PublicID).To(Equal("userpublicid"))
+		})
+
+		It("Should fail with 404 if score does not exist", func() {
+			res := api.Get(a, "/l/testkey/users/userpublicid/rank")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusNotFound))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("User not found."))
+		})
+	})
 })
