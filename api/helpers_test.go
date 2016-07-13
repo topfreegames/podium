@@ -26,8 +26,13 @@ func GetDefaultTestApp() *App {
 }
 
 // Get returns a test request against specified URL
-func Get(app *App, url string) *httpexpect.Response {
+func Get(app *App, url string, queryString ...map[string]interface{}) *httpexpect.Response {
 	req := sendRequest(app, "GET", url)
+	if len(queryString) == 1 {
+		for k, v := range queryString[0] {
+			req = req.WithQuery(k, v)
+		}
+	}
 	return req.Expect()
 }
 

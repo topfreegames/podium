@@ -38,22 +38,30 @@ type Leaderboard struct {
 	PageSize    int
 }
 
-func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int) []User {
+func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int) ([]User, error) {
 	conn := redisClient.GetConnection()
 	defer conn.Close()
-	users := make([]User, pageSize)
 	values, _ := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
+	users := make([]User, len(values)/2)
 	var i = 0
+	var err error
 	for len(values) > 0 {
 		publicID := ""
 		score := -1
-		values, _ = redis.Scan(values, &publicID, &score)
-		rank, _ := redis.Int(conn.Do("ZREVRANK", leaderboard, publicID))
+		// Scan returns the slice of src following the copied values.
+		values, err = redis.Scan(values, &publicID, &score)
+		if err != nil {
+			return nil, err
+		}
+		rank, err := redis.Int(conn.Do("ZREVRANK", leaderboard, publicID))
+		if err != nil {
+			return nil, err
+		}
 		nUser := User{PublicID: publicID, Score: score, Rank: rank + 1}
 		users[i] = nUser
 		i++
 	}
-	return users
+	return users, nil
 }
 
 // NewLeaderboard creates a new Leaderboard with given settings, ID and pageSize
@@ -131,8 +139,11 @@ func (l *Leaderboard) GetMember(userID string) (User, error) {
 }
 
 // GetAroundMe returns a page of results centered in the user with the given ID
-func (l *Leaderboard) GetAroundMe(userID string) []User {
-	currentUser, _ := l.GetMember(userID)
+func (l *Leaderboard) GetAroundMe(userID string) ([]User, error) {
+	currentUser, err := l.GetMember(userID)
+	if err != nil {
+		return nil, err
+	}
 	startOffset := currentUser.Rank - (l.PageSize / 2)
 	if startOffset < 0 {
 		startOffset = 0
@@ -153,7 +164,7 @@ func (l *Leaderboard) GetRank(userID string) (int, error) {
 }
 
 // GetLeaders returns a page of users with rank and score
-func (l *Leaderboard) GetLeaders(page int) []User {
+func (l *Leaderboard) GetLeaders(page int) ([]User, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -176,7 +187,7 @@ func (l *Leaderboard) GetMemberByRank(position int) User {
 	if position <= l.TotalMembers() {
 		currentPage := int(math.Ceil(float64(position) / float64(l.PageSize)))
 		offset := (position - 1) % l.PageSize
-		leaders := l.GetLeaders(currentPage)
+		leaders, _ := l.GetLeaders(currentPage) // TODO treat error
 		defer conn.Close()
 		if leaders[offset].Rank == position {
 			return leaders[offset]

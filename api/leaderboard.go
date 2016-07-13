@@ -10,14 +10,33 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/kataras/iris"
 	"github.com/topfreegames/podium/leaderboard"
 )
 
 var notFoundError = "redigo: nil returned"
+var defaultLimit = 20
 
 type setScorePayload struct {
 	Score int
+}
+
+func serializeUser(user *leaderboard.User) map[string]interface{} {
+	return map[string]interface{}{
+		"publicID": user.PublicID,
+		"score":    user.Score,
+		"rank":     user.Rank,
+	}
+}
+
+func serializeUsers(users []leaderboard.User) []map[string]interface{} {
+	serializedUsers := make([]map[string]interface{}, len(users))
+	for i, user := range users {
+		serializedUsers[i] = serializeUser(&user)
+	}
+	return serializedUsers
 }
 
 // UpsertUserScoreHandler is the handler responsible for creating or updating the user score
@@ -40,11 +59,7 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		SucceedWith(map[string]interface{}{
-			"publicID": user.PublicID,
-			"score":    user.Score,
-			"rank":     user.Rank,
-		}, c)
+		SucceedWith(serializeUser(&user), c)
 	}
 }
 
@@ -83,11 +98,7 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		SucceedWith(map[string]interface{}{
-			"publicID": user.PublicID,
-			"score":    user.Score,
-			"rank":     user.Rank,
-		}, c)
+		SucceedWith(serializeUser(&user), c)
 	}
 }
 
@@ -111,6 +122,36 @@ func GetUserRankHandler(app *App) func(c *iris.Context) {
 		SucceedWith(map[string]interface{}{
 			"publicID": userPublicID,
 			"rank":     rank,
+		}, c)
+	}
+}
+
+// GetAroundUserHandler is the handler responsible for remover a user score
+func GetAroundUserHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		leaderboardID := c.Param("leaderboardID")
+		userPublicID := c.Param("userPublicID")
+		limit, err := c.URLParamInt("limit")
+		if err != nil && err.Error() == "strconv.ParseInt: parsing \"\": invalid syntax" {
+			limit = defaultLimit
+		} else if err != nil {
+			FailWith(400, fmt.Sprintf("Invalid limit provided: %s", err.Error()), c)
+			return
+		}
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, limit)
+		users, err := l.GetAroundMe(userPublicID)
+
+		if err != nil && err.Error() == notFoundError {
+			FailWith(404, "User not found.", c)
+			return
+		} else if err != nil {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{
+			"users": serializeUsers(users),
 		}, c)
 	}
 }

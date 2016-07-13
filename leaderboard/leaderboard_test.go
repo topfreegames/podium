@@ -103,7 +103,8 @@ var _ = Describe("Leaderboard", func() {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 			Expect(err).To(BeNil())
 		}
-		users := testLeaderboard.GetAroundMe("member_20")
+		users, err := testLeaderboard.GetAroundMe("member_20")
+		Expect(err).To(BeNil())
 		firstAroundMe := users[0]
 		lastAroundMe := users[testLeaderboard.PageSize-1]
 		Expect(len(users)).To(Equal(testLeaderboard.PageSize))
@@ -127,7 +128,8 @@ var _ = Describe("Leaderboard", func() {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i+1), 1234*i)
 			Expect(err).To(BeNil())
 		}
-		var users = testLeaderboard.GetLeaders(1)
+		users, err := testLeaderboard.GetLeaders(1)
+		Expect(err).To(BeNil())
 
 		firstOnPage := users[0]
 		lastOnPage := users[len(users)-1]
