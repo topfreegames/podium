@@ -89,8 +89,8 @@ func (l *Leaderboard) SetUserScore(userID string, score int) (User, error) {
 // TotalMembers returns the total number of members in a given leaderboard
 func (l *Leaderboard) TotalMembers() (int, error) {
 	conn := l.RedisClient.GetConnection()
-	total, err := redis.Int(conn.Do("ZCARD", l.PublicID))
 	defer conn.Close()
+	total, err := redis.Int(conn.Do("ZCARD", l.PublicID))
 	if err != nil {
 		fmt.Printf("error on get leaderboard total members")
 		return 0, err
@@ -101,21 +101,21 @@ func (l *Leaderboard) TotalMembers() (int, error) {
 // RemoveMember removes the member with the given publicID from the leaderboard
 func (l *Leaderboard) RemoveMember(userID string) (User, error) {
 	conn := l.RedisClient.GetConnection()
+	defer conn.Close()
 	nUser, err := l.GetMember(userID)
 	_, err = conn.Do("ZREM", l.PublicID, userID)
 	if err != nil {
 		fmt.Printf("error on remove user from leaderboard")
 	}
-	defer conn.Close()
 	return nUser, err
 }
 
 // TotalPages returns the number of pages of the leaderboard
 func (l *Leaderboard) TotalPages() (int, error) {
 	conn := l.RedisClient.GetConnection()
+	defer conn.Close()
 	pages := 0
 	total, err := redis.Int(conn.Do("ZCARD", l.PublicID))
-	defer conn.Close()
 	if err != nil {
 		fmt.Printf("error on get leaderboard total pages")
 		return 0, err
@@ -127,6 +127,7 @@ func (l *Leaderboard) TotalPages() (int, error) {
 // GetMember returns the score and the rank of the user with the given ID
 func (l *Leaderboard) GetMember(userID string) (User, error) {
 	conn := l.RedisClient.GetConnection()
+	defer conn.Close()
 	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
 	if err != nil {
 		rank = -1
@@ -135,7 +136,6 @@ func (l *Leaderboard) GetMember(userID string) (User, error) {
 	if err != nil {
 		score = 0
 	}
-	defer conn.Close()
 	nUser := User{PublicID: userID, Score: score, Rank: rank + 1}
 	return nUser, err
 }
@@ -157,11 +157,11 @@ func (l *Leaderboard) GetAroundMe(userID string) ([]User, error) {
 // GetRank returns the rank of the user with the given ID
 func (l *Leaderboard) GetRank(userID string) (int, error) {
 	conn := l.RedisClient.GetConnection()
+	defer conn.Close()
 	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
 	if err != nil {
 		rank = -1
 	}
-	defer conn.Close()
 	return rank + 1, err
 }
 
