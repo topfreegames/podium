@@ -38,13 +38,37 @@ type Leaderboard struct {
 	PageSize    int
 }
 
+func setAutoExpireIfNecessary(conn redis.Conn, leaderboardPublicID string) error {
+	expire, err := conn.Do("TTL", leaderboardPublicID)
+	if err != nil {
+		return err
+	}
+	if expire.(int) > -1 { // expire already set
+		return nil
+	}
+
+	expireAt, err := util.GetExpireAt(leaderboardPublicID)
+	if err != nil {
+		return err
+	}
+	if expireAt > -1 {
+		_, err = conn.Do("EXPIREAT", leaderboardPublicID, expireAt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int) ([]User, error) {
 	conn := redisClient.GetConnection()
 	defer conn.Close()
-	values, _ := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
+	values, err := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
+	if err != nil {
+		return nil, err
+	}
 	users := make([]User, len(values)/2)
 	var i = 0
-	var err error
 	for len(values) > 0 {
 		publicID := ""
 		score := -1
