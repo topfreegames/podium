@@ -18,5 +18,5 @@ type InvalidDurationError struct {
 }
 
 func (e *InvalidDurationError) Error() string {
-	return fmt.Sprintf("Leaderboard if %s has invalid duration %v", e.LeaderboardPublicID, e.DurationInSeconds)
+	return fmt.Sprintf("Leaderboard %s has invalid duration %v", e.LeaderboardPublicID, e.DurationInSeconds)
 }

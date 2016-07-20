@@ -26,14 +26,8 @@ var quarterRE = regexp.MustCompile("year([0-9]{4})(week|quarter|month)([0-9]+)$"
 func GetExpireAt(leaderboardPublicID string) (int64, error) {
 	substrings := unixRE.FindStringSubmatch(leaderboardPublicID)
 	if len(substrings) == 3 {
-		startTimestamp, err := strconv.ParseInt(substrings[1], 10, 32)
-		if err != nil {
-			return -1, err
-		}
-		endTimestamp, err := strconv.ParseInt(substrings[2], 10, 32)
-		if err != nil {
-			return -1, err
-		}
+		startTimestamp, _ := strconv.ParseInt(substrings[1], 10, 32)
+		endTimestamp, _ := strconv.ParseInt(substrings[2], 10, 32)
 		durationInSeconds := endTimestamp - startTimestamp
 		if durationInSeconds < 0 {
 			return -1, &InvalidDurationError{leaderboardPublicID, durationInSeconds}
@@ -60,10 +54,7 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 
 	substrings = yearlyRE.FindStringSubmatch(leaderboardPublicID)
 	if len(substrings) == 2 {
-		startTime, err := time.Parse("2006", substrings[1])
-		if err != nil {
-			return -1, err
-		}
+		startTime, _ := time.Parse("2006", substrings[1])
 		endTime := startTime.AddDate(2, 0, 0)
 		return endTime.Unix(), nil
 	}
@@ -83,32 +74,17 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 		}
 
 		if substrings[2] == "week" {
-			year, err := strconv.ParseInt(substrings[1], 10, 32)
-			if err != nil {
-				return -1, err
-			}
-			week, err := strconv.ParseInt(substrings[3], 10, 32)
-			if err != nil {
-				return -1, err
-			}
-			dummyDate, err := time.Parse("2006", substrings[1])
-			if err != nil {
-				return -1, err
-			}
+			year, _ := strconv.ParseInt(substrings[1], 10, 32)
+			week, _ := strconv.ParseInt(substrings[3], 10, 32)
+			dummyDate, _ := time.Parse("2006", substrings[1])
 			dummyDateYear, dummyDateWeek := dummyDate.ISOWeek()
 			startTime = dummyDate.AddDate(int(year)-dummyDateYear, 0, 1+(int(week)-dummyDateWeek)*7)
 			endTime = startTime.AddDate(0, 0, 14)
 		}
 
 		if substrings[2] == "quarter" {
-			quarter, err := strconv.ParseInt(substrings[3], 10, 32)
-			if err != nil {
-				return -1, err
-			}
-			dummyDate, err := time.Parse("2006", substrings[1])
-			if err != nil {
-				return -1, err
-			}
+			quarter, _ := strconv.ParseInt(substrings[3], 10, 32)
+			dummyDate, _ := time.Parse("2006", substrings[1])
 			startTime = dummyDate.AddDate(0, (int(quarter)-1)*3, 0)
 			endTime = startTime.AddDate(0, 6, 0)
 		}
