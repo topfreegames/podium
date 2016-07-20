@@ -17,10 +17,14 @@ import (
 	"time"
 )
 
+var unixRE = regexp.MustCompile("from([0-9]{10})to([0-9]{10})$")                                            // unix timestamp
+var timestampRE = regexp.MustCompile("from([0-9]{4}[0|1][0-9][0-3][0-9])to([0-9]{4}[0|1][0-9][0-3][0-9])$") //YYYYMMDD
+var yearlyRE = regexp.MustCompile("year([0-9]{4})$")                                                        // yearly
+var quarterRE = regexp.MustCompile("year([0-9]{4})(week|quarter|month)([0-9]+)$")                           //week, quarter, mo
+
 // GetExpireAt returns a timestamp when the key should expire or -1 if the key doesn't match any valid auto expire regexes
 func GetExpireAt(leaderboardPublicID string) (int64, error) {
-	re := regexp.MustCompile("from([0-9]{10})to([0-9]{10})$") // unix timestamp
-	substrings := re.FindStringSubmatch(leaderboardPublicID)
+	substrings := unixRE.FindStringSubmatch(leaderboardPublicID)
 	if len(substrings) == 3 {
 		startTimestamp, err := strconv.ParseInt(substrings[1], 10, 32)
 		if err != nil {
@@ -37,8 +41,7 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 		return endTimestamp + durationInSeconds, nil
 	}
 
-	re = regexp.MustCompile("from([0-9]{4}[0|1][0-9][0-3][0-9])to([0-9]{4}[0|1][0-9][0-3][0-9])$") //YYYYMMDD
-	substrings = re.FindStringSubmatch(leaderboardPublicID)
+	substrings = timestampRE.FindStringSubmatch(leaderboardPublicID)
 	if len(substrings) == 3 {
 		startTime, err := time.Parse("20060102", substrings[1])
 		if err != nil {
@@ -55,8 +58,7 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 		return endTime.Add(durationInSeconds).Unix(), nil
 	}
 
-	re = regexp.MustCompile("year([0-9]{4})$")
-	substrings = re.FindStringSubmatch(leaderboardPublicID)
+	substrings = yearlyRE.FindStringSubmatch(leaderboardPublicID)
 	if len(substrings) == 2 {
 		startTime, err := time.Parse("2006", substrings[1])
 		if err != nil {
@@ -66,8 +68,7 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 		return endTime.Unix(), nil
 	}
 
-	re = regexp.MustCompile("year([0-9]{4})(week|quarter|month)([0-9]+)$")
-	substrings = re.FindStringSubmatch(leaderboardPublicID)
+	substrings = quarterRE.FindStringSubmatch(leaderboardPublicID)
 	if len(substrings) == 4 {
 		var startTime time.Time
 		var endTime time.Time
