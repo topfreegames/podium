@@ -141,4 +141,19 @@ var _ = Describe("Leaderboard", func() {
 		Expect(lastOnPage.PublicID).To(Equal("member_976"))
 		Expect(lastOnPage.Rank).To(Equal(25))
 	})
+
+	It("should add yearly expiration if league supports it", func() {
+		leagueID := "test-leaderboard-year2016"
+		friendScore := NewLeaderboard(redisClient, leagueID, 10)
+		_, err := friendScore.SetUserScore("dayvson", 12345)
+		Expect(err).To(BeNil())
+
+		conn := redisClient.GetConnection()
+		result, err := conn.Do("TTL", leagueID)
+		Expect(err).NotTo(HaveOccurred())
+
+		exp := result.(int64)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exp).To(BeNumerically(">", int64(-1)))
+	})
 })

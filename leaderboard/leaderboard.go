@@ -71,28 +71,6 @@ func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int
 	return &Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize}
 }
 
-//func setAutoExpireIfNecessary(conn redis.Conn, leaderboardPublicID string) error {
-//expire, err := conn.Do("TTL", leaderboardPublicID)
-//if err != nil {
-//return err
-//}
-//if expire.(int) > -1 { // expire already set
-//return nil
-//}
-
-//expireAt, err := util.GetExpireAt(leaderboardPublicID)
-//if err != nil {
-//return err
-//}
-//if expireAt > -1 {
-//_, err = conn.Do("EXPIREAT", leaderboardPublicID, expireAt)
-//if err != nil {
-//return err
-//}
-//}
-//return nil
-//}
-
 //AddToLeagueSet adds a score to a league set respecting expiration
 func (l *Leaderboard) AddToLeagueSet(redisCli redis.Conn, userID string, score int) (int, error) {
 	expireAt, err := util.GetExpireAt(l.PublicID)
