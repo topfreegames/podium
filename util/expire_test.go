@@ -10,6 +10,8 @@
 package util_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/util"
@@ -17,9 +19,14 @@ import (
 
 var _ = Describe("Expires Helper", func() {
 
-	It("should get expiration for year 2016", func() {
-		exp, err := util.GetExpireAt("league_year2016")
+	It("should get expiration for year 2020", func() {
+		exp, err := util.GetExpireAt("league_year2020")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(exp).To(BeNumerically(">", -1))
+
+		startTime, err := time.Parse("2006", "2020")
+		Expect(err).NotTo(HaveOccurred())
+
+		endTime := startTime.AddDate(2, 0, 0)
+		Expect(exp).To(BeEquivalentTo(endTime.Unix()))
 	})
 })
