@@ -18,6 +18,6 @@ script:
 
 after_success:
   - $HOME/gopath/bin/goveralls -coverprofile _build/test-coverage-all.out -service=travis-ci
-  #- make cross-linux
+  - make cross-linux
   #- ./scripts/push_to_docker.sh
   #- curl -H POST $TEST_FARM_URL
