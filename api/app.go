@@ -112,6 +112,7 @@ func (app *App) configureApplication() {
 		Host:     app.Config.GetString("redis.host"),
 		Port:     app.Config.GetInt("redis.port"),
 		Password: app.Config.GetString("redis.password"),
+		Db:       app.Config.GetInt("redis.db"),
 	}
 	app.RedisClient = util.GetRedisClient(redisSettings)
 

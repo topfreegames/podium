@@ -1,0 +1,3 @@
+redis: redis-server /home/santiago/redis.conf
+api: bash -c "sleep 3 && /go/bin/snt start --host 0.0.0.0 --port 8080 --config /home/santiago/default.yaml"
+worker: bash -c "sleep 3 && /go/bin/snt-worker start -p 57574"

@@ -9,6 +9,10 @@
 
 PACKAGES = $(shell glide novendor)
 GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/podium@.@g | egrep -v "^[.]$$")
+MYIP = $(shell ifconfig | egrep inet | egrep -v inet6 | egrep -v 127.0.0.1 | awk ' { print $$2 } ')
+OS = "$(shell uname | awk '{ print tolower($$0) }')"
+LOCAL_REDIS_PORT=1212
+LOCAL_TEST_REDIS_PORT=1234
 
 setup-hooks:
 	@cd .git/hooks && ln -sf ../../hooks/pre-commit.sh pre-commit
@@ -18,6 +22,15 @@ setup: setup-hooks
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
 	@glide install
+
+# get a redis instance up (localhost:1234)
+redis:
+	@redis-server --port ${LOCAL_REDIS_PORT} --daemonize yes; sleep 1
+	@redis-cli -p ${LOCAL_REDIS_PORT} info > /dev/null
+
+# kill this redis instance (localhost:1234)
+redis-kill:
+	@-redis-cli -p ${LOCAL_REDIS_PORT} shutdown
 
 test: test-redis
 	@ginkgo --cover $(GODIRS)
@@ -34,12 +47,12 @@ test-coverage-html: test-coverage
 
 # get a redis instance up (localhost:1234)
 test-redis:
-	@redis-server --port 1234 --daemonize yes; sleep 1
-	@redis-cli -p 1234 info > /dev/null
+	@redis-server --port ${LOCAL_TEST_REDIS_PORT} --daemonize yes; sleep 1
+	@redis-cli -p ${LOCAL_TEST_REDIS_PORT} info > /dev/null
 
 # kill this redis instance (localhost:1234)
 test-redis-kill:
-	@-redis-cli -p 1234 shutdown
+	@-redis-cli -p ${LOCAL_TEST_REDIS_PORT} shutdown
 
 cross: cross-linux cross-darwin
 
@@ -61,3 +74,18 @@ cross-darwin:
 
 cross-exec:
 	@chmod +x bin/*
+
+docker-build:
+	@docker build -t podium .
+
+docker-run:
+	@docker run -i -t --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:8080 podium
+
+docker-shell:
+	@docker run -it --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) --entrypoint "/bin/bash" podium
+
+docker-dev-build:
+	@docker build -t podium-dev -f ./DevDockerfile .
+
+docker-dev-run:
+	@docker run -i -t --rm -p 8080:8080 podium-dev

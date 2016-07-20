@@ -22,6 +22,7 @@ type RedisSettings struct {
 	Host     string
 	Port     int
 	Password string
+	Db       int
 }
 
 // RedisClient identifies uniquely one redis client with a pool of connections
@@ -32,7 +33,7 @@ type RedisClient struct {
 
 var client *RedisClient
 
-func newPool(host string, port int, password string) *redis.Pool {
+func newPool(host string, port int, password string, db int) *redis.Pool {
 	redisAddress := fmt.Sprintf("%s:%d", host, port)
 	return redis.NewPool(func() (redis.Conn, error) {
 		if viper.GetString("redis.password") != "" {
@@ -59,7 +60,7 @@ func GetRedisClient(settings RedisSettings) *RedisClient {
 		Logger: zap.NewJSON(zap.WarnLevel),
 	}
 	if client.Pool == nil {
-		client.Pool = newPool(settings.Host, settings.Port, settings.Password)
+		client.Pool = newPool(settings.Host, settings.Port, settings.Password, settings.Db)
 	}
 	return client
 }

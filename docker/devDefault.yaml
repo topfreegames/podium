@@ -1,0 +1,6 @@
+api:
+  workingText: WORKING
+  redis:
+    host: localhost
+    port: 57574
+    db: 0
