@@ -12,10 +12,12 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gavv/httpexpect"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/valyala/fasthttp"
 )
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
@@ -90,19 +92,46 @@ func (g *GinkgoPrinter) Logf(source string, args ...interface{}) {
 }
 
 func sendRequest(app *App, method, url string) *httpexpect.Request {
-	handler := app.App.NoListen().Handler
+	api := app.App
+	srv := api.Servers.Main()
 
-	e := httpexpect.WithConfig(httpexpect.Config{
-		BaseURL: "http://example.com",
+	if srv == nil { // maybe the user called this after .Listen/ListenTLS/ListenUNIX, the tester can be used as standalone (with no running iris instance) or inside a running instance/app
+		srv = api.ListenVirtual(api.Config.Tester.ListeningAddr)
+	}
+
+	opened := api.Servers.GetAllOpened()
+	h := srv.Handler
+	baseURL := srv.FullHost()
+	if len(opened) > 1 {
+		baseURL = ""
+		//we have more than one server, so we will create a handler here and redirect by registered listening addresses
+		h = func(reqCtx *fasthttp.RequestCtx) {
+			for _, s := range opened {
+				if strings.HasPrefix(reqCtx.URI().String(), s.FullHost()) { // yes on :80 should be passed :80 also, this is inneed for multiserver testing
+					s.Handler(reqCtx)
+					break
+				}
+			}
+		}
+	}
+
+	if api.Config.Tester.ExplicitURL {
+		baseURL = ""
+	}
+
+	testConfiguration := httpexpect.Config{
+		BaseURL: baseURL,
 		Client: &http.Client{
-			Transport: httpexpect.NewFastBinder(handler),
+			Transport: httpexpect.NewFastBinder(h),
 			Jar:       httpexpect.NewJar(),
 		},
 		Reporter: &GinkgoReporter{},
-		Printers: []httpexpect.Printer{
-		// httpexpect.NewDebugPrinter(&GinkgoPrinter{}, true),
-		},
-	})
+	}
+	if api.Config.Tester.Debug {
+		testConfiguration.Printers = []httpexpect.Printer{
+			httpexpect.NewDebugPrinter(&GinkgoPrinter{}, true),
+		}
+	}
 
-	return e.Request(method, url)
+	return httpexpect.WithConfig(testConfiguration).Request(method, url)
 }
