@@ -53,7 +53,9 @@ func GetApp(host string, port int, configPath string, debug bool) *App {
 
 // Configure instantiates the required dependencies for podium Application
 func (app *App) Configure() {
-	app.Logger = zap.NewJSON(zap.WarnLevel)
+	app.Logger = zap.NewJSON(zap.InfoLevel).With(
+		zap.String("source", "app"),
+	)
 
 	app.setConfigurationDefaults()
 	app.loadConfiguration()
@@ -62,7 +64,10 @@ func (app *App) Configure() {
 
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
+	app.Config.SetDefault("redis.host", "localhost")
+	app.Config.SetDefault("redis.port", 1212)
 	app.Config.SetDefault("redis.password", "")
+	app.Config.SetDefault("redis.db", 0)
 }
 
 func (app *App) loadConfiguration() {
@@ -87,8 +92,12 @@ func (app *App) onErrorHandler(err interface{}, stack []byte) {
 }
 
 func (app *App) configureApplication() {
+	l := app.Logger.With(
+		zap.String("operation", "configureApplication"),
+	)
+
 	c := config.Iris{
-		DisableBanner: !app.Debug,
+		DisableBanner: true,
 	}
 
 	app.App = iris.New(c)
@@ -108,18 +117,31 @@ func (app *App) configureApplication() {
 	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopUsersHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
-	redisSettings := util.RedisSettings{
-		Host:     app.Config.GetString("redis.host"),
-		Port:     app.Config.GetInt("redis.port"),
-		Password: app.Config.GetString("redis.password"),
-		Db:       app.Config.GetInt("redis.db"),
-	}
-	app.RedisClient = util.GetRedisClient(redisSettings)
 
 	go func() {
 		app.Errors.Tick()
 		time.Sleep(5 * time.Second)
 	}()
+
+	redisHost := app.Config.GetString("redis.host")
+	redisPort := app.Config.GetInt("redis.port")
+	redisPass := app.Config.GetString("redis.password")
+	redisDB := app.Config.GetInt("redis.db")
+
+	rl := l.With(
+		zap.String("host", redisHost),
+		zap.Int("port", redisPort),
+		zap.Int("db", redisDB),
+	)
+	rl.Debug("Connecting to redis...")
+	redisSettings := util.RedisSettings{
+		Host:     redisHost,
+		Port:     redisPort,
+		Password: redisPass,
+		Db:       redisDB,
+	}
+	app.RedisClient = util.GetRedisClient(redisSettings)
+	rl.Info("Connected to redis successfully.")
 }
 
 func (app *App) addError() {

@@ -11,6 +11,7 @@ PACKAGES = $(shell glide novendor)
 GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/podium@.@g | egrep -v "^[.]$$")
 MYIP = $(shell ifconfig | egrep inet | egrep -v inet6 | egrep -v 127.0.0.1 | awk ' { print $$2 } ')
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
+REDIS_CONF_PATH=./scripts/redis.conf
 LOCAL_REDIS_PORT=1212
 LOCAL_TEST_REDIS_PORT=1234
 
@@ -23,14 +24,22 @@ setup: setup-hooks
 	@go get github.com/gordonklaus/ineffassign
 	@glide install
 
-# get a redis instance up (localhost:1234)
-redis:
-	@redis-server --port ${LOCAL_REDIS_PORT} --daemonize yes; sleep 1
-	@redis-cli -p ${LOCAL_REDIS_PORT} info > /dev/null
+# get a redis instance up (localhost:1212)
+redis: redis-shutdown
+	@if [ -z "$$REDIS_PORT" ]; then \
+		redis-server $(REDIS_CONF_PATH) && sleep 1 &&  \
+		redis-cli -p $(LOCAL_REDIS_PORT) info > /dev/null && \
+		echo "REDIS running locally at localhost:$(LOCAL_REDIS_PORT)."; \
+	else \
+		echo "REDIS running at $$REDIS_PORT"; \
+	fi
 
-# kill this redis instance (localhost:1234)
-redis-kill:
-	@-redis-cli -p ${LOCAL_REDIS_PORT} shutdown
+# kill this redis instance (localhost:1212)
+redis-shutdown:
+	@-redis-cli -p 1212 shutdown
+
+redis-clear:
+	@redis-cli -p 1212 FLUSHDB
 
 test: test-redis
 	@ginkgo --cover $(GODIRS)

@@ -20,7 +20,7 @@ var _ = Describe("App", func() {
 
 	Describe("App Load Configuration", func() {
 		It("Should load configuration from file", func() {
-			app := api.GetApp("127.0.0.1", 9999, "../config/default.yaml", false)
+			app := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false)
 			Expect(app.Config).NotTo(BeNil())
 			expected := app.Config.GetString("healthcheck.workingText")
 			Expect(expected).To(Equal("WORKING"))

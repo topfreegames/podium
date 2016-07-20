@@ -29,4 +29,4 @@ ENV PODIUM_REDIS_PASSWORD ""
 ENV PODIUM_REDIS_DB 0
 ENV PODIUM_SENTRY_URL ""
 
-ENTRYPOINT /go/bin/podium start -d -c /home/podium/default.yaml -p 8080
+ENTRYPOINT /go/bin/podium start -c /home/podium/default.yaml -p 8080
