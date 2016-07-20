@@ -60,7 +60,7 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		SucceedWith(serializeUser(&user), c)
+		SucceedWith(serializeUser(user), c)
 	}
 }
 
@@ -99,7 +99,7 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		SucceedWith(serializeUser(&user), c)
+		SucceedWith(serializeUser(user), c)
 	}
 }
 

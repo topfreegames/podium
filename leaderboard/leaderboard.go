@@ -38,28 +38,6 @@ type Leaderboard struct {
 	PageSize    int
 }
 
-func setAutoExpireIfNecessary(conn redis.Conn, leaderboardPublicID string) error {
-	expire, err := conn.Do("TTL", leaderboardPublicID)
-	if err != nil {
-		return err
-	}
-	if expire.(int) > -1 { // expire already set
-		return nil
-	}
-
-	expireAt, err := util.GetExpireAt(leaderboardPublicID)
-	if err != nil {
-		return err
-	}
-	if expireAt > -1 {
-		_, err = conn.Do("EXPIREAT", leaderboardPublicID, expireAt)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int) ([]User, error) {
 	conn := redisClient.GetConnection()
 	defer conn.Close()
@@ -93,21 +71,76 @@ func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int
 	return &Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize}
 }
 
+//func setAutoExpireIfNecessary(conn redis.Conn, leaderboardPublicID string) error {
+//expire, err := conn.Do("TTL", leaderboardPublicID)
+//if err != nil {
+//return err
+//}
+//if expire.(int) > -1 { // expire already set
+//return nil
+//}
+
+//expireAt, err := util.GetExpireAt(leaderboardPublicID)
+//if err != nil {
+//return err
+//}
+//if expireAt > -1 {
+//_, err = conn.Do("EXPIREAT", leaderboardPublicID, expireAt)
+//if err != nil {
+//return err
+//}
+//}
+//return nil
+//}
+
+//AddToLeagueSet adds a score to a league set respecting expiration
+func (l *Leaderboard) AddToLeagueSet(redisCli redis.Conn, userID string, score int) (int, error) {
+	expireAt, err := util.GetExpireAt(l.PublicID)
+	if err != nil {
+		return -1, err
+	}
+	script := redis.NewScript(1, `
+		-- Script params:
+		-- KEYS[1] is the name of the league
+		-- ARGV[1] is user's public ID
+		-- ARGV[2] is the user's updated score
+		-- ARGV[3] is the league's expiration
+
+		-- creates league or just sets score of member
+		local res = redis.call("ZADD", KEYS[1], ARGV[2], ARGV[1])
+
+		-- If expiration is required set expiration
+		if (ARGV[3] ~= "-1") then
+			local expiration = redis.call("TTL", KEYS[1])
+			if (expiration == -2) then
+				return redis.error_reply("League Set was not created in ZADD! Don't know how to proceed.")
+			end
+			if (expiration == -1) then
+				redis.call("EXPIREAT", KEYS[1], ARGV[3])
+			end
+		end
+
+		-- return updated rank of player
+		local rank = redis.call("ZREVRANK", KEYS[1], ARGV[1])
+		return rank
+	`)
+
+	newRank, err := script.Do(redisCli, l.PublicID, userID, score, expireAt)
+	return int(newRank.(int64)), err
+}
+
 // SetUserScore sets the score to the user with the given ID
-func (l *Leaderboard) SetUserScore(userID string, score int) (User, error) {
+func (l *Leaderboard) SetUserScore(userID string, score int) (*User, error) {
 	conn := l.RedisClient.GetConnection()
 	defer conn.Close()
-	_, err := conn.Do("ZADD", l.PublicID, score, userID)
+
+	rank, err := l.AddToLeagueSet(conn, userID, score)
 	if err != nil {
-		fmt.Printf("error on store in redis in SetUserScore Leaderboard:%s - UserID:%s - Score:%d", l.PublicID, userID, score)
+		return nil, err
 	}
-	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
-	if err != nil {
-		fmt.Printf("error on get user rank Leaderboard:%s - Username:%s", l.PublicID, userID)
-		rank = -1
-	}
+
 	nUser := User{PublicID: userID, Score: score, Rank: rank + 1}
-	return nUser, err
+	return &nUser, err
 }
 
 // TotalMembers returns the total number of members in a given leaderboard
@@ -123,13 +156,14 @@ func (l *Leaderboard) TotalMembers() (int, error) {
 }
 
 // RemoveMember removes the member with the given publicID from the leaderboard
-func (l *Leaderboard) RemoveMember(userID string) (User, error) {
+func (l *Leaderboard) RemoveMember(userID string) (*User, error) {
 	conn := l.RedisClient.GetConnection()
 	defer conn.Close()
 	nUser, err := l.GetMember(userID)
 	_, err = conn.Do("ZREM", l.PublicID, userID)
 	if err != nil {
 		fmt.Printf("error on remove user from leaderboard")
+		return nil, err
 	}
 	return nUser, err
 }
@@ -149,19 +183,19 @@ func (l *Leaderboard) TotalPages() (int, error) {
 }
 
 // GetMember returns the score and the rank of the user with the given ID
-func (l *Leaderboard) GetMember(userID string) (User, error) {
+func (l *Leaderboard) GetMember(userID string) (*User, error) {
 	conn := l.RedisClient.GetConnection()
 	defer conn.Close()
 	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
 	if err != nil {
-		rank = -1
+		return nil, err
 	}
 	score, err := redis.Int(conn.Do("ZSCORE", l.PublicID, userID))
 	if err != nil {
-		score = 0
+		return nil, err
 	}
 	nUser := User{PublicID: userID, Score: score, Rank: rank + 1}
-	return nUser, err
+	return &nUser, err
 }
 
 // GetAroundMe returns a page of results centered in the user with the given ID

@@ -33,16 +33,16 @@ var _ = Describe("Leaderboard", func() {
 
 		redisClient = util.GetRedisClient(redisSettings)
 		conn := redisClient.GetConnection()
-		conn.Do("DEL", "testleaderbord")
+		conn.Do("DEL", "test-leaderboard")
 	})
 
 	AfterSuite(func() {
 		conn := redisClient.GetConnection()
-		conn.Do("DEL", "testleaderbord")
+		conn.Do("DEL", "test-leaderboard")
 	})
 
 	It("TestSetUserScore", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 10)
+		testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
 		dayvson, err := testLeaderboard.SetUserScore("dayvson", 481516)
 		Expect(err).To(BeNil())
 		arthur, err := testLeaderboard.SetUserScore("arthur", 1000)
@@ -52,7 +52,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestTotalMembers", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 10)
+		testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
 		for i := 0; i < 10; i++ {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 			Expect(err).To(BeNil())
@@ -63,7 +63,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestRemoveMember", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 10)
+		testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
 		for i := 0; i < 10; i++ {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 			Expect(err).To(BeNil())
@@ -74,7 +74,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestTotalPages", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 25)
+		testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
 		for i := 0; i < 101; i++ {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 			Expect(err).To(BeNil())
@@ -83,7 +83,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetUser", func() {
-		friendScore := NewLeaderboard(redisClient, "testleaderbord", 10)
+		friendScore := NewLeaderboard(redisClient, "test-leaderboard", 10)
 		dayvson, err := friendScore.SetUserScore("dayvson", 12345)
 		Expect(err).To(BeNil())
 		felipe, err := friendScore.SetUserScore("felipe", 12344)
@@ -100,7 +100,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetAroundMe", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 25)
+		testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
 		for i := 0; i < 101; i++ {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 			Expect(err).To(BeNil())
@@ -115,7 +115,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetRank", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 25)
+		testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
 		for i := 0; i < 101; i++ {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 			Expect(err).To(BeNil())
@@ -125,7 +125,7 @@ var _ = Describe("Leaderboard", func() {
 	})
 
 	It("TestGetLeaders", func() {
-		testLeaderboard := NewLeaderboard(redisClient, "testleaderbord", 25)
+		testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
 		for i := 0; i < 1000; i++ {
 			_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i+1), 1234*i)
 			Expect(err).To(BeNil())
