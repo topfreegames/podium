@@ -12,10 +12,30 @@ package leaderboard
 import (
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/topfreegames/podium/util"
 )
+
+//UserNotFoundError indicates user was not found in Redis
+type UserNotFoundError struct {
+	LeaderboardID string
+	UserID        string
+}
+
+func (e *UserNotFoundError) Error() string {
+	return fmt.Sprintf("Could not find data for user %s in leaderboard %s.", e.UserID, e.LeaderboardID)
+}
+
+//NewUserNotFound returns a new error for user not found
+func NewUserNotFound(leaderboardID, userID string) *UserNotFoundError {
+	return &UserNotFoundError{
+		LeaderboardID: leaderboardID,
+		UserID:        userID,
+	}
+}
 
 // User maps an user identified by their publicID to their score and rank
 type User struct {
@@ -71,27 +91,27 @@ func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int
 	return &Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize}
 }
 
-//AddToLeagueSet adds a score to a league set respecting expiration
-func (l *Leaderboard) AddToLeagueSet(redisCli redis.Conn, userID string, score int) (int, error) {
+//AddToLeaderboardSet adds a score to a leaderboard set respecting expiration
+func (l *Leaderboard) AddToLeaderboardSet(redisCli redis.Conn, userID string, score int) (int, error) {
 	expireAt, err := util.GetExpireAt(l.PublicID)
 	if err != nil {
 		return -1, err
 	}
 	script := redis.NewScript(1, `
 		-- Script params:
-		-- KEYS[1] is the name of the league
+		-- KEYS[1] is the name of the leaderboard
 		-- ARGV[1] is user's public ID
 		-- ARGV[2] is the user's updated score
-		-- ARGV[3] is the league's expiration
+		-- ARGV[3] is the leaderboard's expiration
 
-		-- creates league or just sets score of member
+		-- creates leaderboard or just sets score of member
 		local res = redis.call("ZADD", KEYS[1], ARGV[2], ARGV[1])
 
 		-- If expiration is required set expiration
 		if (ARGV[3] ~= "-1") then
 			local expiration = redis.call("TTL", KEYS[1])
 			if (expiration == -2) then
-				return redis.error_reply("League Set was not created in ZADD! Don't know how to proceed.")
+				return redis.error_reply("Leaderboard Set was not created in ZADD! Don't know how to proceed.")
 			end
 			if (expiration == -1) then
 				redis.call("EXPIREAT", KEYS[1], ARGV[3])
@@ -104,6 +124,12 @@ func (l *Leaderboard) AddToLeagueSet(redisCli redis.Conn, userID string, score i
 	`)
 
 	newRank, err := script.Do(redisCli, l.PublicID, userID, score, expireAt)
+	if err != nil {
+		return -1, err
+	}
+	if newRank == nil {
+		return -1, NewUserNotFound(l.PublicID, userID)
+	}
 	return int(newRank.(int64)), err
 }
 
@@ -112,7 +138,7 @@ func (l *Leaderboard) SetUserScore(userID string, score int) (*User, error) {
 	conn := l.RedisClient.GetConnection()
 	defer conn.Close()
 
-	rank, err := l.AddToLeagueSet(conn, userID, score)
+	rank, err := l.AddToLeaderboardSet(conn, userID, score)
 	if err != nil {
 		return nil, err
 	}
@@ -164,16 +190,36 @@ func (l *Leaderboard) TotalPages() (int, error) {
 func (l *Leaderboard) GetMember(userID string) (*User, error) {
 	conn := l.RedisClient.GetConnection()
 	defer conn.Close()
-	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
+
+	script := redis.NewScript(1, `
+		-- Script params:
+		-- KEYS[1] is the name of the leaderboard
+		-- ARGV[1] is user's public ID
+
+		-- gets rank of the user
+		local rank = redis.call("ZREVRANK", KEYS[1], ARGV[1])
+		local score = redis.call("ZSCORE", KEYS[1], ARGV[1])
+
+		return {rank,score}
+	`)
+
+	result, err := script.Do(conn, l.PublicID, userID)
 	if err != nil {
 		return nil, err
 	}
-	score, err := redis.Int(conn.Do("ZSCORE", l.PublicID, userID))
-	if err != nil {
-		return nil, err
+
+	res := result.([]interface{})
+
+	if res[0] == nil || res[1] == nil {
+		return nil, NewUserNotFound(l.PublicID, userID)
 	}
+
+	rank := int(res[0].(int64))
+	scoreParsed, _ := strconv.ParseInt(string(res[1].([]byte)), 10, 32)
+	score := int(scoreParsed)
+
 	nUser := User{PublicID: userID, Score: score, Rank: rank + 1}
-	return &nUser, err
+	return &nUser, nil
 }
 
 // GetAroundMe returns a page of results centered in the user with the given ID
@@ -196,9 +242,12 @@ func (l *Leaderboard) GetRank(userID string) (int, error) {
 	defer conn.Close()
 	rank, err := redis.Int(conn.Do("ZREVRANK", l.PublicID, userID))
 	if err != nil {
-		rank = -1
+		if strings.HasPrefix(err.Error(), "redigo: nil returned") {
+			return -1, NewUserNotFound(l.PublicID, userID)
+		}
+		return -1, err
 	}
-	return rank + 1, err
+	return rank + 1, nil
 }
 
 // GetLeaders returns a page of users with rank and score

@@ -1,5 +1,5 @@
-hash: 4fb0efe59ce0f0883ff0c2af09444c1d8818b82eacb1f5032e9903be12049313
-updated: 2016-07-12T11:55:52.773623863-03:00
+hash: fbbf25119d3cccf58c9ea9f10a9c8273186139a68000450ce3a0c7c6cc655f59
+updated: 2016-07-20T17:41:43.570777375-03:00
 imports:
 - name: github.com/ajg/form
   version: 7ff89c75808766205bfa4411abb436c98c33eb5e
@@ -121,9 +121,35 @@ imports:
 - name: github.com/moul/http2curl
   version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/onsi/ginkgo
-  version: 16c38793d41b07a5f9ae77d573af7836a994bf27
+  version: 38caab951a9ff39f0e61294a1dbaaa074a39228b
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/failer
+  - internal/remote
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - types
+  - internal/containernode
+  - internal/leafnodes
+  - internal/spec
+  - internal/specrunner
 - name: github.com/onsi/gomega
-  version: fcb0f1276bbd7cf097f5a7fd86cc68b50da9376f
+  version: 4dfabf7db2e4147ec99a86db32b2f2a3484cfee8
+  subpackages:
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/testingtsupport
+  - matchers
+  - types
+  - format
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
@@ -132,6 +158,8 @@ imports:
   version: cfa5a85e9f0abbdf1701b59082c36fc7bff10759
 - name: github.com/russross/blackfriday
   version: 1d6b8e9301e720b08a8938b8c25c018285885438
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sergi/go-diff
   version: 97b2266dfe4bd4ea1b81a463322f04f8b724801e
   subpackages:
@@ -186,4 +214,4 @@ imports:
   - unix
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
-devImports: []
+testImports: []

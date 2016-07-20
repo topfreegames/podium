@@ -87,7 +87,8 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeTrue())
 
 			_, err = l.GetMember("userpublicid")
-			Expect(err.Error()).To(Equal("redigo: nil returned"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not find data for user"))
 		})
 
 		It("Should not fail in deleting user score from redis if score does not exist", func() {
@@ -98,7 +99,8 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeTrue())
 
 			_, err := l.GetMember("userpublicid")
-			Expect(err.Error()).To(Equal("redigo: nil returned"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not find data for user"))
 		})
 	})
 

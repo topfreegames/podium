@@ -11,12 +11,13 @@ package api
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kataras/iris"
 	"github.com/topfreegames/podium/leaderboard"
 )
 
-var notFoundError = "redigo: nil returned"
+var notFoundError = "Could not find data for user"
 var noPageSizeProvidedError = "strconv.ParseInt: parsing \"\": invalid syntax"
 var defaultPageSize = 20
 
@@ -73,7 +74,7 @@ func RemoveUserHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
 		_, err := l.RemoveMember(userPublicID)
 
-		if err != nil && err.Error() != notFoundError {
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -91,7 +92,7 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
 		user, err := l.GetMember(userPublicID)
 
-		if err != nil && err.Error() == notFoundError {
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			FailWith(404, "User not found.", c)
 			return
 		} else if err != nil {
@@ -112,7 +113,7 @@ func GetUserRankHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
 		rank, err := l.GetRank(userPublicID)
 
-		if err != nil && err.Error() == notFoundError {
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			FailWith(404, "User not found.", c)
 			return
 		} else if err != nil {
@@ -143,7 +144,7 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
 		users, err := l.GetAroundMe(userPublicID)
 
-		if err != nil && err.Error() == notFoundError {
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			FailWith(404, "User not found.", c)
 			return
 		} else if err != nil {
@@ -222,7 +223,7 @@ func GetTopUsersHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
 		users, err := l.GetLeaders(pageNumber)
 
-		if err != nil && err.Error() == notFoundError {
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			FailWith(404, "User not found.", c)
 			return
 		} else if err != nil {
