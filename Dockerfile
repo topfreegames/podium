@@ -18,8 +18,8 @@ RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
 
 ADD bin/podium-linux-x86_64 /go/bin/podium
 RUN chmod +x /go/bin/podium
-RUN mkdir -p /home/podium/
 
+RUN mkdir -p /home/podium/
 ADD ./docker/default.yaml /home/podium/default.yaml
 
 ENV PODIUM_REDIS_HOST localhost
