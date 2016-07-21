@@ -1,5 +1,11 @@
-Podium
-=======
+# Podium
+
+[![Build Status](https://travis-ci.org/topfreegames/podium.svg?branch=master)](https://travis-ci.org/topfreegames/podium)
+[![Coverage Status](https://coveralls.io/repos/github/topfreegames/podium/badge.svg?branch=master)](https://coveralls.io/github/topfreegames/podium?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/topfreegames/podium)](https://goreportcard.com/report/github.com/topfreegames/podium)
+[![Docs](https://readthedocs.org/projects/snt/badge/?version=latest
+)](http://snt.readthedocs.io/en/latest/)
+[![](https://imagelayers.io/badge/tfgco/podium:latest.svg)](https://imagelayers.io/?images=tfgco/podium:latest 'Khan Image Layers')
 
 A leaderboard system written in [Go](http://golang.org/) using [Redis](http://redis.io/) database.
 
@@ -32,7 +38,6 @@ Testing
 Coverage
 ---------
     make test-coverage test-coverage-html
-
 
 License
 -------
