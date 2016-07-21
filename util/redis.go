@@ -55,9 +55,9 @@ func newPool(host string, port int, password string, db int) *redis.Pool {
 }
 
 // GetRedisClient creates and returns a new redis client based on the given settings
-func GetRedisClient(settings RedisSettings) *RedisClient {
+func GetRedisClient(settings RedisSettings, logger zap.Logger) *RedisClient {
 	client = &RedisClient{
-		Logger: zap.NewJSON(zap.WarnLevel),
+		Logger: logger,
 	}
 	if client.Pool == nil {
 		client.Pool = newPool(settings.Host, settings.Port, settings.Password, settings.Db)

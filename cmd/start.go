@@ -12,6 +12,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/podium/api"
+	"github.com/uber-go/zap"
 )
 
 var host string
@@ -25,11 +26,16 @@ var startCmd = &cobra.Command{
 	Long: `Starts podium server with the specified arguments. You can use
 	environment variables to override configuration keys.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		logger := zap.NewJSON(zap.InfoLevel).With(
+			zap.String("source", "app"),
+		)
+
 		app := api.GetApp(
 			host,
 			port,
 			ConfigFile,
 			debug,
+			logger,
 		)
 
 		app.Start()

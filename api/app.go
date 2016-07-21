@@ -39,13 +39,14 @@ type App struct {
 }
 
 // GetApp returns a new podium Application
-func GetApp(host string, port int, configPath string, debug bool) *App {
+func GetApp(host string, port int, configPath string, debug bool, logger zap.Logger) *App {
 	app := &App{
 		Host:       host,
 		Port:       port,
 		ConfigPath: configPath,
 		Config:     viper.New(),
 		Debug:      debug,
+		Logger:     logger,
 	}
 	app.Configure()
 	return app
@@ -53,10 +54,6 @@ func GetApp(host string, port int, configPath string, debug bool) *App {
 
 // Configure instantiates the required dependencies for podium Application
 func (app *App) Configure() {
-	app.Logger = zap.NewJSON(zap.InfoLevel).With(
-		zap.String("source", "app"),
-	)
-
 	app.setConfigurationDefaults()
 	app.loadConfiguration()
 	app.configureApplication()
@@ -140,7 +137,7 @@ func (app *App) configureApplication() {
 		Password: redisPass,
 		Db:       redisDB,
 	}
-	app.RedisClient = util.GetRedisClient(redisSettings)
+	app.RedisClient = util.GetRedisClient(redisSettings, app.Logger)
 	rl.Info("Connected to redis successfully.")
 }
 

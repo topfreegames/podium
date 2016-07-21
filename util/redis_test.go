@@ -13,10 +13,13 @@ import (
 	"github.com/garyburd/redigo/redis"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/util"
 )
 
 var _ = Describe("RedisClient", func() {
+
+	logger := testing.NewMockLogger()
 
 	testRedisSettings := util.RedisSettings{
 		Host:     "localhost",
@@ -24,7 +27,7 @@ var _ = Describe("RedisClient", func() {
 		Password: "",
 	}
 
-	redisClient := util.GetRedisClient(testRedisSettings)
+	redisClient := util.GetRedisClient(testRedisSettings, logger)
 
 	BeforeSuite(func() {
 		conn := redisClient.GetConnection()

@@ -15,6 +15,7 @@ import (
 
 	"github.com/satori/go.uuid"
 	. "github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/util"
 
 	. "github.com/onsi/ginkgo"
@@ -26,22 +27,24 @@ var _ = Describe("Leaderboard Model", func() {
 	var redisSettings util.RedisSettings
 	var redisClient *util.RedisClient
 	var faultyRedisClient *util.RedisClient
+	var logger *testing.MockLogger
 
 	BeforeEach(func() {
+		logger = testing.NewMockLogger()
 		redisSettings = util.RedisSettings{
 			Host:     "localhost",
 			Port:     1234,
 			Password: "",
 		}
 
-		redisClient = util.GetRedisClient(redisSettings)
+		redisClient = util.GetRedisClient(redisSettings, logger)
 
 		redisSettings = util.RedisSettings{
 			Host:     "localhost",
 			Port:     1235,
 			Password: "",
 		}
-		faultyRedisClient = util.GetRedisClient(redisSettings)
+		faultyRedisClient = util.GetRedisClient(redisSettings, logger)
 
 		conn := redisClient.GetConnection()
 		conn.Do("DEL", "test-leaderboard")
@@ -54,7 +57,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("setting user scores", func() {
 		It("should set scores and return ranks", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			dayvson, err := testLeaderboard.SetUserScore("dayvson", 481516)
 			Expect(err).To(BeNil())
 			arthur, err := testLeaderboard.SetUserScore("arthur", 1000)
@@ -66,7 +69,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("getting number of members", func() {
 		It("should retrieve the number of members in a leaderboard", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			for i := 0; i < 10; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 				Expect(err).To(BeNil())
@@ -77,7 +80,7 @@ var _ = Describe("Leaderboard Model", func() {
 		})
 
 		It("should fail if faulty redis client", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			testLeaderboard.RedisClient = faultyRedisClient
 			_, err := testLeaderboard.TotalMembers()
 			Expect(err).To(HaveOccurred())
@@ -87,7 +90,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("removing members", func() {
 		It("should remove member", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			for i := 0; i < 10; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 				Expect(err).To(BeNil())
@@ -98,7 +101,7 @@ var _ = Describe("Leaderboard Model", func() {
 		})
 
 		It("should fail if faulty redis client", func() {
-			testLeaderboard := NewLeaderboard(faultyRedisClient, "test-leaderboard", 10)
+			testLeaderboard := NewLeaderboard(faultyRedisClient, "test-leaderboard", 10, logger)
 			_, err := testLeaderboard.RemoveMember("invalid member")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
@@ -107,7 +110,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("getting number of pages in leaderboard", func() {
 		It("should return total number of pages", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 				Expect(err).To(BeNil())
@@ -116,7 +119,7 @@ var _ = Describe("Leaderboard Model", func() {
 		})
 
 		It("should fail if faulty redis client", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			testLeaderboard.RedisClient = faultyRedisClient
 			_, err := testLeaderboard.TotalPages()
 			Expect(err).To(HaveOccurred())
@@ -126,7 +129,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("getting user details for a given leaderboard", func() {
 		It("should return user details", func() {
-			friendScore := NewLeaderboard(redisClient, uuid.NewV4().String(), 10)
+			friendScore := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
 			dayvson, err := friendScore.SetUserScore("dayvson", 12345)
 			Expect(err).To(BeNil())
 			felipe, err := friendScore.SetUserScore("felipe", 12344)
@@ -144,7 +147,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail if user does not exist", func() {
 			leaderboardID := uuid.NewV4().String()
-			friendScore := NewLeaderboard(redisClient, leaderboardID, 10)
+			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 			playerID := uuid.NewV4().String()
 			player, err := friendScore.GetMember(playerID)
 			Expect(player).To(BeNil())
@@ -155,7 +158,7 @@ var _ = Describe("Leaderboard Model", func() {
 		})
 
 		It("should fail if faulty redis client", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			testLeaderboard.RedisClient = faultyRedisClient
 			_, err := testLeaderboard.TotalPages()
 			Expect(err).To(HaveOccurred())
@@ -165,7 +168,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("get users around someone in a leaderboard", func() {
 		It("should get users around specific user", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 				Expect(err).To(BeNil())
@@ -182,7 +185,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("getting player ranking", func() {
 		It("should return specific player ranking", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
 				Expect(err).To(BeNil())
@@ -194,7 +197,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 	Describe("getting leaderboard leaders", func() {
 		It("should get specific number of leaders", func() {
-			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25)
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 1000; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i+1), 1234*i)
 				Expect(err).To(BeNil())
@@ -215,7 +218,7 @@ var _ = Describe("Leaderboard Model", func() {
 	Describe("expiration of leaderboards", func() {
 		It("should fail if invalid leaderboard", func() {
 			leaderboardID := "leaderboard_from20201039to20201011"
-			friendScore := NewLeaderboard(redisClient, leaderboardID, 10)
+			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 			_, err := friendScore.SetUserScore("dayvson", 12345)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("day out of range"))
@@ -223,7 +226,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should add yearly expiration if leaderboard supports it", func() {
 			leaderboardID := "test-leaderboard-year2016"
-			friendScore := NewLeaderboard(redisClient, leaderboardID, 10)
+			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 			_, err := friendScore.SetUserScore("dayvson", 12345)
 			Expect(err).To(BeNil())
 

@@ -19,15 +19,18 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/testing"
 )
 
 var _ = Describe("Leaderboard Handler", func() {
 	var a *api.App
 	var l *leaderboard.Leaderboard
+	var lg *testing.MockLogger
 
 	BeforeEach(func() {
 		a = api.GetDefaultTestApp()
-		l = leaderboard.NewLeaderboard(a.RedisClient, "testkey", 0)
+		lg = testing.NewMockLogger()
+		l = leaderboard.NewLeaderboard(a.RedisClient, "testkey", 0, lg)
 		conn := a.RedisClient.GetConnection()
 		conn.Do("DEL", "testkey")
 	})

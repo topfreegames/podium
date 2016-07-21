@@ -17,12 +17,14 @@ import (
 	"github.com/gavv/httpexpect"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/topfreegames/podium/testing"
 	"github.com/valyala/fasthttp"
 )
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
 func GetDefaultTestApp() *App {
-	app := GetApp("0.0.0.0", 8890, "../config/test.yaml", false)
+	logger := testing.NewMockLogger()
+	app := GetApp("0.0.0.0", 8890, "../config/test.yaml", false, logger)
 	app.Configure()
 	return app
 }

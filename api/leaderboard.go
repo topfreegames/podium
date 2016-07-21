@@ -15,6 +15,7 @@ import (
 
 	"github.com/kataras/iris"
 	"github.com/topfreegames/podium/leaderboard"
+	"github.com/uber-go/zap"
 )
 
 var notFoundError = "Could not find data for user"
@@ -44,6 +45,9 @@ func serializeUsers(users []leaderboard.User) []map[string]interface{} {
 // UpsertUserScoreHandler is the handler responsible for creating or updating the user score
 func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("source", "UpsertUserScoreHandler"),
+		)
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
 
@@ -53,7 +57,7 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
 		user, err := l.SetUserScore(userPublicID, payload.Score)
 
 		if err != nil {
@@ -68,10 +72,14 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 // RemoveUserHandler is the handler responsible for removing a user score
 func RemoveUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("source", "RemoveUserHandler"),
+		)
+
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
 		_, err := l.RemoveMember(userPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
@@ -86,10 +94,14 @@ func RemoveUserHandler(app *App) func(c *iris.Context) {
 // GetUserHandler is the handler responsible for retrieving a user score and rank
 func GetUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("source", "GetUserHandler"),
+		)
+
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
 		user, err := l.GetMember(userPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
@@ -107,10 +119,14 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 // GetUserRankHandler is the handler responsible for retrieving a user rank
 func GetUserRankHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("source", "GetUserRankHandler"),
+		)
+
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
 		rank, err := l.GetRank(userPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
@@ -131,6 +147,10 @@ func GetUserRankHandler(app *App) func(c *iris.Context) {
 // GetAroundUserHandler retrieves a list of user score and rank centered in the given user
 func GetAroundUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("source", "GetAroundUserHandler"),
+		)
+
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
 		pageSize, err := c.URLParamInt("pageSize")
@@ -141,7 +161,7 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
 		users, err := l.GetAroundMe(userPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
@@ -161,9 +181,13 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 // GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
 func GetTotalMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("source", "GetTotalMembersHandler"),
+		)
+
 		leaderboardID := c.Param("leaderboardID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
 		count, err := l.TotalMembers()
 
 		if err != nil {
@@ -180,6 +204,10 @@ func GetTotalMembersHandler(app *App) func(c *iris.Context) {
 // GetTotalPagesHandler is the handler responsible for returning the total number of pages in a leaderboard given a pageSize
 func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "GetTotalPagesHandler"),
+		)
+
 		leaderboardID := c.Param("leaderboardID")
 		pageSize, err := c.URLParamInt("pageSize")
 		if err != nil && err.Error() == noPageSizeProvidedError {
@@ -189,7 +217,7 @@ func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
 		count, err := l.TotalPages()
 
 		if err != nil {
@@ -206,6 +234,10 @@ func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 // GetTopUsersHandler retrieves onePage of user score and rank
 func GetTopUsersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "GetTopUsersHandler"),
+		)
+
 		leaderboardID := c.Param("leaderboardID")
 		pageNumber, err := c.ParamInt("pageNumber")
 		if err != nil {
@@ -220,7 +252,7 @@ func GetTopUsersHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize)
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
 		users, err := l.GetLeaders(pageNumber)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
