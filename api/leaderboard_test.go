@@ -17,6 +17,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/satori/go.uuid"
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/testing"
@@ -499,6 +500,35 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
+		})
+	})
+
+	Describe("Get Top Percentage Handler", func() {
+		It("Should get top users from redis if leaderboard exists", func() {
+			leaderboardID := uuid.NewV4().String()
+			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore(fmt.Sprintf("user_%d", i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, fmt.Sprintf("/l/%s/top-percent/10", leaderboardID))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(10))
+
+			for i, userObj := range users {
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(i + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", i+1)))
+				Expect(int(user["score"].(float64))).To(Equal(100 - i))
+			}
 		})
 	})
 })

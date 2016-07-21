@@ -239,4 +239,87 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(exp).To(BeNumerically(">", int64(-1)))
 		})
 	})
+
+	Describe("get top x percent of players in the leaderboard", func() {
+		It("should get top 10 percent players in the leaderboard", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			members := []*User{}
+			for i := 0; i < 100; i++ {
+				member, err := leader.SetUserScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				Expect(err).To(BeNil())
+				members = append(members, member)
+			}
+
+			top10, err := leader.GetTopPercentage(10, 2000)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(top10).To(HaveLen(10))
+
+			Expect(top10[0].PublicID).To(Equal("friend-0"))
+			Expect(top10[0].Rank).To(Equal(1))
+			Expect(top10[0].Score).To(Equal(10000))
+
+			Expect(top10[9].PublicID).To(Equal("friend-9"))
+			Expect(top10[9].Rank).To(Equal(10))
+			Expect(top10[9].Score).To(Equal(9100))
+		})
+
+		It("should get max members if query too broad", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			members := []*User{}
+			for i := 0; i < 10; i++ {
+				member, err := leader.SetUserScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				Expect(err).To(BeNil())
+				members = append(members, member)
+			}
+
+			top3, err := leader.GetTopPercentage(100, 3)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(top3).To(HaveLen(3))
+
+			Expect(top3[0].PublicID).To(Equal("friend-0"))
+			Expect(top3[0].Rank).To(Equal(1))
+			Expect(top3[0].Score).To(Equal(10000))
+
+			Expect(top3[2].PublicID).To(Equal("friend-2"))
+			Expect(top3[2].Rank).To(Equal(3))
+			Expect(top3[2].Score).To(Equal(9800))
+		})
+
+		It("should get top 1 percent return at least 1", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			members := []*User{}
+			for i := 0; i < 2; i++ {
+				member, err := leader.SetUserScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				Expect(err).To(BeNil())
+				members = append(members, member)
+			}
+
+			top10, err := leader.GetTopPercentage(1, 2000)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(top10).To(HaveLen(1))
+
+			Expect(top10[0].PublicID).To(Equal("friend-0"))
+			Expect(top10[0].Rank).To(Equal(1))
+			Expect(top10[0].Score).To(Equal(10000))
+		})
+
+		It("should fail if more than 100 percent", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			top10, err := leader.GetTopPercentage(101, 2000)
+			Expect(top10).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Percentage must be a valid integer between 1 and 100."))
+		})
+	})
 })

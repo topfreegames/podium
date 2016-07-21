@@ -61,6 +61,7 @@ func (app *App) Configure() {
 
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
+	app.Config.SetDefault("api.maxReturnedMembers", 2000)
 	app.Config.SetDefault("redis.host", "localhost")
 	app.Config.SetDefault("redis.port", 1212)
 	app.Config.SetDefault("redis.password", "")
@@ -112,6 +113,7 @@ func (app *App) configureApplication() {
 	a.Get("/l/:leaderboardID/users-count", GetTotalMembersHandler(app))
 	a.Get("/l/:leaderboardID/pages", GetTotalPagesHandler(app))
 	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopUsersHandler(app))
+	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 

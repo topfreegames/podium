@@ -34,10 +34,10 @@ func serializeUser(user *leaderboard.User) map[string]interface{} {
 	}
 }
 
-func serializeUsers(users []leaderboard.User) []map[string]interface{} {
+func serializeUsers(users []*leaderboard.User) []map[string]interface{} {
 	serializedUsers := make([]map[string]interface{}, len(users))
 	for i, user := range users {
-		serializedUsers[i] = serializeUser(&user)
+		serializedUsers[i] = serializeUser(user)
 	}
 	return serializedUsers
 }
@@ -46,7 +46,7 @@ func serializeUsers(users []leaderboard.User) []map[string]interface{} {
 func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("source", "UpsertUserScoreHandler"),
+			zap.String("handler", "UpsertUserScoreHandler"),
 		)
 		leaderboardID := c.Param("leaderboardID")
 		userPublicID := c.Param("userPublicID")
@@ -73,7 +73,7 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 func RemoveUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("source", "RemoveUserHandler"),
+			zap.String("handler", "RemoveUserHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
@@ -95,7 +95,7 @@ func RemoveUserHandler(app *App) func(c *iris.Context) {
 func GetUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("source", "GetUserHandler"),
+			zap.String("handler", "GetUserHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
@@ -120,7 +120,7 @@ func GetUserHandler(app *App) func(c *iris.Context) {
 func GetUserRankHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("source", "GetUserRankHandler"),
+			zap.String("handler", "GetUserRankHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
@@ -148,7 +148,7 @@ func GetUserRankHandler(app *App) func(c *iris.Context) {
 func GetAroundUserHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("source", "GetAroundUserHandler"),
+			zap.String("handler", "GetAroundUserHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
@@ -182,7 +182,7 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 func GetTotalMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("source", "GetTotalMembersHandler"),
+			zap.String("handler", "GetTotalMembersHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
@@ -259,6 +259,39 @@ func GetTopUsersHandler(app *App) func(c *iris.Context) {
 			FailWith(404, "User not found.", c)
 			return
 		} else if err != nil {
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{
+			"users": serializeUsers(users),
+		}, c)
+	}
+}
+
+// GetTopPercentageHandler retrieves top x % players in the leaderboard
+func GetTopPercentageHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "GetTopPercentageHandler"),
+		)
+
+		leaderboardID := c.Param("leaderboardID")
+		percentage, err := c.ParamInt("percentage")
+		if err != nil {
+			FailWith(400, fmt.Sprintf("Invalid percentage provided: %s", err.Error()), c)
+			return
+		}
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
+		users, err := l.GetTopPercentage(percentage, app.Config.GetInt("api.maxReturnedMembers"))
+
+		if err != nil {
+			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
+				FailWith(400, err.Error(), c)
+				return
+			}
+
 			FailWith(500, err.Error(), c)
 			return
 		}

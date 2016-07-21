@@ -60,7 +60,7 @@ type Leaderboard struct {
 	PageSize    int
 }
 
-func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int, l zap.Logger) ([]User, error) {
+func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int, l zap.Logger) ([]*User, error) {
 	conn := redisClient.GetConnection()
 	defer conn.Close()
 
@@ -73,7 +73,7 @@ func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSi
 	l.Info("Retrieval of leaderboard top members succeeded.")
 
 	l.Debug("Retrieving details of leaderboard top members...")
-	users := make([]User, len(values)/2)
+	users := make([]*User, len(values)/2)
 	var i = 0
 	for len(values) > 0 {
 		publicID := ""
@@ -90,7 +90,7 @@ func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSi
 			return nil, err
 		}
 		nUser := User{PublicID: publicID, Score: score, Rank: rank + 1}
-		users[i] = nUser
+		users[i] = &nUser
 		i++
 	}
 	l.Info("Retrieval of leaderboard top members' details succeeded.")
@@ -294,7 +294,7 @@ func (lb *Leaderboard) GetMember(userID string) (*User, error) {
 }
 
 // GetAroundMe returns a page of results centered in the user with the given ID
-func (lb *Leaderboard) GetAroundMe(userID string) ([]User, error) {
+func (lb *Leaderboard) GetAroundMe(userID string) ([]*User, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetAroundMe"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -348,7 +348,7 @@ func (lb *Leaderboard) GetRank(userID string) (int, error) {
 }
 
 // GetLeaders returns a page of users with rank and score
-func (lb *Leaderboard) GetLeaders(page int) ([]User, error) {
+func (lb *Leaderboard) GetLeaders(page int) ([]*User, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetLeaders"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -363,7 +363,7 @@ func (lb *Leaderboard) GetLeaders(page int) ([]User, error) {
 		return nil, err
 	}
 	if page > totalPages {
-		return make([]User, 0), nil
+		return make([]*User, 0), nil
 	}
 	redisIndex := page - 1
 	startOffset := redisIndex * lb.PageSize
@@ -372,4 +372,82 @@ func (lb *Leaderboard) GetLeaders(page int) ([]User, error) {
 	}
 	endOffset := (startOffset + lb.PageSize) - 1
 	return getMembersByRange(lb.RedisClient, lb.PublicID, lb.PageSize, startOffset, endOffset, l)
+}
+
+//GetTopPercentage of members in the leaderboard.
+func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*User, error) {
+	l := lb.Logger.With(
+		zap.String("operation", "GetTopPercentage"),
+		zap.String("leaguePublicID", lb.PublicID),
+		zap.Int("amount", amount),
+	)
+
+	if amount < 1 || amount > 100 {
+		err := fmt.Errorf("Percentage must be a valid integer between 1 and 100.")
+		l.Error(err.Error(), zap.Error(err))
+		return nil, err
+	}
+
+	conn := lb.RedisClient.GetConnection()
+	defer conn.Close()
+
+	l.Debug("Getting top percentage of members...")
+	script := redis.NewScript(1, `
+		-- Script params:
+		-- KEYS[1] is the name of the leaderboard
+		-- ARGV[1] is the desired percentage (0.0 to 1.0)
+		-- ARGV[2] is the maximum number of members returned
+
+		local totalNumber = redis.call("ZCARD", KEYS[1])
+		local numberOfMembers = math.floor(ARGV[1] * totalNumber)
+		if (numberOfMembers < 1) then
+			numberOfMembers = 1
+		end
+
+		if (numberOfMembers > math.floor(ARGV[2])) then
+			numberOfMembers = math.floor(ARGV[2])
+		end
+
+		local members = redis.call("ZREVRANGE", KEYS[1], 0, numberOfMembers - 1)
+		local fullMembers = {}
+
+		for index, publicID in ipairs(members) do
+		 	local rank = redis.call("ZREVRANK", KEYS[1], publicID)
+		 	local score = redis.call("ZSCORE", KEYS[1], publicID)
+			
+			table.insert(fullMembers, publicID)
+			table.insert(fullMembers, rank)
+			table.insert(fullMembers, score)
+		end
+
+		return fullMembers
+	`)
+
+	result, err := script.Do(conn, lb.PublicID, float64(amount)/100.0, maxMembers)
+
+	if err != nil {
+		l.Error("Getting top percentage of members failed.", zap.Error(err))
+		return nil, err
+	}
+
+	res := result.([]interface{})
+	members := []*User{}
+
+	for i := 0; i < len(res); i += 3 {
+		memberPublicID := string(res[i].([]byte))
+
+		rank := int(res[i+1].(int64)) + 1
+		s, _ := strconv.ParseInt(string(res[i+2].([]byte)), 10, 32)
+		score := int(s)
+
+		members = append(members, &User{
+			PublicID: memberPublicID,
+			Score:    score,
+			Rank:     rank,
+		})
+	}
+
+	l.Info("Top percentage of members retrieved successfully.")
+
+	return members, nil
 }
