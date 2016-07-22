@@ -159,6 +159,9 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 		} else if err != nil {
 			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
 			return
+		} else if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+			FailWith(400, fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", app.Config.GetInt("api.maxReturnedMembers"), pageSize), c)
+			return
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
@@ -249,6 +252,9 @@ func GetTopUsersHandler(app *App) func(c *iris.Context) {
 			pageSize = defaultPageSize
 		} else if err != nil {
 			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
+			return
+		} else if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+			FailWith(400, fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", app.Config.GetInt("api.maxReturnedMembers"), pageSize), c)
 			return
 		}
 

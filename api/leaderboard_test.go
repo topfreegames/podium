@@ -401,6 +401,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
 
+		It("Should fail with 400 if pageSize provided if bigger than maxPageSizeAllowed", func() {
+			pageSize := a.Config.GetInt("api.maxReturnedMembers") + 1
+			res := api.Get(a, "/l/testkey/users/user_50/around", map[string]interface{}{
+				"pageSize": pageSize,
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal(fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", pageSize-1, pageSize)))
+		})
+
 		Measure("it should get around user", func(b Benchmarker) {
 			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
 			userID := uuid.NewV4().String()
@@ -675,6 +687,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
+		})
+
+		It("Should fail with 400 if pageSize provided if bigger than maxPageSizeAllowed", func() {
+			pageSize := a.Config.GetInt("api.maxReturnedMembers") + 1
+			res := api.Get(a, "/l/testkey/top/1", map[string]interface{}{
+				"pageSize": pageSize,
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal(fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", pageSize-1, pageSize)))
 		})
 
 		Measure("it should get top users", func(b Benchmarker) {
