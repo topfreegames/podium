@@ -28,10 +28,14 @@ var _ = Describe("Leaderboard Handler", func() {
 	var l *leaderboard.Leaderboard
 	var lg *testing.MockLogger
 
-	BeforeEach(func() {
+	BeforeSuite(func() {
 		a = api.GetDefaultTestApp()
+	})
+
+	BeforeEach(func() {
 		lg = testing.NewMockLogger()
 		l = leaderboard.NewLeaderboard(a.RedisClient, "testkey", 0, lg)
+
 		conn := a.RedisClient.Client
 		conn.Del("testkey")
 	})
@@ -367,6 +371,26 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
+
+		Measure("it should get around user", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+			userID := uuid.NewV4().String()
+
+			_, err := lead.SetUserScore(userID, 500)
+			Expect(err).NotTo(HaveOccurred())
+
+			for i := 0; i < 10; i++ {
+				_, err := lead.SetUserScore(fmt.Sprintf("user-%d", i), 500)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			runtime := b.Time("runtime", func() {
+				res := api.Get(a, fmt.Sprintf("/l/%s/users/%s/around", lead.PublicID, userID))
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting around user shouldn't take too long.")
+		}, 200)
 	})
 
 	Describe("Get Total Members Handler", func() {
@@ -391,6 +415,22 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeTrue())
 			Expect(int(result["count"].(float64))).To(Equal(0))
 		})
+
+		Measure("it should get total members", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+
+			for i := 0; i < 10; i++ {
+				_, err := lead.SetUserScore(fmt.Sprintf("user-%d", i), 500)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			runtime := b.Time("runtime", func() {
+				res := api.Get(a, fmt.Sprintf("/l/%s/users-count", lead.PublicID))
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting total members shouldn't take too long.")
+		}, 200)
 	})
 
 	Describe("Get Total Pages Handler", func() {
@@ -441,6 +481,22 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
+
+		Measure("it should get total pages", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+
+			for i := 0; i < 10; i++ {
+				_, err := lead.SetUserScore(fmt.Sprintf("user-%d", i), 500)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			runtime := b.Time("runtime", func() {
+				res := api.Get(a, fmt.Sprintf("/l/%s/pages", lead.PublicID))
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting total pages shouldn't take too long.")
+		}, 200)
 	})
 
 	Describe("Get Top Users Handler", func() {
@@ -563,6 +619,22 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
 		})
+
+		Measure("it should get top users", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+
+			for i := 0; i < 100; i++ {
+				_, err := lead.SetUserScore(fmt.Sprintf("user-%d", i), 500)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			runtime := b.Time("runtime", func() {
+				res := api.Get(a, fmt.Sprintf("/l/%s/top/10", lead.PublicID))
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting top users shouldn't take too long.")
+		}, 200)
 	})
 
 	Describe("Get Top Percentage Handler", func() {
@@ -592,5 +664,22 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(user["score"].(float64))).To(Equal(100 - i))
 			}
 		})
+
+		Measure("it should get top percentage of users", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+
+			for i := 0; i < 100; i++ {
+				_, err := lead.SetUserScore(fmt.Sprintf("user-%d", i), 500)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			runtime := b.Time("runtime", func() {
+				res := api.Get(a, fmt.Sprintf("/l/%s/top-percent/10", lead.PublicID))
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting top percentage users shouldn't take too long.")
+		}, 200)
+
 	})
 })
