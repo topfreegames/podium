@@ -52,8 +52,9 @@ BenchmarkGetTotalPages-8   	  100000	     80390 ns/op	   0.36 MB/s	    4160 B/op
 BenchmarkGetTopUsers-8     	   20000	    498763 ns/op	   2.04 MB/s	    7717 B/op	      55 allocs/op
 BenchmarkGetTopPercentage-8	   10000	   5265023 ns/op	   9.31 MB/s	  231009 B/op	      60 allocs/op
 
-
 To run the benchmarks: `make bench-podium-app bench-run`.
+
+Our builds also show the difference to the previous build.
 
 License
 -------
