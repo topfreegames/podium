@@ -107,8 +107,8 @@ bench-podium-app: build bench-podium-app-kill bench-redis
 	@rm -rf /tmp/podium-bench.log
 	@./bin/podium start -p 8888 --quiet -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
 
-bench-podium-app-kill:
-	@-ps aux | egrep './podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
+bench-podium-app-kill: bench-redis-kill
+	@-ps aux | egrep 'podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
 
 # get a redis instance up (localhost:1224)
 bench-redis: bench-redis-kill
