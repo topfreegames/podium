@@ -293,6 +293,18 @@ func (lb *Leaderboard) GetAroundMe(userID string) ([]*User, error) {
 	}
 	endOffset := (startOffset + lb.PageSize) - 1
 
+	totalMembers, err := lb.TotalMembers()
+	if err != nil {
+		return nil, err
+	}
+	if totalMembers < endOffset {
+		endOffset = totalMembers
+		startOffset = endOffset - lb.PageSize
+		if startOffset < 0 {
+			startOffset = 0
+		}
+	}
+
 	members, err := getMembersByRange(lb.RedisClient, lb.PublicID, lb.PageSize, startOffset, endOffset, l)
 	if err != nil {
 		l.Error("Failed to retrieve information around a specific user.", zap.Error(err))

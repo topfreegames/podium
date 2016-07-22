@@ -193,11 +193,41 @@ var _ = Describe("Leaderboard Model", func() {
 			}
 			users, err := testLeaderboard.GetAroundMe("member_20")
 			Expect(err).NotTo(HaveOccurred())
+			Expect(len(users)).To(Equal(testLeaderboard.PageSize))
 			firstAroundMe := users[0]
 			lastAroundMe := users[testLeaderboard.PageSize-1]
-			Expect(len(users)).To(Equal(testLeaderboard.PageSize))
 			Expect(firstAroundMe.Score).To(Equal(100))
 			Expect(lastAroundMe.Score).To(Equal(100))
+		})
+
+		It("should get PageSize users around specific user even if user in ranking top", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 1; i <= 100; i++ {
+				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			users, err := testLeaderboard.GetAroundMe("member_2")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(users)).To(Equal(testLeaderboard.PageSize))
+			firstAroundMe := users[0]
+			lastAroundMe := users[testLeaderboard.PageSize-1]
+			Expect(firstAroundMe.PublicID).To(Equal("member_1"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_25"))
+		})
+
+		It("should get PageSize users around specific user even if user in ranking bottom", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 1; i <= 100; i++ {
+				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			users, err := testLeaderboard.GetAroundMe("member_99")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(users)).To(Equal(testLeaderboard.PageSize))
+			firstAroundMe := users[0]
+			lastAroundMe := users[testLeaderboard.PageSize-1]
+			Expect(firstAroundMe.PublicID).To(Equal("member_76"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_100"))
 		})
 	})
 

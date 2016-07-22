@@ -413,6 +413,60 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal(fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", pageSize-1, pageSize)))
 		})
 
+		It("Should get one page of top users from redis if leaderboard exists and user in ranking bottom", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/users/user_2/around")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(20))
+			for i, userObj := range users {
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(i + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", i+1)))
+				Expect(int(user["score"].(float64))).To(Equal(100 - i - 1))
+
+				dbUser, err := l.GetMember(user["publicID"].(string))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
+				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
+				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
+			}
+		})
+
+		It("Should get one page of top users from redis if leaderboard exists and user in ranking top", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/users/user_99/around")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(20))
+			for i, userObj := range users {
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(80 + i + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", 80+i+1)))
+				Expect(int(user["score"].(float64))).To(Equal(100 - 80 - i - 1))
+
+				dbUser, err := l.GetMember(user["publicID"].(string))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
+				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
+				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
+			}
+		})
+
 		Measure("it should get around user", func(b Benchmarker) {
 			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
 			userID := uuid.NewV4().String()
