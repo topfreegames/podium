@@ -34,11 +34,11 @@ var _ = Describe("Leaderboard Model", func() {
 		var err error
 
 		logger = testing.NewMockLogger()
-		redisClient, err = util.GetRedisClient("localhost", 1234, "", 0, logger)
+		redisClient, err = util.GetRedisClient("localhost", 1234, "", 0, 50, logger)
 		Expect(err).NotTo(HaveOccurred())
 
 		//First we connect properly
-		faultyRedisClient, err = util.GetRedisClient("localhost", 1234, "", 0, logger)
+		faultyRedisClient, err = util.GetRedisClient("localhost", 1234, "", 0, 50, logger)
 		Expect(err).NotTo(HaveOccurred())
 		//Then we change the connection to be faulty
 		faultyRedisClient.Client = redis.NewClient(&redis.Options{
