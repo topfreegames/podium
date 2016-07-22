@@ -42,7 +42,7 @@ func BenchmarkRemoveUser(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("user-%d", i)
+		userID := fmt.Sprintf("bench-user-%d", i)
 		route := getRoute(fmt.Sprintf("/l/%s/users/%s", l.PublicID, userID))
 		status, body, err := sendTo("DELETE", route, nil)
 		validateResp(status, body, err)
@@ -57,7 +57,7 @@ func BenchmarkGetUser(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("user-%d", i)
+		userID := fmt.Sprintf("bench-user-%d", i)
 		route := getRoute(fmt.Sprintf("/l/%s/users/%s", l.PublicID, userID))
 		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)
@@ -72,7 +72,7 @@ func BenchmarkGetUserRank(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("user-%d", i)
+		userID := fmt.Sprintf("bench-user-%d", i)
 		route := getRoute(fmt.Sprintf("/l/%s/users/%s/rank", l.PublicID, userID))
 		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)
@@ -88,7 +88,7 @@ func BenchmarkGetAroundUser(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("user-%d", i)
+		userID := fmt.Sprintf("bench-user-%d", i)
 		route := getRoute(fmt.Sprintf("/l/%s/users/%s/around", l.PublicID, userID))
 		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)

@@ -14,7 +14,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/satori/go.uuid"
 	"github.com/topfreegames/podium/leaderboard"
 	test "github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/util"
@@ -94,12 +93,12 @@ func validateResp(statusCode int, body string, err error) {
 func generateNUsers(amount int) *leaderboard.Leaderboard {
 	redisClient := getRedis()
 
-	lbID := uuid.NewV4().String()
+	lbID := "leaderboard-0"
 
 	l := leaderboard.NewLeaderboard(redisClient, lbID, 10, redisClient.Logger)
 
 	for i := 0; i < amount; i++ {
-		l.SetUserScore(fmt.Sprintf("user-%d", i), 100+i)
+		l.SetUserScore(fmt.Sprintf("bench-user-%d", i), 100+i)
 	}
 
 	return l

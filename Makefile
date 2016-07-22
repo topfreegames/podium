@@ -92,7 +92,10 @@ docker-build:
 	@docker build -t podium .
 
 docker-run:
-	@docker run -i -t --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:8080 podium
+	@docker run -i -t --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:80 podium
+
+docker-run-basic-auth:
+	@docker run -i -t --rm -e BASICAUTH_USERNAME=admin -e BASICAUTH_PASSWORD=12345 -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:80 podium
 
 docker-shell:
 	@docker run -it --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) --entrypoint "/bin/bash" podium
@@ -103,11 +106,11 @@ docker-dev-build:
 docker-dev-run:
 	@docker run -i -t --rm -p 8080:8080 podium-dev
 
-bench-podium-app: build bench-podium-app-kill bench-redis
+bench-podium-app: build bench-podium-app-kill
 	@rm -rf /tmp/podium-bench.log
 	@./bin/podium start -p 8888 --quiet -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
 
-bench-podium-app-kill: bench-redis-kill
+bench-podium-app-kill:
 	@-ps aux | egrep 'podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
 
 # get a redis instance up (localhost:1224)
@@ -121,6 +124,9 @@ bench-redis-kill:
 
 bench-run:
 	@go test -benchmem -bench . -benchtime 5s ./bench/...
+
+bench-seed:
+	@go run bench/seed/main.go
 
 ci-bench-run:
 	@mkdir -p ./bench-data

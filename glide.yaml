@@ -19,3 +19,4 @@ import:
 - package: gopkg.in/redis.v4
 - package: gopkg.in/bsm/ratelimit.v1
 - package: github.com/getsentry/raven-go
+- package: github.com/gosuri/uiprogress

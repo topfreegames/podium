@@ -27,6 +27,12 @@ imports:
   version: 9235644dd9e52eeae6fa48efd539fdc351a0af53
   subpackages:
   - query
+- name: github.com/gosuri/uilive
+  version: efb88ccd059957c48f24f9d351d33a0eb00ede41
+- name: github.com/gosuri/uiprogress
+  version: a9f819bfc744fe70043abcc5a6cd0137a678e3d8
+  subpackages:
+  - util/strutil
 - name: github.com/hashicorp/hcl
   version: d8c773c4cba11b11539e3d45f93daeaa5dcf1fa1
   subpackages:
@@ -104,10 +110,34 @@ imports:
   version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/onsi/ginkgo
   version: 38caab951a9ff39f0e61294a1dbaaa074a39228b
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/failer
+  - internal/remote
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - types
+  - internal/containernode
+  - internal/leafnodes
+  - internal/spec
+  - internal/specrunner
 - name: github.com/onsi/gomega
   version: 4dfabf7db2e4147ec99a86db32b2f2a3484cfee8
   subpackages:
   - types
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/testingtsupport
+  - matchers
+  - format
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
@@ -183,4 +213,4 @@ imports:
   - internal/proto
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
-devImports: []
+testImports: []
