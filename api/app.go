@@ -143,6 +143,7 @@ func (app *App) configureApplication() {
 	a.Get("/l/:leaderboardID/pages", GetTotalPagesHandler(app))
 	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopUsersHandler(app))
 	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
+	a.Put("/u/:userPublicID/scores", UpsertUserLeaderboardsScoreHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 

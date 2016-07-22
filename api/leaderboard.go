@@ -26,6 +26,11 @@ type setScorePayload struct {
 	Score int
 }
 
+type setScoresPayload struct {
+	Score        int
+	Leaderboards []string
+}
+
 func serializeUser(user *leaderboard.User) map[string]interface{} {
 	return map[string]interface{}{
 		"publicID": user.PublicID,
@@ -304,6 +309,41 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 
 		SucceedWith(map[string]interface{}{
 			"users": serializeUsers(users),
+		}, c)
+	}
+}
+
+// UpsertUserLeaderboardsScoreHandler sets the user score for all leaderboards
+func UpsertUserLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "UpsertUserLeaderboardsScoreHandler"),
+		)
+		userPublicID := c.Param("userPublicID")
+
+		var payload setScoresPayload
+		if err := LoadJSONPayload(&payload, c); err != nil {
+			FailWith(400, err.Error(), c)
+			return
+		}
+
+		serializedScores := make([]map[string]interface{}, len(payload.Leaderboards))
+
+		for i, leaderboardID := range payload.Leaderboards {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			user, err := l.SetUserScore(userPublicID, payload.Score)
+
+			if err != nil {
+				FailWith(500, err.Error(), c)
+				return
+			}
+			serializedScore := serializeUser(user)
+			serializedScore["leaderboardID"] = leaderboardID
+			serializedScores[i] = serializedScore
+		}
+
+		SucceedWith(map[string]interface{}{
+			"scores": serializedScores,
 		}, c)
 	}
 }

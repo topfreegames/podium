@@ -38,6 +38,11 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		conn := a.RedisClient.Client
 		conn.Del("testkey")
+		conn.Del("testkey1")
+		conn.Del("testkey2")
+		conn.Del("testkey3")
+		conn.Del("testkey4")
+		conn.Del("testkey5")
 	})
 
 	Describe("Upsert User Score", func() {
@@ -840,6 +845,82 @@ var _ = Describe("Leaderboard Handler", func() {
 			})
 
 			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting top percentage users shouldn't take too long.")
+		}, 200)
+	})
+
+	Describe("Upsert User Score For Several Leaderboards", func() {
+		It("Should set correct user score in redis and respond with the correct values", func() {
+			payload := map[string]interface{}{
+				"score":        100,
+				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+			}
+			res := api.PutJSON(a, "/u/userpublicid/scores", payload)
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			scores := result["scores"].([]interface{})
+			Expect(len(scores)).To(Equal(5))
+			for i, scoreObj := range scores {
+				score := scoreObj.(map[string]interface{})
+				Expect(score["publicID"]).To(Equal("userpublicid"))
+				Expect(int(score["score"].(float64))).To(Equal(payload["score"]))
+				Expect(int(score["rank"].(float64))).To(Equal(1))
+				Expect(score["leaderboardID"]).To(Equal(payload["leaderboards"].([]string)[i]))
+
+				ll := leaderboard.NewLeaderboard(a.RedisClient, score["leaderboardID"].(string), 0, lg)
+				user, err := ll.GetMember("userpublicid")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(user.Rank).To(Equal(1))
+				Expect(user.Score).To(Equal(100))
+				Expect(user.PublicID).To(Equal("userpublicid"))
+			}
+		})
+
+		It("Should fail if missing score", func() {
+			payload := map[string]interface{}{
+				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+			}
+			res := api.PutJSON(a, "/u/userpublicid/scores", payload)
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("score is required"))
+		})
+
+		It("Should fail if missing leaderboards", func() {
+			payload := map[string]interface{}{
+				"score": 100,
+			}
+			res := api.PutJSON(a, "/u/userpublicid/scores", payload)
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("leaderboards is required"))
+		})
+
+		It("Should fail if invalid payload", func() {
+			res := api.PutBody(a, "/u/userpublicid/scores", "invalid")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(ContainSubstring("While trying to read JSON"))
+		})
+
+		Measure("it should set correct user score for all leaderboards", func(b Benchmarker) {
+			runtime := b.Time("runtime", func() {
+				payload := map[string]interface{}{
+					"score":        100,
+					"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+				}
+				res := api.PutJSON(a, "/u/userpublicid/scores", payload)
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Set score shouldn't take too long.")
 		}, 200)
 	})
 })

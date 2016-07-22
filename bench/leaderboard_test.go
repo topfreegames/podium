@@ -153,3 +153,27 @@ func BenchmarkGetTopPercentage(b *testing.B) {
 		keeper = body
 	}
 }
+
+func BenchmarkSetUserScoreForSeveralLeaderboards(b *testing.B) {
+	leaderboards := make([]string, b.N)
+	for i := 0; i < b.N; i++ {
+		l := generateNUsers(b.N)
+		leaderboards[i] = l.PublicID
+	}
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		userID := uuid.NewV4().String()
+		route := getRoute(fmt.Sprintf("/u/%s/scores", userID))
+		payload := map[string]interface{}{
+			"score":        100,
+			"leaderboards": leaderboards,
+		}
+
+		status, body, err := putTo(route, payload)
+		validateResp(status, body, err)
+		b.SetBytes(int64(len([]byte(body))))
+
+		keeper = body
+	}
+}
