@@ -20,8 +20,8 @@ import (
 func HealthCheckHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		workingString := app.Config.GetString("healthcheck.workingText")
-		res, err := app.RedisClient.GetConnection().Do("ping")
-		if res != "PONG" || err != nil {
+		res, err := app.RedisClient.Client.Ping().Result()
+		if err != nil || res != "PONG" {
 			c.Write(fmt.Sprintf("Error connecting to redis: %s", err))
 			c.SetStatusCode(500)
 			return

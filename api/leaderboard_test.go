@@ -32,8 +32,8 @@ var _ = Describe("Leaderboard Handler", func() {
 		a = api.GetDefaultTestApp()
 		lg = testing.NewMockLogger()
 		l = leaderboard.NewLeaderboard(a.RedisClient, "testkey", 0, lg)
-		conn := a.RedisClient.GetConnection()
-		conn.Do("DEL", "testkey")
+		conn := a.RedisClient.Client
+		conn.Del("testkey")
 	})
 
 	Describe("Upsert User Score", func() {
@@ -77,6 +77,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(ContainSubstring("While trying to read JSON"))
 		})
+
+		Measure("it should set correct user score", func(b Benchmarker) {
+			runtime := b.Time("runtime", func() {
+				payload := map[string]interface{}{
+					"score": 100,
+				}
+				res := api.PutJSON(a, "/l/testkey/users/userpublicid/score", payload)
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Set score shouldn't take too long.")
+		}, 200)
 	})
 
 	Describe("Remove User Score", func() {
@@ -106,6 +118,20 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for user"))
 		})
+
+		Measure("it should remove user score", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+			userID := uuid.NewV4().String()
+			_, err := lead.SetUserScore(userID, 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			runtime := b.Time("runtime", func() {
+				res := api.Delete(a, fmt.Sprintf("/l/%s/users/%s", lead.PublicID, userID))
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Remove member shouldn't take too long.")
+		}, 200)
 	})
 
 	Describe("Get User", func() {
@@ -137,6 +163,22 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("User not found."))
 		})
+
+		Measure("it should get user score", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+			userID := uuid.NewV4().String()
+			_, err := lead.SetUserScore(userID, 500)
+			Expect(err).NotTo(HaveOccurred())
+
+			runtime := b.Time("runtime", func() {
+				url := fmt.Sprintf("/l/%s/users/%s", lead.PublicID, userID)
+				res := api.Get(a, url)
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.02), "Remove member shouldn't take too long.")
+		}, 200)
+
 	})
 
 	Describe("Get User Rank", func() {
@@ -167,6 +209,27 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("User not found."))
 		})
+
+		Measure("it should get user rank", func(b Benchmarker) {
+			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
+			userID := uuid.NewV4().String()
+
+			_, err := lead.SetUserScore(userID, 500)
+			Expect(err).NotTo(HaveOccurred())
+
+			for i := 0; i < 10; i++ {
+				_, err := lead.SetUserScore(fmt.Sprintf("user-%d", i), 500)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			runtime := b.Time("runtime", func() {
+				url := fmt.Sprintf("/l/%s/users/%s/rank", lead.PublicID, userID)
+				res := api.Get(a, url)
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.02), "Remove member shouldn't take too long.")
+		}, 200)
 	})
 
 	Describe("Get Around User Handler", func() {
@@ -190,6 +253,33 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(user["rank"].(float64))).To(Equal(pos + 1))
 				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", pos+1)))
 				Expect(int(user["score"].(float64))).To(Equal(100 - pos))
+
+				dbUser, err := l.GetMember(user["publicID"].(string))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
+				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
+				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
+			}
+		})
+
+		It("Should get one page of top users from redis if leaderboard exists but less than pageSize neighbours exist", func() {
+			for i := 1; i <= 15; i++ {
+				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 16-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/users/user_10/around")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			users := result["users"].([]interface{})
+			Expect(len(users)).To(Equal(15))
+			for i, userObj := range users {
+				user := userObj.(map[string]interface{})
+				Expect(int(user["rank"].(float64))).To(Equal(i + 1))
+				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", i+1)))
+				Expect(int(user["score"].(float64))).To(Equal(15 - i))
 
 				dbUser, err := l.GetMember(user["publicID"].(string))
 				Expect(err).NotTo(HaveOccurred())
@@ -259,7 +349,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail with 404 if score for player does not exist", func() {
-			res := api.Get(a, "/l/testkey/users/userpublicid/rank")
+			res := api.Get(a, "/l/testkey/users/userpublicid/around")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusNotFound))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
@@ -410,33 +500,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 		})
 
-		It("Should get one page of top users from redis if leaderboard exists but less than pageSize neighbours exist", func() {
-			for i := 1; i <= 15; i++ {
-				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 16-i)
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			res := api.Get(a, "/l/testkey/users/user_10/around")
-			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
-			var result map[string]interface{}
-			json.Unmarshal([]byte(res.Body().Raw()), &result)
-			Expect(result["success"]).To(BeTrue())
-			users := result["users"].([]interface{})
-			Expect(len(users)).To(Equal(15))
-			for i, userObj := range users {
-				user := userObj.(map[string]interface{})
-				Expect(int(user["rank"].(float64))).To(Equal(i + 1))
-				Expect(user["publicID"]).To(Equal(fmt.Sprintf("user_%d", i+1)))
-				Expect(int(user["score"].(float64))).To(Equal(15 - i))
-
-				dbUser, err := l.GetMember(user["publicID"].(string))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(dbUser.Rank).To(Equal(int(user["rank"].(float64))))
-				Expect(dbUser.Score).To(Equal(int(user["score"].(float64))))
-				Expect(dbUser.PublicID).To(Equal(user["publicID"]))
-			}
-		})
-
 		It("Should get top users from redis if leaderboard exists with custom pageSize", func() {
 			for i := 1; i <= 100; i++ {
 				_, err := l.SetUserScore("user_"+strconv.Itoa(i), 101-i)
@@ -478,7 +541,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 			users := result["users"].([]interface{})
-			fmt.Println(users)
 			Expect(len(users)).To(Equal(0))
 		})
 

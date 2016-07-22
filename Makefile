@@ -24,6 +24,9 @@ setup: setup-hooks
 	@go get github.com/gordonklaus/ineffassign
 	@glide install
 
+build:
+	@go build $(GODIRS)
+
 # get a redis instance up (localhost:1212)
 redis: redis-shutdown
 	@if [ -z "$$REDIS_PORT" ]; then \

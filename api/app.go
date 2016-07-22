@@ -133,13 +133,11 @@ func (app *App) configureApplication() {
 		zap.Int("db", redisDB),
 	)
 	rl.Debug("Connecting to redis...")
-	redisSettings := util.RedisSettings{
-		Host:     redisHost,
-		Port:     redisPort,
-		Password: redisPass,
-		Db:       redisDB,
+	cli, err := util.GetRedisClient(redisHost, redisPort, redisPass, redisDB, app.Logger)
+	if err != nil {
+		panic(fmt.Sprintf("Could not connect to redis: %s", err))
 	}
-	app.RedisClient = util.GetRedisClient(redisSettings, app.Logger)
+	app.RedisClient = cli
 	rl.Info("Connected to redis successfully.")
 }
 

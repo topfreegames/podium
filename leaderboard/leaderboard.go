@@ -15,9 +15,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/garyburd/redigo/redis"
 	"github.com/topfreegames/podium/util"
 	"github.com/uber-go/zap"
+	redis "gopkg.in/redis.v4"
 )
 
 //UserNotFoundError indicates user was not found in Redis
@@ -61,11 +61,9 @@ type Leaderboard struct {
 }
 
 func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int, l zap.Logger) ([]*User, error) {
-	conn := redisClient.GetConnection()
-	defer conn.Close()
-
+	cli := redisClient.Client
 	l.Debug("Getting top leaderboard members...")
-	values, err := redis.Values(conn.Do("ZREVRANGE", leaderboard, startOffset, endOffset, "WITHSCORES"))
+	values, err := cli.ZRevRangeWithScores(leaderboard, int64(startOffset), int64(endOffset)).Result()
 	if err != nil {
 		l.Error("Retrieval of leaderboard top members failed.", zap.Error(err))
 		return nil, err
@@ -73,25 +71,17 @@ func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSi
 	l.Info("Retrieval of leaderboard top members succeeded.")
 
 	l.Debug("Retrieving details of leaderboard top members...")
-	users := make([]*User, len(values)/2)
-	var i = 0
-	for len(values) > 0 {
-		publicID := ""
-		score := -1
-		// Scan returns the slice of src following the copied values.
-		values, err = redis.Scan(values, &publicID, &score)
-		if err != nil {
-			l.Error("Retrieval of leaderboard top members failed.", zap.Error(err))
-			return nil, err
-		}
-		rank, err := redis.Int(conn.Do("ZREVRANK", leaderboard, publicID))
+	users := make([]*User, len(values))
+	for i := 0; i < len(users); i++ {
+		publicID := values[i].Member.(string)
+		score := int(values[i].Score)
+		rank, err := cli.ZRevRank(leaderboard, publicID).Result()
 		if err != nil {
 			l.Error("Retrieval of leaderboard top members rank failed.", zap.Error(err))
 			return nil, err
 		}
-		nUser := User{PublicID: publicID, Score: score, Rank: rank + 1}
+		nUser := User{PublicID: publicID, Score: score, Rank: int(rank + 1)}
 		users[i] = &nUser
-		i++
 	}
 	l.Info("Retrieval of leaderboard top members' details succeeded.")
 	return users, nil
@@ -103,7 +93,9 @@ func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int
 }
 
 //AddToLeaderboardSet adds a score to a leaderboard set respecting expiration
-func (lb *Leaderboard) AddToLeaderboardSet(redisCli redis.Conn, userID string, score int) (int, error) {
+func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, userID string, score int) (int, error) {
+	cli := redisCli.Client
+
 	l := lb.Logger.With(
 		zap.String("operation", "AddToLeaderboardSet"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -119,34 +111,35 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli redis.Conn, userID string, s
 	}
 	l.Debug("Expiration calculated successfully.", zap.Int64("expiration", expireAt))
 
-	script := redis.NewScript(1, `
+	script := redis.NewScript(`
 		-- Script params:
 		-- KEYS[1] is the name of the leaderboard
-		-- ARGV[1] is user's public ID
-		-- ARGV[2] is the user's updated score
-		-- ARGV[3] is the leaderboard's expiration
+		-- KEYS[2] is user's public ID
+		-- ARGV[1] is the user's updated score
+		-- ARGV[2] is the leaderboard's expiration
 
 		-- creates leaderboard or just sets score of member
-		local res = redis.call("ZADD", KEYS[1], ARGV[2], ARGV[1])
+		local res = redis.call("ZADD", KEYS[1], ARGV[1], KEYS[2])
 
 		-- If expiration is required set expiration
-		if (ARGV[3] ~= "-1") then
+		if (ARGV[2] ~= "-1") then
 			local expiration = redis.call("TTL", KEYS[1])
 			if (expiration == -2) then
 				return redis.error_reply("Leaderboard Set was not created in ZADD! Don't know how to proceed.")
 			end
 			if (expiration == -1) then
-				redis.call("EXPIREAT", KEYS[1], ARGV[3])
+				redis.call("EXPIREAT", KEYS[1], ARGV[2])
 			end
 		end
 
 		-- return updated rank of user
-		local rank = redis.call("ZREVRANK", KEYS[1], ARGV[1])
+		local rank = redis.call("ZREVRANK", KEYS[1], KEYS[2])
 		return rank
 	`)
 
 	l.Debug("Updating rank for user.")
-	newRank, err := script.Do(redisCli, lb.PublicID, userID, score, expireAt)
+	newRank, err := script.Run(cli, []string{lb.PublicID, userID}, score, expireAt).Result()
+
 	if err != nil {
 		l.Error("Failed to update rank for user.", zap.Error(err))
 		return -1, err
@@ -169,12 +162,9 @@ func (lb *Leaderboard) SetUserScore(userID string, score int) (*User, error) {
 		zap.String("userID", userID),
 		zap.Int("score", score),
 	)
-	conn := lb.RedisClient.GetConnection()
-	defer conn.Close()
-
 	l.Debug("Setting user score...")
 
-	rank, err := lb.AddToLeaderboardSet(conn, userID, score)
+	rank, err := lb.AddToLeaderboardSet(lb.RedisClient, userID, score)
 	if err != nil {
 		return nil, err
 	}
@@ -190,17 +180,16 @@ func (lb *Leaderboard) TotalMembers() (int, error) {
 		zap.String("operation", "TotalMembers"),
 		zap.String("leaguePublicID", lb.PublicID),
 	)
-	conn := lb.RedisClient.GetConnection()
-	defer conn.Close()
+	cli := lb.RedisClient.Client
 
 	l.Debug("Retrieving total members...")
-	total, err := redis.Int(conn.Do("ZCARD", lb.PublicID))
+	total, err := cli.ZCard(lb.PublicID).Result()
 	if err != nil {
 		l.Error("Retrieval of total members failed.", zap.Error(err))
 		return 0, err
 	}
 	l.Info("Total members of leaderboard retrieved successfully.")
-	return total, nil
+	return int(total), nil
 }
 
 // RemoveMember removes the member with the given publicID from the leaderboard
@@ -211,12 +200,11 @@ func (lb *Leaderboard) RemoveMember(userID string) (*User, error) {
 		zap.String("userID", userID),
 	)
 
-	conn := lb.RedisClient.GetConnection()
-	defer conn.Close()
+	cli := lb.RedisClient.Client
 
 	l.Debug("Removing member from leaderboard...")
 	nUser, err := lb.GetMember(userID)
-	_, err = conn.Do("ZREM", lb.PublicID, userID)
+	_, err = cli.ZRem(lb.PublicID, userID).Result()
 	if err != nil {
 		l.Error("Member removal failed...", zap.Error(err))
 		return nil, err
@@ -232,12 +220,11 @@ func (lb *Leaderboard) TotalPages() (int, error) {
 		zap.String("leaguePublicID", lb.PublicID),
 	)
 
-	conn := lb.RedisClient.GetConnection()
-	defer conn.Close()
+	cli := lb.RedisClient.Client
 
 	l.Debug("Retrieving number of pages for leaderboard.")
 	pages := 0
-	total, err := redis.Int(conn.Do("ZCARD", lb.PublicID))
+	total, err := cli.ZCard(lb.PublicID).Result()
 	if err != nil {
 		l.Error("Number of pages could not be retrieved.", zap.Error(err))
 		return 0, err
@@ -255,23 +242,22 @@ func (lb *Leaderboard) GetMember(userID string) (*User, error) {
 		zap.String("userID", userID),
 	)
 
-	conn := lb.RedisClient.GetConnection()
-	defer conn.Close()
+	cli := lb.RedisClient.Client
 
 	l.Debug("Getting member information...")
-	script := redis.NewScript(1, `
+	script := redis.NewScript(`
 		-- Script params:
 		-- KEYS[1] is the name of the leaderboard
-		-- ARGV[1] is user's public ID
+		-- KEYS[2] is user's public ID
 
 		-- gets rank of the user
-		local rank = redis.call("ZREVRANK", KEYS[1], ARGV[1])
-		local score = redis.call("ZSCORE", KEYS[1], ARGV[1])
+		local rank = redis.call("ZREVRANK", KEYS[1], KEYS[2])
+		local score = redis.call("ZSCORE", KEYS[1], KEYS[2])
 
 		return {rank,score}
 	`)
 
-	result, err := script.Do(conn, lb.PublicID, userID)
+	result, err := script.Run(cli, []string{lb.PublicID, userID}).Result()
 	if err != nil {
 		l.Error("Getting member information failed.", zap.Error(err))
 		return nil, err
@@ -285,7 +271,7 @@ func (lb *Leaderboard) GetMember(userID string) (*User, error) {
 	}
 
 	rank := int(res[0].(int64))
-	scoreParsed, _ := strconv.ParseInt(string(res[1].([]byte)), 10, 32)
+	scoreParsed, _ := strconv.ParseInt(res[1].(string), 10, 32)
 	score := int(scoreParsed)
 
 	l.Info("User information found.", zap.Int("rank", rank), zap.Int("score", score))
@@ -329,13 +315,12 @@ func (lb *Leaderboard) GetRank(userID string) (int, error) {
 		zap.String("userID", userID),
 	)
 
-	conn := lb.RedisClient.GetConnection()
-	defer conn.Close()
+	cli := lb.RedisClient.Client
 
 	l.Debug("Getting rank of specific user...")
-	rank, err := redis.Int(conn.Do("ZREVRANK", lb.PublicID, userID))
+	rank, err := cli.ZRevRank(lb.PublicID, userID).Result()
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "redigo: nil returned") {
+		if strings.HasPrefix(err.Error(), "redis: nil") {
 			l.Error("User was not found in specified leaderboard.", zap.Error(err))
 			return -1, NewUserNotFound(lb.PublicID, userID)
 		}
@@ -344,7 +329,7 @@ func (lb *Leaderboard) GetRank(userID string) (int, error) {
 		return -1, err
 	}
 	l.Info("Rank retrieval succeeded.")
-	return rank + 1, nil
+	return int(rank + 1), nil
 }
 
 // GetLeaders returns a page of users with rank and score
@@ -388,11 +373,10 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*User, error)
 		return nil, err
 	}
 
-	conn := lb.RedisClient.GetConnection()
-	defer conn.Close()
+	cli := lb.RedisClient.Client
 
 	l.Debug("Getting top percentage of members...")
-	script := redis.NewScript(1, `
+	script := redis.NewScript(`
 		-- Script params:
 		-- KEYS[1] is the name of the leaderboard
 		-- ARGV[1] is the desired percentage (0.0 to 1.0)
@@ -423,7 +407,7 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*User, error)
 		return fullMembers
 	`)
 
-	result, err := script.Do(conn, lb.PublicID, float64(amount)/100.0, maxMembers)
+	result, err := script.Run(cli, []string{lb.PublicID}, float64(amount)/100.0, maxMembers).Result()
 
 	if err != nil {
 		l.Error("Getting top percentage of members failed.", zap.Error(err))
@@ -434,10 +418,10 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*User, error)
 	members := []*User{}
 
 	for i := 0; i < len(res); i += 3 {
-		memberPublicID := string(res[i].([]byte))
+		memberPublicID := res[i].(string)
 
 		rank := int(res[i+1].(int64)) + 1
-		s, _ := strconv.ParseInt(string(res[i+2].([]byte)), 10, 32)
+		s, _ := strconv.ParseInt(res[i+2].(string), 10, 32)
 		score := int(s)
 
 		members = append(members, &User{

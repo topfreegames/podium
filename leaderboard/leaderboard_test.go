@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"gopkg.in/redis.v4"
+
 	"github.com/satori/go.uuid"
 	. "github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/testing"
@@ -24,35 +26,36 @@ import (
 
 var _ = Describe("Leaderboard Model", func() {
 
-	var redisSettings util.RedisSettings
 	var redisClient *util.RedisClient
 	var faultyRedisClient *util.RedisClient
 	var logger *testing.MockLogger
 
 	BeforeEach(func() {
+		var err error
+
 		logger = testing.NewMockLogger()
-		redisSettings = util.RedisSettings{
-			Host:     "localhost",
-			Port:     1234,
-			Password: "",
-		}
+		redisClient, err = util.GetRedisClient("localhost", 1234, "", 0, logger)
+		Expect(err).NotTo(HaveOccurred())
 
-		redisClient = util.GetRedisClient(redisSettings, logger)
-
-		redisSettings = util.RedisSettings{
-			Host:     "localhost",
-			Port:     1235,
+		//First we connect properly
+		faultyRedisClient, err = util.GetRedisClient("localhost", 1234, "", 0, logger)
+		Expect(err).NotTo(HaveOccurred())
+		//Then we change the connection to be faulty
+		faultyRedisClient.Client = redis.NewClient(&redis.Options{
+			Addr:     "localhost:1235",
 			Password: "",
-		}
-		faultyRedisClient = util.GetRedisClient(redisSettings, logger)
+			DB:       0,
+		})
 
 		conn := redisClient.GetConnection()
-		conn.Do("DEL", "test-leaderboard")
+		_, err = conn.Del("test-leaderboard").Result()
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterSuite(func() {
 		conn := redisClient.GetConnection()
-		conn.Do("DEL", "test-leaderboard")
+		_, err := conn.Del("test-leaderboard").Result()
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("setting user scores", func() {
@@ -231,10 +234,10 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(err).To(BeNil())
 
 			conn := redisClient.GetConnection()
-			result, err := conn.Do("TTL", leaderboardID)
+			result, err := conn.TTL(leaderboardID).Result()
 			Expect(err).NotTo(HaveOccurred())
 
-			exp := result.(int64)
+			exp := result.Seconds()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(exp).To(BeNumerically(">", int64(-1)))
 		})

@@ -10,7 +10,8 @@
 package util_test
 
 import (
-	"github.com/garyburd/redigo/redis"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/testing"
@@ -20,31 +21,23 @@ import (
 var _ = Describe("RedisClient", func() {
 
 	logger := testing.NewMockLogger()
+	var redisClient *util.RedisClient
 
-	testRedisSettings := util.RedisSettings{
-		Host:     "localhost",
-		Port:     1234,
-		Password: "",
-	}
-
-	redisClient := util.GetRedisClient(testRedisSettings, logger)
-
-	BeforeSuite(func() {
+	BeforeEach(func() {
+		var err error
+		redisClient, err = util.GetRedisClient("localhost", 1234, "", 0, logger)
+		Expect(err).NotTo(HaveOccurred())
 		conn := redisClient.GetConnection()
-		conn.Do("DEL", "test")
-	})
-
-	AfterSuite(func() {
-		conn := redisClient.GetConnection()
-		conn.Do("DEL", "test")
+		_, err = conn.Del("test").Result()
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("It should set and get without error", func() {
 		conn := redisClient.GetConnection()
-		_, err := conn.Do("set", "test", 1)
+		_, err := conn.Set("test", 1, time.Duration(-1)).Result()
 		Expect(err).To(BeNil())
-		res, err := redis.Int(conn.Do("get", "test"))
+		res, err := conn.Get("test").Result()
 		Expect(err).To(BeNil())
-		Expect(res).To(Equal(1))
+		Expect(res).To(BeEquivalentTo("1"))
 	})
 })

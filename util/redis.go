@@ -12,60 +12,37 @@ package util
 import (
 	"fmt"
 
-	"github.com/garyburd/redigo/redis"
-	"github.com/spf13/viper"
 	"github.com/uber-go/zap"
+	"gopkg.in/redis.v4"
 )
-
-// RedisSettings identifies uniquely the settings of a redis client
-type RedisSettings struct {
-	Host     string
-	Port     int
-	Password string
-	Db       int
-}
 
 // RedisClient identifies uniquely one redis client with a pool of connections
 type RedisClient struct {
 	Logger zap.Logger
-	Pool   *redis.Pool
-}
-
-var client *RedisClient
-
-func newPool(host string, port int, password string, db int) *redis.Pool {
-	redisAddress := fmt.Sprintf("%s:%d", host, port)
-	return redis.NewPool(func() (redis.Conn, error) {
-		if viper.GetString("redis.password") != "" {
-			c, err := redis.Dial("tcp", fmt.Sprintf("%s:%d", viper.GetString("redis.host"),
-				viper.GetInt("redis.port")), redis.DialPassword(viper.GetString("redis.password")))
-			if err != nil {
-				client.Logger.Error(err.Error())
-			}
-			return c, err
-		}
-		c, err := redis.Dial("tcp", redisAddress)
-		if err != nil {
-			if err != nil {
-				client.Logger.Error(err.Error())
-			}
-		}
-		return c, err
-	}, viper.GetInt("redis.maxPoolSize"))
+	Client *redis.Client
 }
 
 // GetRedisClient creates and returns a new redis client based on the given settings
-func GetRedisClient(settings RedisSettings, logger zap.Logger) *RedisClient {
-	client = &RedisClient{
+func GetRedisClient(redisHost string, redisPort int, redisPassword string, redisDB int, logger zap.Logger) (*RedisClient, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", redisHost, redisPort),
+		Password: redisPassword, // no password set
+		DB:       redisDB,       // use default DB
+	})
+
+	_, err := client.Ping().Result()
+	if err != nil {
+		return nil, err
+	}
+
+	cl := &RedisClient{
+		Client: client,
 		Logger: logger,
 	}
-	if client.Pool == nil {
-		client.Pool = newPool(settings.Host, settings.Port, settings.Password, settings.Db)
-	}
-	return client
+	return cl, nil
 }
 
 // GetConnection return a redis connection
-func (c *RedisClient) GetConnection() redis.Conn {
-	return c.Pool.Get()
+func (c *RedisClient) GetConnection() *redis.Client {
+	return c.Client
 }

@@ -1,8 +1,5 @@
 package: github.com/topfreegames/podium
 import:
-- package: github.com/garyburd/redigo
-  subpackages:
-  - redis
 - package: github.com/onsi/ginkgo
 - package: github.com/onsi/gomega
 - package: github.com/uber-go/zap
@@ -19,3 +16,5 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.1.0
 - package: github.com/valyala/fasthttp
+- package: gopkg.in/redis.v4
+- package: gopkg.in/bsm/ratelimit.v1
