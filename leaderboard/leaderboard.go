@@ -62,28 +62,23 @@ type Leaderboard struct {
 
 func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int, l zap.Logger) ([]*User, error) {
 	cli := redisClient.Client
-	l.Debug("Getting top leaderboard members...")
+	l.Debug(fmt.Sprintf("Retrieving members for range: %d - %d", startOffset, endOffset))
 	values, err := cli.ZRevRangeWithScores(leaderboard, int64(startOffset), int64(endOffset)).Result()
 	if err != nil {
-		l.Error("Retrieval of leaderboard top members failed.", zap.Error(err))
+		l.Error(fmt.Sprintf("Retrieval of members for range %d - %d failed.", startOffset, endOffset), zap.Error(err))
 		return nil, err
 	}
-	l.Info("Retrieval of leaderboard top members succeeded.")
+	l.Info(fmt.Sprintf("Retrieval of members for range %d - %d succeeded.", startOffset, endOffset))
 
-	l.Debug("Retrieving details of leaderboard top members...")
+	l.Debug("Building details of leaderboard members...")
 	users := make([]*User, len(values))
 	for i := 0; i < len(users); i++ {
 		publicID := values[i].Member.(string)
 		score := int(values[i].Score)
-		rank, err := cli.ZRevRank(leaderboard, publicID).Result()
-		if err != nil {
-			l.Error("Retrieval of leaderboard top members rank failed.", zap.Error(err))
-			return nil, err
-		}
-		nUser := User{PublicID: publicID, Score: score, Rank: int(rank + 1)}
+		nUser := User{PublicID: publicID, Score: score, Rank: int(startOffset + i + 1)}
 		users[i] = &nUser
 	}
-	l.Info("Retrieval of leaderboard top members' details succeeded.")
+	l.Info("Retrieval of leaderboard members' details succeeded.")
 	return users, nil
 }
 
@@ -399,7 +394,7 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*User, error)
 			local publicID = members[index]
 			local score = members[index + 1]
 		 	local rank = redis.call("ZREVRANK", KEYS[1], publicID)
-			
+
 			table.insert(fullMembers, publicID)
 			table.insert(fullMembers, rank)
 			table.insert(fullMembers, score)

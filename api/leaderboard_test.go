@@ -365,7 +365,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 			users := result["users"].([]interface{})
-			fmt.Println(users)
 			Expect(len(users)).To(Equal(10))
 			start := int(users[0].(map[string]interface{})["rank"].(float64))
 			for i, userObj := range users {
