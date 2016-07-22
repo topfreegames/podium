@@ -121,3 +121,17 @@ bench-redis-kill:
 
 bench-run:
 	@go test -benchmem -bench . -benchtime 5s ./bench/...
+
+ci-bench-run:
+	@mkdir -p ./bench-data
+	@if [ -f "./bench-data/new.txt" ]; then \
+		mv ./bench-data/new.txt ./bench-data/old.txt; \
+	fi
+	@go test -benchmem -bench . -benchtime 5s ./bench/... > ./bench-data/new.txt
+	@echo "Benchmark Results:"
+	@cat ./bench-data/new.txt
+	@echo
+	@if [ -f "./bench-data/old.txt" ]; then \
+		echo "Comparison to previous build:" && \
+		benchcmp ./bench-data/old.txt ./bench-data/new.txt; \
+	fi
