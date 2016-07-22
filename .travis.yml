@@ -18,7 +18,7 @@ script:
   - make test-coverage
   - make bench-podium-app
   - mkdir -p ./bench-data
-  - make bench-run > ./bench-data/new
+  - make ci-bench-run
 
 cache:
   directories:
