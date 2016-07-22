@@ -35,9 +35,9 @@ var _ = Describe("RedisClient", func() {
 	It("It should set and get without error", func() {
 		conn := redisClient.GetConnection()
 		_, err := conn.Set("test", 1, time.Duration(-1)).Result()
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		res, err := conn.Get("test").Result()
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 		Expect(res).To(BeEquivalentTo("1"))
 	})
 })

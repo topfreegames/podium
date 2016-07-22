@@ -62,9 +62,9 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should set scores and return ranks", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			dayvson, err := testLeaderboard.SetUserScore("dayvson", 481516)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			arthur, err := testLeaderboard.SetUserScore("arthur", 1000)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(dayvson.Rank).To(Equal(1))
 			Expect(arthur.Rank).To(Equal(2))
 		})
@@ -75,10 +75,10 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			for i := 0; i < 10; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			}
 			count, err := testLeaderboard.TotalMembers()
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(10))
 		})
 
@@ -96,7 +96,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			for i := 0; i < 10; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			}
 			Expect(testLeaderboard.TotalMembers()).To(Equal(10))
 			testLeaderboard.RemoveMember("member_5")
@@ -116,7 +116,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			}
 			Expect(testLeaderboard.TotalPages()).To(Equal(5))
 		})
@@ -134,16 +134,16 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should return user details", func() {
 			friendScore := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
 			dayvson, err := friendScore.SetUserScore("dayvson", 12345)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			felipe, err := friendScore.SetUserScore("felipe", 12344)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(dayvson.Rank).To(Equal(1))
 			Expect(felipe.Rank).To(Equal(2))
 			friendScore.SetUserScore("felipe", 12346)
 			felipe, err = friendScore.GetMember("felipe")
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			dayvson, err = friendScore.GetMember("dayvson")
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(felipe.Rank).To(Equal(1))
 			Expect(dayvson.Rank).To(Equal(2))
 		})
@@ -174,15 +174,30 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			}
 			users, err := testLeaderboard.GetAroundMe("member_20")
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			firstAroundMe := users[0]
 			lastAroundMe := users[testLeaderboard.PageSize-1]
 			Expect(len(users)).To(Equal(testLeaderboard.PageSize))
 			Expect(firstAroundMe.PublicID).To(Equal("member_31"))
 			Expect(lastAroundMe.PublicID).To(Equal("member_7"))
+		})
+
+		It("should get users around specific user if repeated scores", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 100)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			users, err := testLeaderboard.GetAroundMe("member_20")
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := users[0]
+			lastAroundMe := users[testLeaderboard.PageSize-1]
+			Expect(len(users)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.Score).To(Equal(100))
+			Expect(lastAroundMe.Score).To(Equal(100))
 		})
 	})
 
@@ -191,7 +206,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 1234*i)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			}
 			testLeaderboard.SetUserScore("member_6", 1000)
 			Expect(testLeaderboard.GetRank("member_6")).To(Equal(100))
@@ -203,10 +218,10 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 1000; i++ {
 				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i+1), 1234*i)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			}
 			users, err := testLeaderboard.GetLeaders(1)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 
 			firstOnPage := users[0]
 			lastOnPage := users[len(users)-1]
@@ -215,6 +230,21 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(firstOnPage.Rank).To(Equal(1))
 			Expect(lastOnPage.PublicID).To(Equal("member_976"))
 			Expect(lastOnPage.Rank).To(Equal(25))
+		})
+
+		It("should get leaders if repeated scores", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetUserScore("member_"+strconv.Itoa(i), 100)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			users, err := testLeaderboard.GetLeaders(1)
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := users[0]
+			lastAroundMe := users[testLeaderboard.PageSize-1]
+			Expect(len(users)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.Score).To(Equal(100))
+			Expect(lastAroundMe.Score).To(Equal(100))
 		})
 	})
 
@@ -231,7 +261,7 @@ var _ = Describe("Leaderboard Model", func() {
 			leaderboardID := "test-leaderboard-year2016"
 			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 			_, err := friendScore.SetUserScore("dayvson", 12345)
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 
 			conn := redisClient.GetConnection()
 			result, err := conn.TTL(leaderboardID).Result()
@@ -251,7 +281,7 @@ var _ = Describe("Leaderboard Model", func() {
 			members := []*User{}
 			for i := 0; i < 100; i++ {
 				member, err := leader.SetUserScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
 
@@ -276,7 +306,7 @@ var _ = Describe("Leaderboard Model", func() {
 			members := []*User{}
 			for i := 0; i < 10; i++ {
 				member, err := leader.SetUserScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
 
@@ -301,7 +331,7 @@ var _ = Describe("Leaderboard Model", func() {
 			members := []*User{}
 			for i := 0; i < 2; i++ {
 				member, err := leader.SetUserScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
 
@@ -313,6 +343,29 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(top10[0].PublicID).To(Equal("friend-0"))
 			Expect(top10[0].Rank).To(Equal(1))
 			Expect(top10[0].Score).To(Equal(10000))
+		})
+
+		It("should get top 10 percent players in the leaderboard if repeated scores", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			members := []*User{}
+			for i := 0; i < 100; i++ {
+				member, err := leader.SetUserScore(fmt.Sprintf("friend-%d", i), 100)
+				Expect(err).NotTo(HaveOccurred())
+				members = append(members, member)
+			}
+
+			top10, err := leader.GetTopPercentage(10, 2000)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(top10).To(HaveLen(10))
+
+			Expect(top10[0].Rank).To(Equal(1))
+			Expect(top10[0].Score).To(Equal(100))
+
+			Expect(top10[9].Rank).To(Equal(10))
+			Expect(top10[9].Score).To(Equal(100))
 		})
 
 		It("should fail if more than 100 percent", func() {
