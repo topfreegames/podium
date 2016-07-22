@@ -137,7 +137,7 @@ ci-bench-run:
 	@echo "Benchmark Results:"
 	@cat ./bench-data/new.txt
 	@echo
-	@if [ -f "./bench-data/old.txt" ]; then \
+	@-if [ -f "./bench-data/old.txt" ]; then \
 		echo "Comparison to previous build:" && \
 		benchcmp ./bench-data/old.txt ./bench-data/new.txt; \
 	fi
