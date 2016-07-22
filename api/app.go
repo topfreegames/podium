@@ -128,6 +128,7 @@ func (app *App) configureApplication() {
 	app.App = iris.New(c)
 	a := app.App
 
+	a.Use(NewLoggerMiddleware(app.Logger))
 	a.Use(&RecoveryMiddleware{OnError: app.onErrorHandler})
 	a.Use(&VersionMiddleware{App: app})
 	a.Use(&SentryMiddleware{App: app})
