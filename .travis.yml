@@ -16,6 +16,7 @@ install:
 
 script:
   - make test-coverage
+  - make bench-redis
   - make bench-podium-app
   - mkdir -p ./bench-data
   - make ci-bench-run
