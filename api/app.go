@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getsentry/raven-go"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/config"
 	"github.com/rcrowley/go-metrics"
@@ -56,7 +57,18 @@ func GetApp(host string, port int, configPath string, debug bool, logger zap.Log
 func (app *App) Configure() {
 	app.setConfigurationDefaults()
 	app.loadConfiguration()
+	app.configureSentry()
 	app.configureApplication()
+}
+
+func (app *App) configureSentry() {
+	l := app.Logger.With(
+		zap.String("source", "app"),
+		zap.String("operation", "configureSentry"),
+	)
+	sentryURL := app.Config.GetString("sentry.url")
+	l.Info(fmt.Sprintf("Configuring sentry with URL %s", sentryURL))
+	raven.SetDSN(sentryURL)
 }
 
 func (app *App) setConfigurationDefaults() {
@@ -88,6 +100,20 @@ func (app *App) onErrorHandler(err interface{}, stack []byte) {
 		zap.Object("panicText", err),
 		zap.String("stack", string(stack)),
 	)
+
+	var e error
+	switch err.(type) {
+	case error:
+		e = err.(error)
+	default:
+		e = fmt.Errorf("%v", err)
+	}
+
+	tags := map[string]string{
+		"source": "app",
+		"type":   "panic",
+	}
+	raven.CaptureError(e, tags)
 }
 
 func (app *App) configureApplication() {
@@ -104,6 +130,7 @@ func (app *App) configureApplication() {
 
 	a.Use(&RecoveryMiddleware{OnError: app.onErrorHandler})
 	a.Use(&VersionMiddleware{App: app})
+	a.Use(&SentryMiddleware{App: app})
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Put("/l/:leaderboardID/users/:userPublicID/score", UpsertUserScoreHandler(app))

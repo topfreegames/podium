@@ -1,5 +1,5 @@
-hash: 94ac9143a2623dbf65d37428c3e6f4a07b7b7e5f3baa64fb33a4577b9b6359a3
-updated: 2016-07-21T23:50:54.754678884-03:00
+hash: cafcc684c9ea39a6a5ae8edfa59123627bffa21f2983eac12f6a03b7a147bb5f
+updated: 2016-07-22T10:39:40.625086105-03:00
 imports:
 - name: github.com/ajg/form
   version: 7ff89c75808766205bfa4411abb436c98c33eb5e
@@ -21,6 +21,8 @@ imports:
   version: 35c8994667acb85dad8c454a2d231ebc1b782caf
 - name: github.com/gavv/monotime
   version: 259cd7b345f5aa080eff16f21d7866ef7dea9528
+- name: github.com/getsentry/raven-go
+  version: dffeb57df75d6a911f00232155194e43d79d38d7
 - name: github.com/google/go-querystring
   version: 9235644dd9e52eeae6fa48efd539fdc351a0af53
   subpackages:

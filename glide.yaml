@@ -18,3 +18,4 @@ import:
 - package: github.com/valyala/fasthttp
 - package: gopkg.in/redis.v4
 - package: gopkg.in/bsm/ratelimit.v1
+- package: github.com/getsentry/raven-go
