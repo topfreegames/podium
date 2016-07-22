@@ -1,2 +1,1 @@
-api: /bin/sh -c "/go/bin/snt start --host 0.0.0.0 --port 8080 --config /home/santiago/default.yaml"
-worker: /bin/sh -c "/go/bin/snt-worker start --redis-host=$SNT_API_REDIS_HOST --redis-port=$SNT_API_REDIS_PORT --redis-pass=$SNT_API_REDIS_PASSWORD --redis-db=$SNT_API_REDIS_DB --sentry-url=$SNT_API_SENTRY_URL"
+api: /bin/sh -c "/go/bin/podium start --host 0.0.0.0 --port 8080 --redis-host=$PODIUM_REDIS_HOST --redis-port=$PODIUM_REDIS_PORT --redis-pass=$PODIUM_REDIS_PASSWORD --redis-db=$PODIUM_REDIS_DB --sentry-url=$PODIUM_SENTRY_URL"
