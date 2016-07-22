@@ -18,6 +18,7 @@ import (
 var host string
 var port int
 var debug bool
+var quiet bool
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -26,7 +27,14 @@ var startCmd = &cobra.Command{
 	Long: `Starts podium server with the specified arguments. You can use
 	environment variables to override configuration keys.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := zap.NewJSON(zap.InfoLevel).With(
+		ll := zap.InfoLevel
+		if debug {
+			ll = zap.DebugLevel
+		}
+		if quiet {
+			ll = zap.WarnLevel
+		}
+		logger := zap.NewJSON(ll).With(
 			zap.String("source", "app"),
 		)
 
@@ -47,5 +55,6 @@ func init() {
 
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind podium to")
 	startCmd.Flags().IntVarP(&port, "port", "p", 8890, "Port to bind podium to")
-	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
+	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode (log=debug)")
+	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log=warn)")
 }

@@ -26,6 +26,7 @@ setup: setup-hooks
 
 build:
 	@go build $(GODIRS)
+	@go build -o ./bin/podium ./main.go
 
 # get a redis instance up (localhost:1212)
 redis: redis-shutdown
@@ -101,3 +102,22 @@ docker-dev-build:
 
 docker-dev-run:
 	@docker run -i -t --rm -p 8080:8080 podium-dev
+
+bench-podium-app: build bench-podium-app-kill bench-redis
+	@rm -rf /tmp/podium-bench.log
+	@./bin/podium start -p 8888 --quiet -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
+
+bench-podium-app-kill:
+	@-ps aux | egrep './podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
+
+# get a redis instance up (localhost:1224)
+bench-redis: bench-redis-kill
+	@redis-server --port 1224 --daemonize yes; sleep 1
+	@redis-cli -p 1224 info > /dev/null
+
+# kill this redis instance (localhost:1224)
+bench-redis-kill:
+	@-redis-cli -p 1224 shutdown
+
+bench-run:
+	@go test -benchmem -bench . -benchtime 5s ./bench/...

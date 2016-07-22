@@ -23,20 +23,16 @@ import (
 
 // FailWith fails with the specified message
 func FailWith(status int, message string, c *iris.Context) {
-	result, _ := json.Marshal(map[string]interface{}{
+	c.JSON(status, map[string]interface{}{
 		"success": false,
 		"reason":  message,
 	})
-	c.SetStatusCode(status)
-	c.Write(string(result))
 }
 
 // SucceedWith sends payload to user with status 200
 func SucceedWith(payload map[string]interface{}, c *iris.Context) {
 	payload["success"] = true
-	result, _ := json.Marshal(payload)
-	c.SetStatusCode(200)
-	c.Write(string(result))
+	c.JSON(200, payload)
 }
 
 // LoadJSONPayload loads the JSON payload to the given struct validating all fields are not null

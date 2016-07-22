@@ -1,0 +1,8 @@
+healthcheck:
+  workingText: WORKING
+redis:
+  host: localhost
+  port: 1224
+  password: ""
+  db: 0
+  maxPoolSize: 50

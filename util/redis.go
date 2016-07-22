@@ -23,11 +23,12 @@ type RedisClient struct {
 }
 
 // GetRedisClient creates and returns a new redis client based on the given settings
-func GetRedisClient(redisHost string, redisPort int, redisPassword string, redisDB int, logger zap.Logger) (*RedisClient, error) {
+func GetRedisClient(redisHost string, redisPort int, redisPassword string, redisDB int, maxPoolSize int, logger zap.Logger) (*RedisClient, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", redisHost, redisPort),
-		Password: redisPassword, // no password set
-		DB:       redisDB,       // use default DB
+		Password: redisPassword,
+		DB:       redisDB,
+		PoolSize: maxPoolSize,
 	})
 
 	_, err := client.Ping().Result()

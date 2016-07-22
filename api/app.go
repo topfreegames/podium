@@ -66,6 +66,7 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("redis.port", 1212)
 	app.Config.SetDefault("redis.password", "")
 	app.Config.SetDefault("redis.db", 0)
+	app.Config.SetDefault("redis.maxPoolSize", 20)
 }
 
 func (app *App) loadConfiguration() {
@@ -126,14 +127,16 @@ func (app *App) configureApplication() {
 	redisPort := app.Config.GetInt("redis.port")
 	redisPass := app.Config.GetString("redis.password")
 	redisDB := app.Config.GetInt("redis.db")
+	redisMaxPoolSize := app.Config.GetInt("redis.maxPoolSize")
 
 	rl := l.With(
 		zap.String("host", redisHost),
 		zap.Int("port", redisPort),
 		zap.Int("db", redisDB),
+		zap.Int("maxPoolSize", redisMaxPoolSize),
 	)
 	rl.Debug("Connecting to redis...")
-	cli, err := util.GetRedisClient(redisHost, redisPort, redisPass, redisDB, app.Logger)
+	cli, err := util.GetRedisClient(redisHost, redisPort, redisPass, redisDB, redisMaxPoolSize, app.Logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not connect to redis: %s", err))
 	}
