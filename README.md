@@ -42,15 +42,15 @@ Benchmarks
 
 Podium benchmarks prove it's blazing fast:
 
-BenchmarkSetUserScore-8    	   50000	    121245 ns/op	   0.75 MB/s	    5281 B/op	      71 allocs/op
-BenchmarkRemoveUser-8      	  100000	    119257 ns/op	   0.13 MB/s	    3840 B/op	      53 allocs/op
-BenchmarkGetUser-8         	  100000	    102257 ns/op	   0.63 MB/s	    4367 B/op	      57 allocs/op
-BenchmarkGetUserRank-8     	  100000	     82795 ns/op	   0.59 MB/s	    4367 B/op	      57 allocs/op
-BenchmarkGetAroundUser-8   	   10000	    512711 ns/op	   1.94 MB/s	    8028 B/op	      58 allocs/op
-BenchmarkGetTotalMembers-8 	  100000	     79465 ns/op	   0.39 MB/s	    4192 B/op	      53 allocs/op
-BenchmarkGetTotalPages-8   	  100000	     80390 ns/op	   0.36 MB/s	    4160 B/op	      53 allocs/op
-BenchmarkGetTopUsers-8     	   20000	    498763 ns/op	   2.04 MB/s	    7717 B/op	      55 allocs/op
-BenchmarkGetTopPercentage-8	   10000	   5265023 ns/op	   9.31 MB/s	  231009 B/op	      60 allocs/op
+    BenchmarkSetUserScore-8    	   50000	    121245 ns/op	   0.75 MB/s	    5281 B/op	      71 allocs/op
+    BenchmarkRemoveUser-8      	  100000	    119257 ns/op	   0.13 MB/s	    3840 B/op	      53 allocs/op
+    BenchmarkGetUser-8         	  100000	    102257 ns/op	   0.63 MB/s	    4367 B/op	      57 allocs/op
+    BenchmarkGetUserRank-8     	  100000	     82795 ns/op	   0.59 MB/s	    4367 B/op	      57 allocs/op
+    BenchmarkGetAroundUser-8   	   10000	    512711 ns/op	   1.94 MB/s	    8028 B/op	      58 allocs/op
+    BenchmarkGetTotalMembers-8 	  100000	     79465 ns/op	   0.39 MB/s	    4192 B/op	      53 allocs/op
+    BenchmarkGetTotalPages-8   	  100000	     80390 ns/op	   0.36 MB/s	    4160 B/op	      53 allocs/op
+    BenchmarkGetTopUsers-8     	   20000	    498763 ns/op	   2.04 MB/s	    7717 B/op	      55 allocs/op
+    BenchmarkGetTopPercentage-8	   10000	   5265023 ns/op	   9.31 MB/s	  231009 B/op	      60 allocs/op
 
 To run the benchmarks: `make bench-podium-app bench-run`.
 

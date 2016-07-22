@@ -392,12 +392,13 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*User, error)
 			numberOfMembers = math.floor(ARGV[2])
 		end
 
-		local members = redis.call("ZREVRANGE", KEYS[1], 0, numberOfMembers - 1)
+		local members = redis.call("ZREVRANGE", KEYS[1], 0, numberOfMembers - 1, "WITHSCORES")
 		local fullMembers = {}
 
-		for index, publicID in ipairs(members) do
+		for index=1, #members, 2 do
+			local publicID = members[index]
+			local score = members[index + 1]
 		 	local rank = redis.call("ZREVRANK", KEYS[1], publicID)
-		 	local score = redis.call("ZSCORE", KEYS[1], publicID)
 			
 			table.insert(fullMembers, publicID)
 			table.insert(fullMembers, rank)
