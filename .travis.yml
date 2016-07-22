@@ -11,10 +11,19 @@ services:
 
 install:
   - go get github.com/mattn/goveralls
+  - go get golang.org/x/tools/cmd/benchcmp
   - make setup
 
 script:
   - make test-coverage
+  - make bench-podium-app
+  - mkdir -p ./bench-data
+  - make bench-run > ./bench-data/new
+
+cache:
+  directories:
+  - ./bench-data
+  - ./vendor
 
 after_success:
   - $HOME/gopath/bin/goveralls -coverprofile _build/test-coverage-all.out -service=travis-ci
