@@ -18,7 +18,7 @@ LOCAL_TEST_REDIS_PORT=1234
 setup-hooks:
 	@cd .git/hooks && ln -sf ../../hooks/pre-commit.sh pre-commit
 
-setup: setup-hooks setup-docs
+setup: setup-hooks
 	@go get -u github.com/Masterminds/glide/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
