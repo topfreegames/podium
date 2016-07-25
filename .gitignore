@@ -27,3 +27,4 @@ _testmain.go
 vendor/
 /bin
 bench-data/
+.venv

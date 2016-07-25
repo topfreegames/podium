@@ -134,6 +134,7 @@ func (app *App) configureApplication() {
 	a.Use(&SentryMiddleware{App: app})
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
+	a.Get("/status", StatusHandler(app))
 	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
 	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))

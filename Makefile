@@ -18,11 +18,14 @@ LOCAL_TEST_REDIS_PORT=1234
 setup-hooks:
 	@cd .git/hooks && ln -sf ../../hooks/pre-commit.sh pre-commit
 
-setup: setup-hooks
+setup: setup-hooks setup-docs
 	@go get -u github.com/Masterminds/glide/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
 	@glide install
+
+setup-docs:
+	@pip install -q --log /tmp/pip.log --no-cache-dir sphinx recommonmark sphinx_rtd_theme
 
 build:
 	@go build $(GODIRS)
@@ -141,3 +144,8 @@ ci-bench-run:
 		echo "Comparison to previous build:" && \
 		benchcmp ./bench-data/old.txt ./bench-data/new.txt; \
 	fi
+
+rtfd:
+	@rm -rf docs/_build
+	@sphinx-build -b html -d ./docs/_build/doctrees ./docs/ docs/_build/html
+	@open docs/_build/html/index.html
