@@ -16,14 +16,14 @@ import (
 
 var keeper interface{}
 
-func BenchmarkSetUserScore(b *testing.B) {
-	l := generateNUsers(b.N)
+func BenchmarkSetMemberScore(b *testing.B) {
+	l := generateNMembers(b.N)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := uuid.NewV4().String()
-		route := getRoute(fmt.Sprintf("/l/%s/users/%s/score", l.PublicID, userID))
+		memberID := uuid.NewV4().String()
+		route := getRoute(fmt.Sprintf("/l/%s/members/%s/score", l.PublicID, memberID))
 		payload := map[string]interface{}{
 			"score": 100,
 		}
@@ -36,14 +36,14 @@ func BenchmarkSetUserScore(b *testing.B) {
 	}
 }
 
-func BenchmarkRemoveUser(b *testing.B) {
-	l := generateNUsers(b.N)
+func BenchmarkRemoveMember(b *testing.B) {
+	l := generateNMembers(b.N)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("bench-user-%d", i)
-		route := getRoute(fmt.Sprintf("/l/%s/users/%s", l.PublicID, userID))
+		memberID := fmt.Sprintf("bench-member-%d", i)
+		route := getRoute(fmt.Sprintf("/l/%s/members/%s", l.PublicID, memberID))
 		status, body, err := sendTo("DELETE", route, nil)
 		validateResp(status, body, err)
 		b.SetBytes(int64(len([]byte(body))))
@@ -52,13 +52,13 @@ func BenchmarkRemoveUser(b *testing.B) {
 	}
 }
 
-func BenchmarkGetUser(b *testing.B) {
-	l := generateNUsers(b.N)
+func BenchmarkGetMember(b *testing.B) {
+	l := generateNMembers(b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("bench-user-%d", i)
-		route := getRoute(fmt.Sprintf("/l/%s/users/%s", l.PublicID, userID))
+		memberID := fmt.Sprintf("bench-member-%d", i)
+		route := getRoute(fmt.Sprintf("/l/%s/members/%s", l.PublicID, memberID))
 		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)
 		b.SetBytes(int64(len([]byte(body))))
@@ -67,13 +67,13 @@ func BenchmarkGetUser(b *testing.B) {
 	}
 }
 
-func BenchmarkGetUserRank(b *testing.B) {
-	l := generateNUsers(b.N)
+func BenchmarkGetMemberRank(b *testing.B) {
+	l := generateNMembers(b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("bench-user-%d", i)
-		route := getRoute(fmt.Sprintf("/l/%s/users/%s/rank", l.PublicID, userID))
+		memberID := fmt.Sprintf("bench-member-%d", i)
+		route := getRoute(fmt.Sprintf("/l/%s/members/%s/rank", l.PublicID, memberID))
 		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)
 		b.SetBytes(int64(len([]byte(body))))
@@ -82,14 +82,14 @@ func BenchmarkGetUserRank(b *testing.B) {
 	}
 }
 
-func BenchmarkGetAroundUser(b *testing.B) {
-	l := generateNUsers(b.N)
+func BenchmarkGetAroundMember(b *testing.B) {
+	l := generateNMembers(b.N)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := fmt.Sprintf("bench-user-%d", i)
-		route := getRoute(fmt.Sprintf("/l/%s/users/%s/around", l.PublicID, userID))
+		memberID := fmt.Sprintf("bench-member-%d", i)
+		route := getRoute(fmt.Sprintf("/l/%s/members/%s/around", l.PublicID, memberID))
 		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)
 		b.SetBytes(int64(len([]byte(body))))
@@ -99,11 +99,11 @@ func BenchmarkGetAroundUser(b *testing.B) {
 }
 
 func BenchmarkGetTotalMembers(b *testing.B) {
-	l := generateNUsers(b.N)
+	l := generateNMembers(b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		route := getRoute(fmt.Sprintf("/l/%s/users-count", l.PublicID))
+		route := getRoute(fmt.Sprintf("/l/%s/members-count", l.PublicID))
 		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)
 		b.SetBytes(int64(len([]byte(body))))
@@ -113,7 +113,7 @@ func BenchmarkGetTotalMembers(b *testing.B) {
 }
 
 func BenchmarkGetTotalPages(b *testing.B) {
-	l := generateNUsers(b.N)
+	l := generateNMembers(b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -126,8 +126,8 @@ func BenchmarkGetTotalPages(b *testing.B) {
 	}
 }
 
-func BenchmarkGetTopUsers(b *testing.B) {
-	l := generateNUsers(b.N)
+func BenchmarkGetTopMembers(b *testing.B) {
+	l := generateNMembers(b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -141,7 +141,7 @@ func BenchmarkGetTopUsers(b *testing.B) {
 }
 
 func BenchmarkGetTopPercentage(b *testing.B) {
-	l := generateNUsers(b.N)
+	l := generateNMembers(b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -154,17 +154,17 @@ func BenchmarkGetTopPercentage(b *testing.B) {
 	}
 }
 
-func BenchmarkSetUserScoreForSeveralLeaderboards(b *testing.B) {
+func BenchmarkSetMemberScoreForSeveralLeaderboards(b *testing.B) {
 	leaderboards := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
-		l := generateNUsers(b.N)
+		l := generateNMembers(b.N)
 		leaderboards[i] = l.PublicID
 	}
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		userID := uuid.NewV4().String()
-		route := getRoute(fmt.Sprintf("/u/%s/scores", userID))
+		memberID := uuid.NewV4().String()
+		route := getRoute(fmt.Sprintf("/m/%s/scores", memberID))
 		payload := map[string]interface{}{
 			"score":        100,
 			"leaderboards": leaderboards,

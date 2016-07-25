@@ -21,8 +21,8 @@ import (
 var currentStage int
 var stages map[int]string
 
-func setScore(cli *redis.Client, leaderboard, user string, score int) {
-	_, err := cli.ZAdd(leaderboard, redis.Z{float64(score), user}).Result()
+func setScore(cli *redis.Client, leaderboard, member string, score int) {
+	_, err := cli.ZAdd(leaderboard, redis.Z{float64(score), member}).Result()
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +31,7 @@ func setScore(cli *redis.Client, leaderboard, user string, score int) {
 func createTestData(cli *redis.Client, leaderboardCount, membersPerLeaderboard int, progress func() bool) error {
 	for i := 0; i < leaderboardCount; i++ {
 		for j := 0; j < membersPerLeaderboard; j++ {
-			setScore(cli, fmt.Sprintf("leaderboard-%d", i), fmt.Sprintf("user-%d", j), i*j)
+			setScore(cli, fmt.Sprintf("leaderboard-%d", i), fmt.Sprintf("member-%d", j), i*j)
 			progress()
 		}
 	}

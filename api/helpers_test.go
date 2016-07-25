@@ -97,7 +97,7 @@ func sendRequest(app *App, method, url string) *httpexpect.Request {
 	api := app.App
 	srv := api.Servers.Main()
 
-	if srv == nil { // maybe the user called this after .Listen/ListenTLS/ListenUNIX, the tester can be used as standalone (with no running iris instance) or inside a running instance/app
+	if srv == nil { // maybe the member called this after .Listen/ListenTLS/ListenUNIX, the tester can be used as standalone (with no running iris instance) or inside a running instance/app
 		srv = api.ListenVirtual(api.Config.Tester.ListeningAddr)
 	}
 

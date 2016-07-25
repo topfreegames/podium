@@ -29,7 +29,7 @@ func FailWith(status int, message string, c *iris.Context) {
 	})
 }
 
-// SucceedWith sends payload to user with status 200
+// SucceedWith sends payload to member with status 200
 func SucceedWith(payload map[string]interface{}, c *iris.Context) {
 	payload["success"] = true
 	c.JSON(200, payload)

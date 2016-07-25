@@ -90,7 +90,7 @@ func validateResp(statusCode int, body string, err error) {
 	}
 }
 
-func generateNUsers(amount int) *leaderboard.Leaderboard {
+func generateNMembers(amount int) *leaderboard.Leaderboard {
 	redisClient := getRedis()
 
 	lbID := "leaderboard-0"
@@ -98,7 +98,7 @@ func generateNUsers(amount int) *leaderboard.Leaderboard {
 	l := leaderboard.NewLeaderboard(redisClient, lbID, 10, redisClient.Logger)
 
 	for i := 0; i < amount; i++ {
-		l.SetUserScore(fmt.Sprintf("bench-user-%d", i), 100+i)
+		l.SetMemberScore(fmt.Sprintf("bench-member-%d", i), 100+i)
 	}
 
 	return l

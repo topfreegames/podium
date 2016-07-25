@@ -18,7 +18,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
-var notFoundError = "Could not find data for user"
+var notFoundError = "Could not find data for member"
 var noPageSizeProvidedError = "strconv.ParseInt: parsing \"\": invalid syntax"
 var defaultPageSize = 20
 
@@ -31,30 +31,30 @@ type setScoresPayload struct {
 	Leaderboards []string
 }
 
-func serializeUser(user *leaderboard.User) map[string]interface{} {
+func serializeMember(member *leaderboard.Member) map[string]interface{} {
 	return map[string]interface{}{
-		"publicID": user.PublicID,
-		"score":    user.Score,
-		"rank":     user.Rank,
+		"publicID": member.PublicID,
+		"score":    member.Score,
+		"rank":     member.Rank,
 	}
 }
 
-func serializeUsers(users []*leaderboard.User) []map[string]interface{} {
-	serializedUsers := make([]map[string]interface{}, len(users))
-	for i, user := range users {
-		serializedUsers[i] = serializeUser(user)
+func serializeMembers(members []*leaderboard.Member) []map[string]interface{} {
+	serializedMembers := make([]map[string]interface{}, len(members))
+	for i, member := range members {
+		serializedMembers[i] = serializeMember(member)
 	}
-	return serializedUsers
+	return serializedMembers
 }
 
-// UpsertUserScoreHandler is the handler responsible for creating or updating the user score
-func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
+// UpsertMemberScoreHandler is the handler responsible for creating or updating the member score
+func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "UpsertUserScoreHandler"),
+			zap.String("handler", "UpsertMemberScoreHandler"),
 		)
 		leaderboardID := c.Param("leaderboardID")
-		userPublicID := c.Param("userPublicID")
+		memberPublicID := c.Param("memberPublicID")
 
 		var payload setScorePayload
 		if err := LoadJSONPayload(&payload, c); err != nil {
@@ -63,29 +63,29 @@ func UpsertUserScoreHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		user, err := l.SetUserScore(userPublicID, payload.Score)
+		member, err := l.SetMemberScore(memberPublicID, payload.Score)
 
 		if err != nil {
 			FailWith(500, err.Error(), c)
 			return
 		}
 
-		SucceedWith(serializeUser(user), c)
+		SucceedWith(serializeMember(member), c)
 	}
 }
 
-// RemoveUserHandler is the handler responsible for removing a user score
-func RemoveUserHandler(app *App) func(c *iris.Context) {
+// RemoveMemberHandler is the handler responsible for removing a member score
+func RemoveMemberHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "RemoveUserHandler"),
+			zap.String("handler", "RemoveMemberHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
-		userPublicID := c.Param("userPublicID")
+		memberPublicID := c.Param("memberPublicID")
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		_, err := l.RemoveMember(userPublicID)
+		_, err := l.RemoveMember(memberPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			FailWith(500, err.Error(), c)
@@ -96,46 +96,46 @@ func RemoveUserHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// GetUserHandler is the handler responsible for retrieving a user score and rank
-func GetUserHandler(app *App) func(c *iris.Context) {
+// GetMemberHandler is the handler responsible for retrieving a member score and rank
+func GetMemberHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "GetUserHandler"),
+			zap.String("handler", "GetMemberHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
-		userPublicID := c.Param("userPublicID")
+		memberPublicID := c.Param("memberPublicID")
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		user, err := l.GetMember(userPublicID)
+		member, err := l.GetMember(memberPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			FailWith(404, "User not found.", c)
+			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
 			FailWith(500, err.Error(), c)
 			return
 		}
 
-		SucceedWith(serializeUser(user), c)
+		SucceedWith(serializeMember(member), c)
 	}
 }
 
-// GetUserRankHandler is the handler responsible for retrieving a user rank
-func GetUserRankHandler(app *App) func(c *iris.Context) {
+// GetMemberRankHandler is the handler responsible for retrieving a member rank
+func GetMemberRankHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "GetUserRankHandler"),
+			zap.String("handler", "GetMemberRankHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
-		userPublicID := c.Param("userPublicID")
+		memberPublicID := c.Param("memberPublicID")
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		rank, err := l.GetRank(userPublicID)
+		rank, err := l.GetRank(memberPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			FailWith(404, "User not found.", c)
+			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
 			FailWith(500, err.Error(), c)
@@ -143,21 +143,21 @@ func GetUserRankHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"publicID": userPublicID,
+			"publicID": memberPublicID,
 			"rank":     rank,
 		}, c)
 	}
 }
 
-// GetAroundUserHandler retrieves a list of user score and rank centered in the given user
-func GetAroundUserHandler(app *App) func(c *iris.Context) {
+// GetAroundMemberHandler retrieves a list of member score and rank centered in the given member
+func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "GetAroundUserHandler"),
+			zap.String("handler", "GetAroundMemberHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
-		userPublicID := c.Param("userPublicID")
+		memberPublicID := c.Param("memberPublicID")
 		pageSize, err := c.URLParamInt("pageSize")
 		if err != nil && err.Error() == noPageSizeProvidedError {
 			pageSize = defaultPageSize
@@ -170,10 +170,10 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
-		users, err := l.GetAroundMe(userPublicID)
+		members, err := l.GetAroundMe(memberPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			FailWith(404, "User not found.", c)
+			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
 			FailWith(500, err.Error(), c)
@@ -181,7 +181,7 @@ func GetAroundUserHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"users": serializeUsers(users),
+			"members": serializeMembers(members),
 		}, c)
 	}
 }
@@ -239,11 +239,11 @@ func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// GetTopUsersHandler retrieves onePage of user score and rank
-func GetTopUsersHandler(app *App) func(c *iris.Context) {
+// GetTopMembersHandler retrieves onePage of member score and rank
+func GetTopMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "GetTopUsersHandler"),
+			zap.String("handler", "GetTopMembersHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
@@ -264,10 +264,10 @@ func GetTopUsersHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
-		users, err := l.GetLeaders(pageNumber)
+		members, err := l.GetLeaders(pageNumber)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			FailWith(404, "User not found.", c)
+			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
 			FailWith(500, err.Error(), c)
@@ -275,12 +275,12 @@ func GetTopUsersHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"users": serializeUsers(users),
+			"members": serializeMembers(members),
 		}, c)
 	}
 }
 
-// GetTopPercentageHandler retrieves top x % players in the leaderboard
+// GetTopPercentageHandler retrieves top x % members in the leaderboard
 func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
@@ -295,7 +295,7 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
-		users, err := l.GetTopPercentage(percentage, app.Config.GetInt("api.maxReturnedMembers"))
+		members, err := l.GetTopPercentage(percentage, app.Config.GetInt("api.maxReturnedMembers"))
 
 		if err != nil {
 			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
@@ -308,18 +308,18 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"users": serializeUsers(users),
+			"members": serializeMembers(members),
 		}, c)
 	}
 }
 
-// UpsertUserLeaderboardsScoreHandler sets the user score for all leaderboards
-func UpsertUserLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
+// UpsertMemberLeaderboardsScoreHandler sets the member score for all leaderboards
+func UpsertMemberLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "UpsertUserLeaderboardsScoreHandler"),
+			zap.String("handler", "UpsertMemberLeaderboardsScoreHandler"),
 		)
-		userPublicID := c.Param("userPublicID")
+		memberPublicID := c.Param("memberPublicID")
 
 		var payload setScoresPayload
 		if err := LoadJSONPayload(&payload, c); err != nil {
@@ -331,13 +331,13 @@ func UpsertUserLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
 
 		for i, leaderboardID := range payload.Leaderboards {
 			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-			user, err := l.SetUserScore(userPublicID, payload.Score)
+			member, err := l.SetMemberScore(memberPublicID, payload.Score)
 
 			if err != nil {
 				FailWith(500, err.Error(), c)
 				return
 			}
-			serializedScore := serializeUser(user)
+			serializedScore := serializeMember(member)
 			serializedScore["leaderboardID"] = leaderboardID
 			serializedScores[i] = serializedScore
 		}
