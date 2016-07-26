@@ -19,10 +19,23 @@ import (
 	. "github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/util"
+	"github.com/uber-go/zap"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+func getFaultyRedis(logger zap.Logger) *util.RedisClient {
+	return &util.RedisClient{
+		Client: redis.NewClient(&redis.Options{
+			Addr:     "localhost:38465",
+			Password: "",
+			DB:       0,
+			PoolSize: 20,
+		}),
+		Logger: logger,
+	}
+}
 
 var _ = Describe("Leaderboard Model", func() {
 
@@ -68,6 +81,13 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(dayvson.Rank).To(Equal(1))
 			Expect(arthur.Rank).To(Equal(2))
 		})
+
+		It("should fail if invalid connection to Redis", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), "test-leaderboard", 10, logger)
+			_, err := testLeaderboard.SetMemberScore("dayvson", 481516)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
 	})
 
 	Describe("getting number of members", func() {
@@ -105,7 +125,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail if faulty redis client", func() {
 			testLeaderboard := NewLeaderboard(faultyRedisClient, "test-leaderboard", 10, logger)
-			_, err := testLeaderboard.RemoveMember("invalid member")
+			err := testLeaderboard.RemoveMember("invalid member")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
 		})
@@ -163,7 +183,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should fail if faulty redis client", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			testLeaderboard.RedisClient = faultyRedisClient
-			_, err := testLeaderboard.TotalPages()
+			_, err := testLeaderboard.GetMember("qwe")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
 		})
@@ -229,6 +249,28 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(firstAroundMe.PublicID).To(Equal("member_76"))
 			Expect(lastAroundMe.PublicID).To(Equal("member_100"))
 		})
+
+		It("should get PageSize members when interval larger than total members", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 1; i <= 10; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetAroundMe("member_2")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(10))
+			firstAroundMe := members[0]
+			lastAroundMe := members[9]
+			Expect(firstAroundMe.PublicID).To(Equal("member_1"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_10"))
+		})
+
+		It("should fail if faulty redis client", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), "test-leaderboard", 10, logger)
+			_, err := testLeaderboard.GetAroundMe("qwe")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
+		})
 	})
 
 	Describe("getting member ranking", func() {
@@ -240,6 +282,22 @@ var _ = Describe("Leaderboard Model", func() {
 			}
 			testLeaderboard.SetMemberScore("member_6", 1000)
 			Expect(testLeaderboard.GetRank("member_6")).To(Equal(100))
+		})
+
+		It("should fail if member does not exist", func() {
+			testLeaderboard := NewLeaderboard(redisClient, uuid.NewV4().String(), 25, logger)
+			rank, err := testLeaderboard.GetRank("invalid-member")
+			Expect(rank).To(Equal(-1))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not find data for member invalid-member in leaderboard"))
+		})
+
+		It("should fail if invalid redis connection", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), uuid.NewV4().String(), 25, logger)
+			rank, err := testLeaderboard.GetRank("invalid-member")
+			Expect(rank).To(Equal(-1))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 
@@ -275,6 +333,39 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
 			Expect(firstAroundMe.Score).To(Equal(100))
 			Expect(lastAroundMe.Score).To(Equal(100))
+		})
+
+		It("should get leaders for negative pages get page 1", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetLeaders(-1)
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := members[0]
+			lastAroundMe := members[testLeaderboard.PageSize-1]
+			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.Score).To(Equal(100))
+			Expect(lastAroundMe.Score).To(Equal(100))
+		})
+
+		It("should get empty leaders for pages greater than total pages", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetLeaders(99999)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(0))
+		})
+
+		It("should fail if invalid connection to Redis", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), "test-leaderboard", 25, logger)
+			_, err := testLeaderboard.GetLeaders(1)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 
@@ -406,6 +497,43 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(top10).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Percentage must be a valid integer between 1 and 100."))
+		})
+
+		It("should fail if invalid redis connection", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), uuid.NewV4().String(), 25, logger)
+			members, err := testLeaderboard.GetTopPercentage(10, 2000)
+			Expect(members).To(BeEmpty())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
+	})
+
+	Describe("get members by range in a given leaderboard", func() {
+		It("should get members in a range in the leaderboard", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			expMembers := []*Member{}
+			for i := 0; i < 100; i++ {
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+				expMembers = append(expMembers, member)
+			}
+
+			members, err := GetMembersByRange(redisClient, leaderboardID, 20, 39, logger)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(20))
+
+			for i := 20; i < 40; i++ {
+				Expect(members[i-20].PublicID).To(Equal(expMembers[i].PublicID))
+			}
+		})
+
+		It("should fail if invalid connection to Redis", func() {
+			leaderboardID := uuid.NewV4().String()
+			_, err := GetMembersByRange(getFaultyRedis(logger), leaderboardID, 20, 39, logger)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 })

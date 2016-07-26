@@ -32,12 +32,19 @@ var _ = Describe("RedisClient", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("It should set and get without error", func() {
+	It("should set and get without error", func() {
 		conn := redisClient.GetConnection()
 		_, err := conn.Set("test", 1, time.Duration(-1)).Result()
 		Expect(err).NotTo(HaveOccurred())
 		res, err := conn.Get("test").Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(res).To(BeEquivalentTo("1"))
+	})
+
+	It("should fail when invalid connection", func() {
+		cli, err := util.GetRedisClient("localhost", 32889, "", 0, 50, logger)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("connection refused"))
+		Expect(cli).To(BeNil())
 	})
 })

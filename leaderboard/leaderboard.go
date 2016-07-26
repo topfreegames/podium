@@ -23,7 +23,7 @@ import (
 //MemberNotFoundError indicates member was not found in Redis
 type MemberNotFoundError struct {
 	LeaderboardID string
-	MemberID        string
+	MemberID      string
 }
 
 func (e *MemberNotFoundError) Error() string {
@@ -34,7 +34,7 @@ func (e *MemberNotFoundError) Error() string {
 func NewMemberNotFound(leaderboardID, memberID string) *MemberNotFoundError {
 	return &MemberNotFoundError{
 		LeaderboardID: leaderboardID,
-		MemberID:        memberID,
+		MemberID:      memberID,
 	}
 }
 
@@ -42,13 +42,6 @@ func NewMemberNotFound(leaderboardID, memberID string) *MemberNotFoundError {
 type Member struct {
 	PublicID string
 	Score    int
-	Rank     int
-}
-
-// Team groups sets of members
-type Team struct {
-	PublicID string
-	Members  map[string]Member
 	Rank     int
 }
 
@@ -60,9 +53,11 @@ type Leaderboard struct {
 	PageSize    int
 }
 
-func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSize int, startOffset int, endOffset int, l zap.Logger) ([]*Member, error) {
+//GetMembersByRange for a given leaderboard
+func GetMembersByRange(redisClient *util.RedisClient, leaderboard string, startOffset int, endOffset int, l zap.Logger) ([]*Member, error) {
 	cli := redisClient.Client
 	l.Debug(fmt.Sprintf("Retrieving members for range: %d - %d", startOffset, endOffset))
+
 	values, err := cli.ZRevRangeWithScores(leaderboard, int64(startOffset), int64(endOffset)).Result()
 	if err != nil {
 		l.Error(fmt.Sprintf("Retrieval of members for range %d - %d failed.", startOffset, endOffset), zap.Error(err))
@@ -79,6 +74,7 @@ func getMembersByRange(redisClient *util.RedisClient, leaderboard string, pageSi
 		members[i] = &nMember
 	}
 	l.Info("Retrieval of leaderboard members' details succeeded.")
+
 	return members, nil
 }
 
@@ -139,10 +135,6 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID 
 		l.Error("Failed to update rank for member.", zap.Error(err))
 		return -1, err
 	}
-	if newRank == nil {
-		l.Error("Member was not found.", zap.Error(err))
-		return -1, NewMemberNotFound(lb.PublicID, memberID)
-	}
 
 	r := int(newRank.(int64))
 	l.Info("Rank for member retrieved successfully.", zap.Int("newRank", r))
@@ -188,7 +180,7 @@ func (lb *Leaderboard) TotalMembers() (int, error) {
 }
 
 // RemoveMember removes the member with the given publicID from the leaderboard
-func (lb *Leaderboard) RemoveMember(memberID string) (*Member, error) {
+func (lb *Leaderboard) RemoveMember(memberID string) error {
 	l := lb.Logger.With(
 		zap.String("operation", "RemoveMember"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -198,14 +190,14 @@ func (lb *Leaderboard) RemoveMember(memberID string) (*Member, error) {
 	cli := lb.RedisClient.Client
 
 	l.Debug("Removing member from leaderboard...")
-	nMember, err := lb.GetMember(memberID)
-	_, err = cli.ZRem(lb.PublicID, memberID).Result()
+
+	_, err := cli.ZRem(lb.PublicID, memberID).Result()
 	if err != nil {
 		l.Error("Member removal failed...", zap.Error(err))
-		return nil, err
+		return err
 	}
 	l.Info("Member removed successfully.")
-	return nMember, err
+	return nil
 }
 
 // TotalPages returns the number of pages of the leaderboard
@@ -305,7 +297,7 @@ func (lb *Leaderboard) GetAroundMe(memberID string) ([]*Member, error) {
 		}
 	}
 
-	members, err := getMembersByRange(lb.RedisClient, lb.PublicID, lb.PageSize, startOffset, endOffset, l)
+	members, err := GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, l)
 	if err != nil {
 		l.Error("Failed to retrieve information around a specific member.", zap.Error(err))
 		return nil, err
@@ -350,20 +342,20 @@ func (lb *Leaderboard) GetLeaders(page int) ([]*Member, error) {
 	if page < 1 {
 		page = 1
 	}
+
 	totalPages, err := lb.TotalPages()
 	if err != nil {
 		return nil, err
 	}
+
 	if page > totalPages {
 		return make([]*Member, 0), nil
 	}
+
 	redisIndex := page - 1
 	startOffset := redisIndex * lb.PageSize
-	if startOffset < 0 {
-		startOffset = 0
-	}
 	endOffset := (startOffset + lb.PageSize) - 1
-	return getMembersByRange(lb.RedisClient, lb.PublicID, lb.PageSize, startOffset, endOffset, l)
+	return GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, l)
 }
 
 //GetTopPercentage of members in the leaderboard.

@@ -158,7 +158,6 @@ func (app *App) configureApplication() error {
 	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
 	a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
-	a.Get("/l/:leaderboardID/pages", GetTotalPagesHandler(app))
 	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopMembersHandler(app))
 	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
 	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))

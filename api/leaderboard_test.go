@@ -128,6 +128,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
 
+		It("Should fail if error removing score", func() {
+			_, err := l.SetMemberScore("memberpublicid", 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Delete(app, "/l/testkey/members/memberpublicid")
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+
 		It("Should not fail in deleting member score from redis if score does not exist", func() {
 			res := api.Delete(a, "/l/testkey/members/memberpublicid")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
@@ -185,6 +197,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal("Member not found."))
 		})
 
+		It("Should fail if error in Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Get(app, "/l/testkey/members/member_99")
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+
 		Measure("it should get member score", func(b Benchmarker) {
 			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
 			memberID := uuid.NewV4().String()
@@ -228,6 +249,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(Equal("Member not found."))
+		})
+
+		It("Should fail if error in Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Get(app, "/l/testkey/members/member_99/rank")
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
 		})
 
 		Measure("it should get member rank", func(b Benchmarker) {
@@ -484,6 +514,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 		})
 
+		It("Should fail if error in Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Get(app, "/l/testkey/members/member_99/around")
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+
 		Measure("it should get around member", func(b Benchmarker) {
 			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
 			memberID := uuid.NewV4().String()
@@ -528,6 +567,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(int(result["count"].(float64))).To(Equal(0))
 		})
 
+		It("Should fail if error in Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Get(app, "/l/testkey/members-count")
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+
 		Measure("it should get total members", func(b Benchmarker) {
 			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
 
@@ -542,72 +590,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			})
 
 			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting total members shouldn't take too long.")
-		}, 200)
-	})
-
-	Describe("Get Total Pages Handler", func() {
-		It("Should get the number of pages in an existing leaderboard with default pageSize", func() {
-			for i := 1; i <= 100; i++ {
-				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 101-i)
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			res := api.Get(a, "/l/testkey/pages")
-			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
-			var result map[string]interface{}
-			json.Unmarshal([]byte(res.Body().Raw()), &result)
-			Expect(int(result["count"].(float64))).To(Equal(5))
-		})
-
-		It("Should get the number of pages in an existing leaderboard with custom pageSize", func() {
-			for i := 1; i <= 100; i++ {
-				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 101-i)
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			res := api.Get(a, "/l/testkey/pages", map[string]interface{}{
-				"pageSize": 10,
-			})
-			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
-			var result map[string]interface{}
-			json.Unmarshal([]byte(res.Body().Raw()), &result)
-			Expect(int(result["count"].(float64))).To(Equal(10))
-		})
-
-		It("Should not fail if leaderboard does not exist", func() {
-			res := api.Get(a, "/l/testkey/pages")
-			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
-			var result map[string]interface{}
-			json.Unmarshal([]byte(res.Body().Raw()), &result)
-			Expect(result["success"]).To(BeTrue())
-			Expect(int(result["count"].(float64))).To(Equal(0))
-		})
-
-		It("Should fail if leaderboard bad pageSize provided", func() {
-			res := api.Get(a, "/l/testkey/pages", map[string]interface{}{
-				"pageSize": "notint",
-			})
-			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
-			var result map[string]interface{}
-			json.Unmarshal([]byte(res.Body().Raw()), &result)
-			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("Invalid pageSize provided: strconv.ParseInt: parsing \"notint\": invalid syntax"))
-		})
-
-		Measure("it should get total pages", func(b Benchmarker) {
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
-
-			for i := 0; i < 10; i++ {
-				_, err := lead.SetMemberScore(fmt.Sprintf("member-%d", i), 500)
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			runtime := b.Time("runtime", func() {
-				res := api.Get(a, fmt.Sprintf("/l/%s/pages", lead.PublicID))
-				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
-			})
-
-			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Getting total pages shouldn't take too long.")
 		}, 200)
 	})
 
@@ -772,6 +754,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(Equal(fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", pageSize-1, pageSize)))
 		})
 
+		It("Should fail if error getting top members from Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Get(app, "/l/testkey/top/1")
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+
 		Measure("it should get top members", func(b Benchmarker) {
 			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, lg)
 
@@ -841,6 +832,38 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int(member["score"].(float64))).To(Equal(100))
 			}
+		})
+
+		It("Should fail if invalid percentage", func() {
+			leaderboardID := uuid.NewV4().String()
+			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+
+			res := api.Get(a, fmt.Sprintf("/l/%s/top-percent/l", leaderboardID))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(res.Body().Raw()).To(ContainSubstring("Invalid percentage provided"))
+		})
+
+		It("Should fail if percentage greater than 100", func() {
+			leaderboardID := uuid.NewV4().String()
+			res := api.Get(a, fmt.Sprintf("/l/%s/top-percent/120", leaderboardID))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(res.Body().Raw()).To(ContainSubstring("Percentage must be a valid integer between 1 and 100."))
+		})
+
+		It("Should fail if percentage lesser than 1", func() {
+			leaderboardID := uuid.NewV4().String()
+			res := api.Get(a, fmt.Sprintf("/l/%s/top-percent/0", leaderboardID))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(res.Body().Raw()).To(ContainSubstring("Percentage must be a valid integer between 1 and 100."))
+		})
+
+		It("Should fail if error in Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Get(app, "/l/testkey/top-percent/10")
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
 		})
 
 		Measure("it should get top percentage of members", func(b Benchmarker) {
@@ -920,6 +943,19 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(ContainSubstring("While trying to read JSON"))
+		})
+
+		It("Should fail if error in Redis when upserting many leaderboards", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			payload := map[string]interface{}{
+				"score":        100,
+				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+			}
+			res := api.PutJSON(app, "/m/memberpublicid/scores", payload)
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
 		})
 
 		Measure("it should set correct member score for all leaderboards", func(b Benchmarker) {
