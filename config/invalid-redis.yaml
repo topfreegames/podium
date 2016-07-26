@@ -1,0 +1,12 @@
+healthcheck:
+  workingText: WORKING
+
+redis:
+  host: localhost
+  port: 9473
+  password: ""
+  db: 0
+  maxPoolSize: 20
+
+api:
+  maxReturnedMembers: 2000

@@ -1,21 +1,25 @@
 package api_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
-	"github.com/topfreegames/podium/testing"
+	. "github.com/topfreegames/podium/testing"
+	"github.com/uber-go/zap"
 )
 
 var _ = Describe("App", func() {
-	var logger *testing.MockLogger
+	var logger *MockLogger
 	BeforeEach(func() {
-		logger = testing.NewMockLogger()
+		logger = NewMockLogger()
 	})
 
 	Describe("App creation", func() {
 		It("should create new app", func() {
-			app := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", true, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", true, logger)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(app).NotTo(BeNil())
 			Expect(app.Host).To(Equal("127.0.0.1"))
 			Expect(app.Port).To(Equal(9999))
@@ -26,10 +30,60 @@ var _ = Describe("App", func() {
 
 	Describe("App Load Configuration", func() {
 		It("Should load configuration from file", func() {
-			app := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, logger)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(app.Config).NotTo(BeNil())
 			expected := app.Config.GetString("healthcheck.workingText")
 			Expect(expected).To(Equal("WORKING"))
+		})
+
+		It("Should faild if configuration file does not exist", func() {
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid.yaml", false, logger)
+			Expect(app).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not load configuration file from: ../config/invalid.yaml"))
+		})
+	})
+
+	Describe("App Connect To Redis", func() {
+		It("Should faild if invalid redis connection", func() {
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid-redis.yaml", false, logger)
+			Expect(app).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
+	})
+
+	Describe("Error Handler", func() {
+		It("should handle errors and send to raven", func() {
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			app.OnErrorHandler("some error occurred", []byte("stack"))
+			Expect(logger).To(HaveLogMessage(
+				zap.ErrorLevel, "Panic occurred.",
+				"panicText", "some error occurred",
+				"stack", "stack",
+			))
+
+			app.OnErrorHandler(fmt.Errorf("some other error occurred"), []byte("stack"))
+			Expect(logger).To(HaveLogMessage(
+				zap.ErrorLevel, "Panic occurred.",
+				"panicText", "some other error occurred",
+				"stack", "stack",
+			))
+
+		})
+	})
+
+	Describe("Error metrics", func() {
+		It("should add error rate", func() {
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			app.AddError()
+			app.Errors.Tick()
+			Expect(app.Errors.Rate()).To(BeNumerically(">", 0))
 		})
 	})
 })

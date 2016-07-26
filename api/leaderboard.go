@@ -58,6 +58,7 @@ func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 
 		var payload setScorePayload
 		if err := LoadJSONPayload(&payload, c); err != nil {
+			app.AddError()
 			FailWith(400, err.Error(), c)
 			return
 		}
@@ -66,6 +67,7 @@ func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 		member, err := l.SetMemberScore(memberPublicID, payload.Score)
 
 		if err != nil {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -87,7 +89,8 @@ func RemoveMemberHandler(app *App) func(c *iris.Context) {
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
 		_, err := l.RemoveMember(memberPublicID)
 
-		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+		if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -110,9 +113,11 @@ func GetMemberHandler(app *App) func(c *iris.Context) {
 		member, err := l.GetMember(memberPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			app.AddError()
 			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -135,9 +140,11 @@ func GetMemberRankHandler(app *App) func(c *iris.Context) {
 		rank, err := l.GetRank(memberPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			app.AddError()
 			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -162,9 +169,11 @@ func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 		if err != nil && err.Error() == noPageSizeProvidedError {
 			pageSize = defaultPageSize
 		} else if err != nil {
+			app.AddError()
 			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
 			return
 		} else if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+			app.AddError()
 			FailWith(400, fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", app.Config.GetInt("api.maxReturnedMembers"), pageSize), c)
 			return
 		}
@@ -173,9 +182,11 @@ func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 		members, err := l.GetAroundMe(memberPublicID)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			app.AddError()
 			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -199,6 +210,7 @@ func GetTotalMembersHandler(app *App) func(c *iris.Context) {
 		count, err := l.TotalMembers()
 
 		if err != nil {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -221,6 +233,7 @@ func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 		if err != nil && err.Error() == noPageSizeProvidedError {
 			pageSize = defaultPageSize
 		} else if err != nil {
+			app.AddError()
 			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
 			return
 		}
@@ -229,6 +242,7 @@ func GetTotalPagesHandler(app *App) func(c *iris.Context) {
 		count, err := l.TotalPages()
 
 		if err != nil {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -249,6 +263,7 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
 		pageNumber, err := c.ParamInt("pageNumber")
 		if err != nil {
+			app.AddError()
 			FailWith(400, fmt.Sprintf("Invalid pageNumber provided: %s", err.Error()), c)
 			return
 		}
@@ -256,9 +271,11 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 		if err != nil && err.Error() == noPageSizeProvidedError {
 			pageSize = defaultPageSize
 		} else if err != nil {
+			app.AddError()
 			FailWith(400, fmt.Sprintf("Invalid pageSize provided: %s", err.Error()), c)
 			return
 		} else if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+			app.AddError()
 			FailWith(400, fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", app.Config.GetInt("api.maxReturnedMembers"), pageSize), c)
 			return
 		}
@@ -267,9 +284,11 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 		members, err := l.GetLeaders(pageNumber)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			app.AddError()
 			FailWith(404, "Member not found.", c)
 			return
 		} else if err != nil {
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -290,6 +309,7 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
 		percentage, err := c.ParamInt("percentage")
 		if err != nil {
+			app.AddError()
 			FailWith(400, fmt.Sprintf("Invalid percentage provided: %s", err.Error()), c)
 			return
 		}
@@ -299,10 +319,12 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 
 		if err != nil {
 			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
+				app.AddError()
 				FailWith(400, err.Error(), c)
 				return
 			}
 
+			app.AddError()
 			FailWith(500, err.Error(), c)
 			return
 		}
@@ -334,6 +356,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
 			member, err := l.SetMemberScore(memberPublicID, payload.Score)
 
 			if err != nil {
+				app.AddError()
 				FailWith(500, err.Error(), c)
 				return
 			}

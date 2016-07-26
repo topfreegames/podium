@@ -54,7 +54,7 @@ func (m *MockKeyValue) AddMarshaler(key string, marshaler zap.LogMarshaler) erro
 
 //AddObject to the kv
 func (m *MockKeyValue) AddObject(key string, value interface{}) error {
-	m.Values[key] = value
+	m.Values[key] = fmt.Sprintf("%v", value)
 	return nil
 }
 
@@ -194,7 +194,7 @@ func testLogMessage(logger *MockLogger, level zap.Level, message string, fields 
 		if msg["message"] != message {
 			continue
 		}
-		if msg["level"] != level {
+		if msg["level"].(zap.Level) != level {
 			continue
 		}
 

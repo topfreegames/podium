@@ -38,13 +38,17 @@ var startCmd = &cobra.Command{
 			zap.String("source", "app"),
 		)
 
-		app := api.GetApp(
+		app, err := api.GetApp(
 			host,
 			port,
 			ConfigFile,
 			debug,
 			logger,
 		)
+
+		if err != nil {
+			logger.Fatal("Could not start podium application.", zap.Error(err))
+		}
 
 		app.Start()
 	},

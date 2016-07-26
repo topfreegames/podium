@@ -40,7 +40,7 @@ type App struct {
 }
 
 // GetApp returns a new podium Application
-func GetApp(host string, port int, configPath string, debug bool, logger zap.Logger) *App {
+func GetApp(host string, port int, configPath string, debug bool, logger zap.Logger) (*App, error) {
 	app := &App{
 		Host:       host,
 		Port:       port,
@@ -49,16 +49,30 @@ func GetApp(host string, port int, configPath string, debug bool, logger zap.Log
 		Debug:      debug,
 		Logger:     logger,
 	}
-	app.Configure()
-	return app
+	err := app.Configure()
+	if err != nil {
+		return nil, err
+	}
+	return app, nil
 }
 
 // Configure instantiates the required dependencies for podium Application
-func (app *App) Configure() {
+func (app *App) Configure() error {
 	app.setConfigurationDefaults()
-	app.loadConfiguration()
+
+	err := app.loadConfiguration()
+	if err != nil {
+		return err
+	}
+
 	app.configureSentry()
-	app.configureApplication()
+
+	err = app.configureApplication()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (app *App) configureSentry() {
@@ -81,7 +95,7 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("redis.maxPoolSize", 20)
 }
 
-func (app *App) loadConfiguration() {
+func (app *App) loadConfiguration() error {
 	app.Config.SetConfigFile(app.ConfigPath)
 	app.Config.SetEnvPrefix("podium")
 	app.Config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -90,11 +104,14 @@ func (app *App) loadConfiguration() {
 	if err := app.Config.ReadInConfig(); err == nil {
 		app.Logger.Info("Loaded config file.", zap.String("configFile", app.Config.ConfigFileUsed()))
 	} else {
-		panic(fmt.Sprintf("Could not load configuration file from: %s", app.ConfigPath))
+		return fmt.Errorf("Could not load configuration file from: %s", app.ConfigPath)
 	}
+
+	return nil
 }
 
-func (app *App) onErrorHandler(err interface{}, stack []byte) {
+//OnErrorHandler handles application panics
+func (app *App) OnErrorHandler(err interface{}, stack []byte) {
 	app.Logger.Error(
 		"Panic occurred.",
 		zap.Object("panicText", err),
@@ -116,7 +133,7 @@ func (app *App) onErrorHandler(err interface{}, stack []byte) {
 	raven.CaptureError(e, tags)
 }
 
-func (app *App) configureApplication() {
+func (app *App) configureApplication() error {
 	l := app.Logger.With(
 		zap.String("operation", "configureApplication"),
 	)
@@ -129,7 +146,7 @@ func (app *App) configureApplication() {
 	a := app.App
 
 	a.Use(NewLoggerMiddleware(app.Logger))
-	a.Use(&RecoveryMiddleware{OnError: app.onErrorHandler})
+	a.Use(&RecoveryMiddleware{OnError: app.OnErrorHandler})
 	a.Use(&VersionMiddleware{App: app})
 	a.Use(&SentryMiddleware{App: app})
 
@@ -168,13 +185,15 @@ func (app *App) configureApplication() {
 	rl.Debug("Connecting to redis...")
 	cli, err := util.GetRedisClient(redisHost, redisPort, redisPass, redisDB, redisMaxPoolSize, app.Logger)
 	if err != nil {
-		panic(fmt.Sprintf("Could not connect to redis: %s", err))
+		return err
 	}
 	app.RedisClient = cli
 	rl.Info("Connected to redis successfully.")
+	return nil
 }
 
-func (app *App) addError() {
+//AddError rate statistics
+func (app *App) AddError() {
 	app.Errors.Update(1)
 }
 

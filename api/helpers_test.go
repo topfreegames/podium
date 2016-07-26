@@ -14,17 +14,35 @@ import (
 	"net/http"
 	"strings"
 
+	"gopkg.in/redis.v4"
+
 	"github.com/gavv/httpexpect"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/testing"
+	"github.com/topfreegames/podium/util"
+	"github.com/uber-go/zap"
 	"github.com/valyala/fasthttp"
 )
+
+//GetFaultyRedis returns an invalid connection to redis
+func GetFaultyRedis(logger zap.Logger) *util.RedisClient {
+	return &util.RedisClient{
+		Client: redis.NewClient(&redis.Options{
+			Addr:     "localhost:38465",
+			Password: "",
+			DB:       0,
+			PoolSize: 20,
+		}),
+		Logger: logger,
+	}
+}
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
 func GetDefaultTestApp() *App {
 	logger := testing.NewMockLogger()
-	app := GetApp("0.0.0.0", 8890, "../config/test.yaml", false, logger)
+	app, err := GetApp("0.0.0.0", 8890, "../config/test.yaml", false, logger)
+	Expect(err).NotTo(HaveOccurred())
 	app.Configure()
 	return app
 }

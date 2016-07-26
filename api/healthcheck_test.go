@@ -35,4 +35,14 @@ var _ = Describe("Healthcheck Handler", func() {
 		Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 		Expect(res.Body().Raw()).To(Equal("OTHERWORKING"))
 	})
+
+	It("Should fail if redis failing", func() {
+		a := api.GetDefaultTestApp()
+		a.RedisClient = api.GetFaultyRedis(a.Logger)
+
+		res := api.Get(a, "/healthcheck")
+
+		Expect(res.Raw().StatusCode).To(Equal(500))
+		Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+	})
 })

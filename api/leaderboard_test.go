@@ -87,6 +87,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["reason"]).To(ContainSubstring("While trying to read JSON"))
 		})
 
+		It("Should fail if error updating score", func() {
+			payload := map[string]interface{}{
+				"score": 100,
+			}
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.PutJSON(app, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+
 		Measure("it should set correct member score", func(b Benchmarker) {
 			runtime := b.Time("runtime", func() {
 				payload := map[string]interface{}{
@@ -106,7 +118,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			res := api.Delete(a, "/l/testkey/members/memberpublicid")
-			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK), res.Body().Raw())
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
