@@ -112,20 +112,6 @@ func BenchmarkGetTotalMembers(b *testing.B) {
 	}
 }
 
-func BenchmarkGetTotalPages(b *testing.B) {
-	l := generateNMembers(b.N)
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		route := getRoute(fmt.Sprintf("/l/%s/pages", l.PublicID))
-		status, body, err := sendTo("GET", route, nil)
-		validateResp(status, body, err)
-		b.SetBytes(int64(len([]byte(body))))
-
-		keeper = body
-	}
-}
-
 func BenchmarkGetTopMembers(b *testing.B) {
 	l := generateNMembers(b.N)
 	b.ResetTimer()
