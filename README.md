@@ -44,15 +44,15 @@ Benchmarks
 
 Podium benchmarks prove it's blazing fast:
 
-    BenchmarkSetUserScore-8    	   50000	    121245 ns/op	   0.75 MB/s	    5281 B/op	      71 allocs/op
-    BenchmarkRemoveUser-8      	  100000	    119257 ns/op	   0.13 MB/s	    3840 B/op	      53 allocs/op
-    BenchmarkGetUser-8         	  100000	    102257 ns/op	   0.63 MB/s	    4367 B/op	      57 allocs/op
-    BenchmarkGetUserRank-8     	  100000	     82795 ns/op	   0.59 MB/s	    4367 B/op	      57 allocs/op
-    BenchmarkGetAroundUser-8   	   10000	    512711 ns/op	   1.94 MB/s	    8028 B/op	      58 allocs/op
-    BenchmarkGetTotalMembers-8 	  100000	     79465 ns/op	   0.39 MB/s	    4192 B/op	      53 allocs/op
-    BenchmarkGetTotalPages-8   	  100000	     80390 ns/op	   0.36 MB/s	    4160 B/op	      53 allocs/op
-    BenchmarkGetTopUsers-8     	   20000	    498763 ns/op	   2.04 MB/s	    7717 B/op	      55 allocs/op
-    BenchmarkGetTopPercentage-8	   10000	   5265023 ns/op	   9.31 MB/s	  231009 B/op	      60 allocs/op
+    BenchmarkSetMemberScore-4                      	   20000	    285962 ns/op	   0.32 MB/s	    5219 B/op	      71 allocs/op
+    BenchmarkRemoveMember-4                        	   50000	    220081 ns/op	   0.07 MB/s	    3823 B/op	      53 allocs/op
+    BenchmarkGetMember-4                           	   30000	    266313 ns/op	   0.27 MB/s	    4143 B/op	      56 allocs/op
+    BenchmarkGetMemberRank-4                       	   30000	    231241 ns/op	   0.25 MB/s	    4319 B/op	      57 allocs/op
+    BenchmarkGetAroundMember-4                     	   10000	    519063 ns/op	   2.38 MB/s	    8314 B/op	      58 allocs/op
+    BenchmarkGetTotalMembers-4                     	   30000	    196277 ns/op	   0.15 MB/s	    3936 B/op	      52 allocs/op
+    BenchmarkGetTopMembers-4                       	   20000	    455470 ns/op	   2.59 MB/s	    7973 B/op	      54 allocs/op
+    BenchmarkGetTopPercentage-4                    	     500	  14354336 ns/op	   8.28 MB/s	  509746 B/op	      65 allocs/op
+    BenchmarkSetMemberScoreForSeveralLeaderboards-4	    1000	  70326444 ns/op	   1.55 MB/s	  534548 B/op	      96 allocs/op
 
 To run the benchmarks: `make bench-redis bench-podium-app bench-run`.
 
