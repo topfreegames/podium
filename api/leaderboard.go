@@ -334,3 +334,24 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
 		}, c)
 	}
 }
+
+// RemoveLeaderboardHandler is the handler responsible for removing a leaderboard
+func RemoveLeaderboardHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "RemoveLeaderboardHandler"),
+		)
+		leaderboardID := c.Param("leaderboardID")
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+		err := l.RemoveLeaderboard()
+
+		if err != nil {
+			app.AddError()
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{}, c)
+	}
+}

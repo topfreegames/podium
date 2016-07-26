@@ -101,6 +101,35 @@ Podium API
       }
       ```
 
+  ### Remove a leaderboard
+  `DELETE /l/:leaderboardID`
+
+  Remove the entire leaderboard from Podium.
+
+  **WARNING: This operation cannot be undone and all the information in the leaderboard will be destroyed.**
+
+  `leaderboardID` should be a valid [leaderboard name](leaderboard-names.html).
+
+  * Success Response
+    * Code: `200`
+    * Content:
+      ```
+      {
+        "success": true,
+      }
+      ```
+
+  * Error Response
+
+    * Code: `500`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
   ### Get a member score and rank
   `GET /l/:leaderboardID/members/:memberPublicID`
 

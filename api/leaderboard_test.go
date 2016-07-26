@@ -971,4 +971,39 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.03), "Set score shouldn't take too long.")
 		}, 200)
 	})
+
+	Describe("Remove Leaderboard", func() {
+		It("should remove a leaderboard", func() {
+			leaderboardID := uuid.NewV4().String()
+			lead := leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 0, lg)
+
+			for i := 0; i < 10; i++ {
+				_, err := lead.SetMemberScore(fmt.Sprintf("member-%d", i), 500)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Delete(a, fmt.Sprintf("/l/%s", leaderboardID))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+		})
+
+		It("should remove a leaderboard that does not exist", func() {
+			res := api.Delete(a, fmt.Sprintf("/l/%s", uuid.NewV4().String()))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+		})
+
+		It("Should fail if error in Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Delete(app, fmt.Sprintf("/l/%s", uuid.NewV4().String()))
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+	})
 })

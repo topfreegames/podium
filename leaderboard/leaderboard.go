@@ -435,3 +435,23 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*Member, erro
 
 	return members, nil
 }
+
+// RemoveLeaderboard removes a leaderboard from redis
+func (lb *Leaderboard) RemoveLeaderboard() error {
+	l := lb.Logger.With(
+		zap.String("operation", "RemoveLeaderboard"),
+		zap.String("leaguePublicID", lb.PublicID),
+	)
+
+	l.Debug("Removing leaderboard...")
+	cli := lb.RedisClient.Client
+
+	_, err := cli.Del(lb.PublicID).Result()
+	if err != nil {
+		l.Error("Failed to remove leaderboard.", zap.Error(err))
+		return err
+	}
+
+	l.Info("Leaderboard removed.")
+	return nil
+}

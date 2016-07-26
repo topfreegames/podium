@@ -536,4 +536,31 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
+
+	Describe("remove leaderboard", func() {
+		It("should remove a leaderboard from redis", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			for i := 0; i < 10; i++ {
+				_, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			err := leader.RemoveLeaderboard()
+			Expect(err).NotTo(HaveOccurred())
+
+			exists, err := redisClient.Client.Exists(leaderboardID).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exists).To(BeFalse())
+		})
+
+		It("should fail if invalid connection to Redis", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(getFaultyRedis(logger), leaderboardID, 10, logger)
+			err := leader.RemoveLeaderboard()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
+	})
 })
