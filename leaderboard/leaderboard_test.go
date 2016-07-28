@@ -563,4 +563,60 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
+
+	Describe("getting many members at once", func() {
+		It("should return all member details", func() {
+			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
+			for i := 0; i < 100; i++ {
+				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
+			}
+
+			members, err := lb.GetMembers("member-10", "member-30", "member-20")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(3))
+
+			Expect(members[0].PublicID).To(Equal("member-10"))
+			Expect(members[0].Rank).To(Equal(11))
+			Expect(members[0].Score).To(Equal(90))
+
+			Expect(members[1].PublicID).To(Equal("member-20"))
+			Expect(members[1].Rank).To(Equal(21))
+			Expect(members[1].Score).To(Equal(80))
+
+			Expect(members[2].PublicID).To(Equal("member-30"))
+			Expect(members[2].Rank).To(Equal(31))
+			Expect(members[2].Score).To(Equal(70))
+		})
+
+		It("should return empty list if invalid leaderboard id", func() {
+			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
+			members, err := lb.GetMembers("test")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(members).To(HaveLen(0))
+		})
+
+		It("should return empty list if invalid members", func() {
+			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
+
+			for i := 0; i < 10; i++ {
+				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
+			}
+
+			members, err := lb.GetMembers("member-0", "invalid-member")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(members).To(HaveLen(1))
+			Expect(members[0].PublicID).To(Equal("member-0"))
+			Expect(members[0].Rank).To(Equal(1))
+			Expect(members[0].Score).To(Equal(100))
+		})
+
+		It("should fail with faulty redis", func() {
+			lb := NewLeaderboard(faultyRedisClient, uuid.NewV4().String(), 10, logger)
+			_, err := lb.GetMembers()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
+	})
 })

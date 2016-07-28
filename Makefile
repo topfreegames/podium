@@ -31,6 +31,10 @@ build:
 	@go build $(GODIRS)
 	@go build -o ./bin/podium ./main.go
 
+# run app
+run: redis
+	@go run main.go start
+
 # get a redis instance up (localhost:1212)
 redis: redis-shutdown
 	@if [ -z "$$REDIS_PORT" ]; then \

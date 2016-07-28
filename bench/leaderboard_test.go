@@ -9,6 +9,7 @@ package bench
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/satori/go.uuid"
@@ -157,6 +158,28 @@ func BenchmarkSetMemberScoreForSeveralLeaderboards(b *testing.B) {
 		}
 
 		status, body, err := putTo(route, payload)
+		validateResp(status, body, err)
+		b.SetBytes(int64(len([]byte(body))))
+
+		keeper = body
+	}
+}
+
+func BenchmarkGetMembers(b *testing.B) {
+	l := generateNMembers(b.N)
+	memberIDs := []string{}
+	for i := 0; i <= 500; i++ {
+		memberID := fmt.Sprintf("bench-member-%d", i)
+		memberIDs = append(memberIDs, memberID)
+	}
+
+	mIDs := strings.Join(memberIDs, ",")
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		route := getRoute(fmt.Sprintf("/l/%s/members?ids=%s", l.PublicID, mIDs))
+		status, body, err := sendTo("GET", route, nil)
 		validateResp(status, body, err)
 		b.SetBytes(int64(len([]byte(body))))
 

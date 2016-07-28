@@ -171,6 +171,57 @@ Podium API
       }
       ```
 
+  ### Get multiple member scores and rank
+  `GET /l/:leaderboardID/members?ids=publicIDcsv`
+
+  Gets multiple members' score and ranks within a leaderboard.
+
+  If any public IDs are not found, they will be returned in the `notFound` list in the response. This is so a list of all the desired members (i.e.: player's friends) can be retrieved and only the ones in the leaderboard get returned.
+
+  Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and publicIDcsv should be a comma-separated list of the desired members Public IDs.
+
+  * Success Response
+    * Code: `200`
+    * Content:
+      ```
+      {
+        "members": [
+          {
+            "publicID": [string],   // member public id
+            "rank": [int],          // member rank in the specific leaderboard
+            "position": [int],      // member rank for all members returned in this request
+            "score": [int],         // member score in the leaderboard
+          }
+        ],
+        "notFound": [
+          "[string]"                // list of public ids that were not found in the leaderboard
+        ],
+        "success": true
+      }
+      ```
+
+  * Error Response
+
+    It will return an error if a list of member ids is not supplied.
+
+    * Code: `400`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
+    * Code: `500`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
   ### Remove member from leaderboard
   `DELETE /l/:leaderboardID/members/:memberPublicID`
 

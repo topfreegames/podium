@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
@@ -69,6 +70,14 @@ A smoke test will perform all the available operations in a leaderboard and then
 			getMember(leaderboardID, fmt.Sprintf("member-%d", i))
 		}
 		fmt.Println("Member details retrieved successfully.\n")
+
+		fmt.Println("Getting many members from leaderboard...")
+		memberIDs := []string{}
+		for i := 0; i < 100; i++ {
+			memberIDs = append(memberIDs, fmt.Sprintf("member-%d", i))
+		}
+		getMembers(leaderboardID, strings.Join(memberIDs, ","))
+		fmt.Println("Members retrieved successfully.\n")
 
 		fmt.Println("Getting members ranks from leaderboard...")
 		for i := 0; i < 100; i++ {
@@ -147,6 +156,20 @@ func getMember(leaderboardID, memberID string) {
 	}
 }
 
+func getMembers(leaderboardID, memberIDs string) {
+	url := fmt.Sprintf("/l/%s/members?ids=%s", leaderboardID, memberIDs)
+	status, body, err := doRequest(
+		"GET",
+		url,
+		"",
+	)
+	if err != nil {
+		log.Fatalf("Could not get members at %s. Error: %s", baseURL, err.Error())
+	}
+	if status != 200 {
+		log.Fatalf("Could not get members at %s (Status: %d). Error: %s", baseURL, status, body)
+	}
+}
 func getRank(leaderboardID, memberID string) {
 	url := fmt.Sprintf("/l/%s/members/%s/rank", leaderboardID, memberID)
 	status, body, err := doRequest(

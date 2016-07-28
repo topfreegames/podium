@@ -88,6 +88,7 @@ func (app *App) configureSentry() {
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
 	app.Config.SetDefault("api.maxReturnedMembers", 2000)
+	app.Config.SetDefault("api.maxReadBufferSize", 32000)
 	app.Config.SetDefault("redis.host", "localhost")
 	app.Config.SetDefault("redis.port", 1212)
 	app.Config.SetDefault("redis.password", "")
@@ -155,6 +156,7 @@ func (app *App) configureApplication() error {
 	a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
 	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
+	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
 	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
@@ -199,5 +201,9 @@ func (app *App) AddError() {
 
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() {
-	app.App.Listen(fmt.Sprintf("%s:%d", app.Host, app.Port))
+	cfg := config.Server{
+		ListeningAddr:  fmt.Sprintf("%s:%d", app.Host, app.Port),
+		ReadBufferSize: app.Config.GetInt("api.maxReadBufferSize"),
+	}
+	app.App.Must(app.App.ListenTo(cfg))
 }

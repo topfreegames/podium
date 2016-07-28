@@ -12,6 +12,7 @@ package leaderboard
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -43,6 +44,21 @@ type Member struct {
 	PublicID string
 	Score    int
 	Rank     int
+}
+
+//Members are a list of member
+type Members []*Member
+
+func (slice Members) Len() int {
+	return len(slice)
+}
+
+func (slice Members) Less(i, j int) bool {
+	return slice[i].Rank < slice[j].Rank
+}
+
+func (slice Members) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
 }
 
 // Leaderboard identifies a leaderboard with given redis client
@@ -264,6 +280,66 @@ func (lb *Leaderboard) GetMember(memberID string) (*Member, error) {
 	l.Info("Member information found.", zap.Int("rank", rank), zap.Int("score", score))
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank + 1}
 	return &nMember, nil
+}
+
+// GetMembers returns the score and the rank of the members with the given IDs
+func (lb *Leaderboard) GetMembers(memberIDs ...string) ([]*Member, error) {
+	l := lb.Logger.With(
+		zap.String("operation", "GetMembers"),
+		zap.String("leaguePublicID", lb.PublicID),
+	)
+
+	cli := lb.RedisClient.Client
+
+	l.Debug("Getting members information...")
+	script := redis.NewScript(`
+		-- Script params:
+		-- KEYS[1] is the name of the leaderboard
+		-- ARGV[1] is member's public IDs
+
+		local members = {}
+
+		for publicID in string.gmatch(ARGV[1], '([^,]+)') do
+			-- gets rank of the member
+			local rank = redis.call("ZREVRANK", KEYS[1], publicID)
+			local score = redis.call("ZSCORE", KEYS[1], publicID)
+
+			table.insert(members, publicID)
+			table.insert(members, rank)
+			table.insert(members, score)
+		end
+
+		return members
+	`)
+
+	result, err := script.Run(cli, []string{lb.PublicID}, strings.Join(memberIDs, ",")).Result()
+	if err != nil {
+		l.Error("Getting members information failed.", zap.Error(err))
+		return nil, err
+	}
+
+	res := result.([]interface{})
+	members := Members{}
+	for i := 0; i < len(res); i += 3 {
+		memberPublicID := res[i].(string)
+		if res[i+1] == nil || res[i+2] == nil {
+			continue
+		}
+
+		rank := int(res[i+1].(int64)) + 1
+		s, _ := strconv.ParseInt(res[i+2].(string), 10, 32)
+		score := int(s)
+
+		members = append(members, &Member{
+			PublicID: memberPublicID,
+			Score:    score,
+			Rank:     rank,
+		})
+	}
+
+	l.Info("Members information found.")
+	sort.Sort(members)
+	return members, nil
 }
 
 // GetAroundMe returns a page of results centered in the member with the given ID

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -1005,5 +1006,140 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(res.Raw().StatusCode).To(Equal(500))
 			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
 		})
+	})
+
+	Describe("Get Members Handler", func() {
+		It("should get several members from leaderboard", func() {
+			leaderboardID := uuid.NewV4().String()
+			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore(fmt.Sprintf("member_%d", i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, fmt.Sprintf("/l/%s/members/", l.PublicID), map[string]interface{}{
+				"ids": "member_10,member_20,member_30",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["notFound"]).To(BeEmpty())
+			members := result["members"].([]interface{})
+			Expect(members).To(HaveLen(3))
+
+			for i := 0; i < 3; i++ {
+				By(fmt.Sprintf("Member %d", i))
+				member := members[i].(map[string]interface{})
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", (i+1)*10)))
+				Expect(member["rank"]).To(BeEquivalentTo((i + 1) * 10))
+				Expect(member["score"]).To(BeEquivalentTo(101 - (i+1)*10))
+				Expect(member["position"]).To(BeEquivalentTo(i))
+			}
+		})
+
+		It("should return empty list if invalid leaderboard", func() {
+			res := api.Get(a, "/l/invalid-leaderboard/members/", map[string]interface{}{
+				"ids": "member_10,member_20,member_30",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["members"]).To(HaveLen(0))
+			Expect(result["notFound"]).To(HaveLen(3))
+
+			members := result["notFound"].([]interface{})
+			Expect(members).To(HaveLen(3))
+			Expect(members[0]).To(Equal("member_10"))
+			Expect(members[1]).To(Equal("member_20"))
+			Expect(members[2]).To(Equal("member_30"))
+		})
+
+		It("should return not found members", func() {
+			leaderboardID := uuid.NewV4().String()
+			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+
+			for i := 1; i <= 10; i++ {
+				_, err := l.SetMemberScore(fmt.Sprintf("member_%d", i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, fmt.Sprintf("/l/%s/members/", l.PublicID), map[string]interface{}{
+				"ids": "member_1,invalid_member",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(members).To(HaveLen(1))
+
+			member := members[0].(map[string]interface{})
+			Expect(member["publicID"]).To(Equal("member_1"))
+			Expect(member["rank"]).To(BeEquivalentTo(1))
+			Expect(member["score"]).To(BeEquivalentTo(100))
+
+			members = result["notFound"].([]interface{})
+			Expect(members).To(HaveLen(1))
+			Expect(members[0]).To(Equal("invalid_member"))
+		})
+
+		It("should fail if no public ids sent", func() {
+			leaderboardID := uuid.NewV4().String()
+			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+
+			res := api.Get(a, fmt.Sprintf("/l/%s/members/", l.PublicID))
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusBadRequest))
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("Member IDs are required using the 'ids' querystring parameter"))
+		})
+
+		It("Should fail if error in Redis", func() {
+			app := api.GetDefaultTestApp()
+			app.RedisClient = api.GetFaultyRedis(a.Logger)
+
+			res := api.Get(app, "/l/invalid-redis/members/", map[string]interface{}{
+				"ids": "member_10,member_20,member_30",
+			})
+
+			Expect(res.Raw().StatusCode).To(Equal(500))
+			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		})
+
+		Measure("it should get members", func(b Benchmarker) {
+			leaderboardID := uuid.NewV4().String()
+			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+
+			memberIDs := []string{}
+			for i := 1; i <= 1000; i++ {
+				memberID := fmt.Sprintf("member_%d", i)
+				memberIDs = append(memberIDs, memberID)
+				_, err := l.SetMemberScore(memberID, 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			mIDs := strings.Join(memberIDs, ",")
+
+			runtime := b.Time("runtime", func() {
+				res := api.Get(a, fmt.Sprintf("/l/%s/members/", l.PublicID), map[string]interface{}{
+					"ids": mIDs,
+				})
+				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.05), "Getting members shouldn't take too long.")
+		}, 200)
 	})
 })

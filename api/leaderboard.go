@@ -31,18 +31,26 @@ type setScoresPayload struct {
 	Leaderboards []string
 }
 
-func serializeMember(member *leaderboard.Member) map[string]interface{} {
-	return map[string]interface{}{
+func serializeMember(member *leaderboard.Member, position int) map[string]interface{} {
+	memberData := map[string]interface{}{
 		"publicID": member.PublicID,
 		"score":    member.Score,
 		"rank":     member.Rank,
 	}
+	if position >= 0 {
+		memberData["position"] = position
+	}
+	return memberData
 }
 
-func serializeMembers(members []*leaderboard.Member) []map[string]interface{} {
+func serializeMembers(members []*leaderboard.Member, includePosition bool) []map[string]interface{} {
 	serializedMembers := make([]map[string]interface{}, len(members))
 	for i, member := range members {
-		serializedMembers[i] = serializeMember(member)
+		if includePosition {
+			serializedMembers[i] = serializeMember(member, i)
+		} else {
+			serializedMembers[i] = serializeMember(member, -1)
+		}
 	}
 	return serializedMembers
 }
@@ -72,7 +80,7 @@ func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		SucceedWith(serializeMember(member), c)
+		SucceedWith(serializeMember(member, -1), c)
 	}
 }
 
@@ -122,7 +130,7 @@ func GetMemberHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		SucceedWith(serializeMember(member), c)
+		SucceedWith(serializeMember(member, -1), c)
 	}
 }
 
@@ -192,7 +200,7 @@ func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members),
+			"members": serializeMembers(members, false),
 		}, c)
 	}
 }
@@ -258,7 +266,7 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members),
+			"members": serializeMembers(members, false),
 		}, c)
 	}
 }
@@ -294,7 +302,55 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 		}
 
 		SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members),
+			"members": serializeMembers(members, false),
+		}, c)
+	}
+}
+
+// GetMembersHandler retrieves several members at once
+func GetMembersHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "GetMembersHandler"),
+		)
+
+		leaderboardID := c.Param("leaderboardID")
+		ids := c.URLParam("ids")
+		if ids == "" {
+			app.AddError()
+			FailWith(400, "Member IDs are required using the 'ids' querystring parameter", c)
+			return
+		}
+
+		memberIDs := strings.Split(ids, ",")
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
+		members, err := l.GetMembers(memberIDs...)
+
+		if err != nil {
+			app.AddError()
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		notFound := []string{}
+
+		for _, memberID := range memberIDs {
+			found := false
+			for _, member := range members {
+				if member.PublicID == memberID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				notFound = append(notFound, memberID)
+			}
+		}
+
+		SucceedWith(map[string]interface{}{
+			"members":  serializeMembers(members, true),
+			"notFound": notFound,
 		}, c)
 	}
 }
@@ -324,7 +380,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
 				FailWith(500, err.Error(), c)
 				return
 			}
-			serializedScore := serializeMember(member)
+			serializedScore := serializeMember(member, -1)
 			serializedScore["leaderboardID"] = leaderboardID
 			serializedScores[i] = serializedScore
 		}
