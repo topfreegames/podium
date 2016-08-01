@@ -222,12 +222,12 @@ Podium API
       }
       ```
 
-  ### Remove member from leaderboard
-  `DELETE /l/:leaderboardID/members/:memberPublicID`
+  ### Remove members from leaderboard
+  `DELETE /l/:leaderboardID/members?ids=memberPublicID1,memberPublicID2,...`
 
-  Removes specified member from leaderboard. If member is not in leaderboard, do nothing.
+  Removes specified members from leaderboard. If a member is not in leaderboard, do nothing.
 
-  Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and memberPublicID should be a unique identifier for the member being removed.
+  Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and ids should be a list of unique identifier for the members being removed, separated by commas.
 
   * Success Response
     * Code: `200`
@@ -249,6 +249,47 @@ Podium API
       }
       ```
 
+
+  ### Get a member score and rank in many leaderboards
+  `GET /m/:memberPublicID/scores?leaderboardIds=leaderboard1,leaderboard2,...`
+
+  Get a member score and rank within many leaderboards.
+
+  Leaderboard Ids should be valid leaderboard names separated by commas.
+
+  * Sucess Response
+
+    * Code: 200
+    * Content:
+      ```
+      {
+        "scores": [
+          {
+            "leaderboardID": "teste",
+            "rank": 1,
+            "score": 100
+          },
+          {
+            "leaderboardID": "teste2",
+            "rank": 1,
+            "score": 100
+          }
+        ],
+        "success": true
+      }   
+      ```
+
+  * Error Response
+
+    * Code: 500
+    * Content:
+    ```
+    {
+      "reason": "Could not find data for member teste3 in leaderboard teste3.",
+      "success": false
+    }
+    ```
+    
   ### Get a member rank
   `GET /l/:leaderboardID/members/:memberPublicID/rank`
 
