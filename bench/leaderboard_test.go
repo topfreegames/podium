@@ -44,7 +44,7 @@ func BenchmarkRemoveMember(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		memberID := fmt.Sprintf("bench-member-%d", i)
-		route := getRoute(fmt.Sprintf("/l/%s/members/%s", l.PublicID, memberID))
+		route := getRoute(fmt.Sprintf("/l/%s/members?ids=%s", l.PublicID, memberID))
 		status, body, err := sendTo("DELETE", route, nil)
 		validateResp(status, body, err)
 		b.SetBytes(int64(len([]byte(body))))
