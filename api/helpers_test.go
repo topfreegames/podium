@@ -94,6 +94,13 @@ func Delete(app *App, url string) *httpexpect.Response {
 	return req.Expect()
 }
 
+// Delete returns a test request against specified URL
+func DeleteWithQuery(app *App, url string, queryKey, queryValue string) *httpexpect.Response {
+	req := sendRequest(app, "DELETE", url)
+	req.WithQuery(queryKey, queryValue)
+	return req.Expect()
+}
+
 //GinkgoReporter implements tests for httpexpect
 type GinkgoReporter struct {
 }

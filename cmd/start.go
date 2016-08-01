@@ -58,7 +58,7 @@ func init() {
 	RootCmd.AddCommand(startCmd)
 
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind podium to")
-	startCmd.Flags().IntVarP(&port, "port", "p", 8890, "Port to bind podium to")
+	startCmd.Flags().IntVarP(&port, "port", "p", 8880, "Port to bind podium to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode (log=debug)")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log=warn)")
 }

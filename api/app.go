@@ -157,7 +157,7 @@ func (app *App) configureApplication() error {
 	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
 	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
-	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
+	a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
 	a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
