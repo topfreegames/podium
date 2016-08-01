@@ -84,18 +84,29 @@ func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 	}
 }
 
-// RemoveMemberHandler is the handler responsible for removing a member score
-func RemoveMemberHandler(app *App) func(c *iris.Context) {
+func RemoveMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(
-			zap.String("handler", "RemoveMemberHandler"),
+			zap.String("handler", "RemoveMembersHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
+		ids := c.URLParam("ids")
+
+		if ids == "" {
+			app.AddError()
+			FailWith(400, "Member IDs are required using the 'ids' querystring parameter", c)
+			return
+		}
+
+		memberIDs := strings.Split(ids, ",")
+		idsInter := make([]interface{}, len(memberIDs))
+		for i, v := range memberIDs {
+			idsInter[i] = v
+		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		err := l.RemoveMember(memberPublicID)
+		err := l.RemoveMembers(idsInter)
 
 		if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
 			app.AddError()

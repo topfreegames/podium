@@ -196,23 +196,22 @@ func (lb *Leaderboard) TotalMembers() (int, error) {
 }
 
 // RemoveMember removes the member with the given publicID from the leaderboard
-func (lb *Leaderboard) RemoveMember(memberID string) error {
+func (lb *Leaderboard) RemoveMembers(memberIDs []interface{}) error {
 	l := lb.Logger.With(
-		zap.String("operation", "RemoveMember"),
+		zap.String("operation", "RemoveMembers"),
 		zap.String("leaguePublicID", lb.PublicID),
-		zap.String("memberID", memberID),
 	)
 
 	cli := lb.RedisClient.Client
 
-	l.Debug("Removing member from leaderboard...")
+	l.Debug("Removing members from leaderboard...")
 
-	_, err := cli.ZRem(lb.PublicID, memberID).Result()
+	_, err := cli.ZRem(lb.PublicID, memberIDs...).Result()
 	if err != nil {
-		l.Error("Member removal failed...", zap.Error(err))
+		l.Error("Members removal failed...", zap.Error(err))
 		return err
 	}
-	l.Info("Member removed successfully.")
+	l.Info("Members removed successfully.")
 	return nil
 }
 

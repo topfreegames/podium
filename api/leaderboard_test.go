@@ -118,13 +118,32 @@ var _ = Describe("Leaderboard Handler", func() {
 			_, err := l.SetMemberScore("memberpublicid", 100)
 			Expect(err).NotTo(HaveOccurred())
 
-			res := api.Delete(a, "/l/testkey/members/memberpublicid")
+			res := api.DeleteWithQuery(a, "/l/testkey/members", "ids", "memberpublicid")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK), res.Body().Raw())
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 
 			_, err = l.GetMember("memberpublicid")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
+		})
+
+		It("Should delete many member score from redis if they exists", func() {
+			_, err := l.SetMemberScore("memberpublicid", 100)
+			_, err = l.SetMemberScore("memberpublicid2", 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			res := api.DeleteWithQuery(a, "/l/testkey/members", "ids", "memberpublicid,memberpublicid2")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK), res.Body().Raw())
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+
+			_, err = l.GetMember("memberpublicid")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
+			_, err = l.GetMember("memberpublicid2")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
@@ -136,13 +155,13 @@ var _ = Describe("Leaderboard Handler", func() {
 			app := api.GetDefaultTestApp()
 			app.RedisClient = api.GetFaultyRedis(a.Logger)
 
-			res := api.Delete(app, "/l/testkey/members/memberpublicid")
+			res := api.DeleteWithQuery(app, "/l/testkey/members", "ids", "memberpublicid")
 			Expect(res.Raw().StatusCode).To(Equal(500))
 			Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
 		})
 
 		It("Should not fail in deleting member score from redis if score does not exist", func() {
-			res := api.Delete(a, "/l/testkey/members/memberpublicid")
+			res := api.DeleteWithQuery(a, "/l/testkey/members", "ids", "memberpublicid")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			var result map[string]interface{}
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
@@ -160,7 +179,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			runtime := b.Time("runtime", func() {
-				res := api.Delete(a, fmt.Sprintf("/l/%s/members/%s", lead.PublicID, memberID))
+				res := api.DeleteWithQuery(a, fmt.Sprintf("/l/%s/members", lead.PublicID), "ids", memberID)
 				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			})
 
