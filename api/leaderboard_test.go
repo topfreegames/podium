@@ -1196,7 +1196,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			})
 
-			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.05), "Getting members shouldn't take too long.")
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.06), "Getting members shouldn't take too long.")
 		}, 200)
 	})
 })
