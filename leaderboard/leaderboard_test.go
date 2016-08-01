@@ -119,13 +119,31 @@ var _ = Describe("Leaderboard Model", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 			Expect(testLeaderboard.TotalMembers()).To(Equal(10))
-			testLeaderboard.RemoveMember("member_5")
+			members := make([]interface{}, 1)
+			members[0] = "member_5"
+			testLeaderboard.RemoveMembers(members)
 			Expect(testLeaderboard.TotalMembers()).To(Equal(9))
+		})
+
+		It("should remove many members", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
+			for i := 0; i < 10; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			Expect(testLeaderboard.TotalMembers()).To(Equal(10))
+			members := make([]interface{}, 2)
+			members[0] = "member_5"
+			members[1] = "member_6"
+			testLeaderboard.RemoveMembers(members)
+			Expect(testLeaderboard.TotalMembers()).To(Equal(8))
 		})
 
 		It("should fail if faulty redis client", func() {
 			testLeaderboard := NewLeaderboard(faultyRedisClient, "test-leaderboard", 10, logger)
-			err := testLeaderboard.RemoveMember("invalid member")
+			members := make([]interface{}, 1)
+			members[0] = "invalid member"
+			err := testLeaderboard.RemoveMembers(members)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
 		})
