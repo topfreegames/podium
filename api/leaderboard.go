@@ -175,6 +175,48 @@ func GetMemberRankHandler(app *App) func(c *iris.Context) {
 	}
 }
 
+func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "GetMemberRankInManyLeaderboardsHandler"),
+		)
+		memberPublicID := c.Param("memberPublicID")
+		ids := c.URLParam("leaderboardIds")
+
+		if ids == "" {
+			app.AddError()
+			FailWith(400, "Leaderboard IDs are required using the 'leaderboardIds' querystring parameter", c)
+			return
+		}
+
+		leaderboardIds := strings.Split(ids, ",")
+		serializedScores := make([]map[string]interface{}, len(leaderboardIds))
+
+		for i, leaderboardId := range leaderboardIds {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardId, 0, lg)
+			member, err := l.GetMember(memberPublicID)
+			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+				app.AddError()
+				FailWith(404, "Leaderboard not found or member not found in leaderboard.", c)
+				return
+			} else if err != nil {
+				app.AddError()
+				FailWith(500, err.Error(), c)
+				return
+			}
+			serializedScores[i] = map[string]interface{}{
+				"leaderboardID": leaderboardId,
+				"rank":          member.Rank,
+				"score":         member.Score,
+			}
+		}
+
+		SucceedWith(map[string]interface{}{
+			"scores": serializedScores,
+		}, c)
+	}
+}
+
 // GetAroundMemberHandler retrieves a list of member score and rank centered in the given member
 func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {

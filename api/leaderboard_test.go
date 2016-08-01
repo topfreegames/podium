@@ -903,6 +903,44 @@ var _ = Describe("Leaderboard Handler", func() {
 		}, 200)
 	})
 
+	Describe("Get member score in many leaderboads", func() {
+		It("Should get member score in many leaderboards", func() {
+			payload := map[string]interface{}{
+				"score":        100,
+				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+			}
+			res := api.PutJSON(a, "/m/memberpublicid/scores", payload)
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			res = api.Get(a, "/m/memberpublicid/scores", map[string]interface{}{
+				"leaderboardIds": "testkey1,testkey2,testkey3,testkey4,testkey5",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			scores := result["scores"].([]interface{})
+			for i, scoreObj := range scores {
+				score := scoreObj.(map[string]interface{})
+				Expect(int(score["score"].(float64))).To(Equal(payload["score"]))
+				Expect(int(score["rank"].(float64))).To(Equal(1))
+				Expect(score["leaderboardID"]).To(Equal(payload["leaderboards"].([]string)[i]))
+			}
+		})
+
+		It("Should fail if pass a leaderboard that does not exist", func() {
+			payload := map[string]interface{}{
+				"score":        100,
+				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+			}
+			res := api.PutJSON(a, "/m/memberpublicid/scores", payload)
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			res = api.Get(a, "/m/memberpublicid/scores", map[string]interface{}{
+				"leaderboardIds": "testkey1,testkey2,testkey3,testkey4,testkey6",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusNotFound))
+		})
+
+	})
+
 	Describe("Upsert Member Score For Several Leaderboards", func() {
 		It("Should set correct member score in redis and respond with the correct values", func() {
 			payload := map[string]interface{}{
