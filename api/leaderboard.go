@@ -224,6 +224,11 @@ func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 			zap.String("handler", "GetAroundMemberHandler"),
 		)
 
+		order := c.URLParam("order")
+		if order == "" {
+			order = "desc"
+		}
+
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
 		pageSize, err := c.URLParamInt("pageSize")
@@ -240,7 +245,7 @@ func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
-		members, err := l.GetAroundMe(memberPublicID)
+		members, err := l.GetAroundMe(memberPublicID, order)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			app.AddError()
@@ -291,6 +296,10 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 
 		leaderboardID := c.Param("leaderboardID")
 		pageNumber, err := c.ParamInt("pageNumber")
+		order := c.URLParam("order")
+		if order == "" {
+			order = "desc"
+		}
 		if err != nil {
 			app.AddError()
 			FailWith(400, fmt.Sprintf("Invalid pageNumber provided: %s", err.Error()), c)
@@ -310,7 +319,7 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
-		members, err := l.GetLeaders(pageNumber)
+		members, err := l.GetLeaders(pageNumber, order)
 
 		if err != nil {
 			app.AddError()
