@@ -159,9 +159,13 @@ func GetMemberRankHandler(app *App) func(c *iris.Context) {
 
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
+		order := c.URLParam("order")
+		if order == "" || (order != "asc" && order != "desc") {
+			order = "desc"
+		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		rank, err := l.GetRank(memberPublicID)
+		rank, err := l.GetRank(memberPublicID, order)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			app.AddError()

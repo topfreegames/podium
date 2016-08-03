@@ -262,6 +262,27 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.PublicID).To(Equal("memberpublicid"))
 		})
 
+		It("Should get member score from redis if score exists and order is asc", func() {
+			_, err := l.SetMemberScore("memberpublicid", 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			res := api.Get(a, "/l/testkey/members/memberpublicid/rank", map[string]interface{}{
+				"order": "asc",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["publicID"]).To(Equal("memberpublicid"))
+			Expect(int(result["rank"].(float64))).To(Equal(1))
+
+			member, err := l.GetMember("memberpublicid", "desc")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member.Rank).To(Equal(1))
+			Expect(member.Score).To(Equal(100))
+			Expect(member.PublicID).To(Equal("memberpublicid"))
+		})
+
 		It("Should fail with 404 if score does not exist", func() {
 			res := api.Get(a, "/l/testkey/members/memberpublicid/rank")
 			Expect(res.Raw().StatusCode).To(Equal(http.StatusNotFound))

@@ -406,7 +406,7 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string) ([]*Member, er
 }
 
 // GetRank returns the rank of the member with the given ID
-func (lb *Leaderboard) GetRank(memberID string) (int, error) {
+func (lb *Leaderboard) GetRank(memberID string, order string) (int, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetRank"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -416,7 +416,13 @@ func (lb *Leaderboard) GetRank(memberID string) (int, error) {
 	cli := lb.RedisClient.Client
 
 	l.Debug("Getting rank of specific member...")
-	rank, err := cli.ZRevRank(lb.PublicID, memberID).Result()
+	var rank int64
+	var err error
+	if order == "desc" {
+		rank, err = cli.ZRevRank(lb.PublicID, memberID).Result()
+	} else {
+		rank, err = cli.ZRank(lb.PublicID, memberID).Result()
+	}
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "redis: nil") {
 			l.Error("Member was not found in specified leaderboard.", zap.Error(err))
