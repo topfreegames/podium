@@ -314,12 +314,22 @@ var _ = Describe("Leaderboard Model", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 			testLeaderboard.SetMemberScore("member_6", 1000)
-			Expect(testLeaderboard.GetRank("member_6")).To(Equal(100))
+			Expect(testLeaderboard.GetRank("member_6", "desc")).To(Equal(100))
+		})
+
+		It("should return specific member ranking if asc order", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			testLeaderboard.SetMemberScore("member_6", 1000)
+			Expect(testLeaderboard.GetRank("member_6", "asc")).To(Equal(2))
 		})
 
 		It("should fail if member does not exist", func() {
 			testLeaderboard := NewLeaderboard(redisClient, uuid.NewV4().String(), 25, logger)
-			rank, err := testLeaderboard.GetRank("invalid-member")
+			rank, err := testLeaderboard.GetRank("invalid-member", "desc")
 			Expect(rank).To(Equal(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member invalid-member in leaderboard"))
@@ -327,7 +337,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail if invalid redis connection", func() {
 			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), uuid.NewV4().String(), 25, logger)
-			rank, err := testLeaderboard.GetRank("invalid-member")
+			rank, err := testLeaderboard.GetRank("invalid-member", "desc")
 			Expect(rank).To(Equal(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))

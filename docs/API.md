@@ -132,6 +132,12 @@ Podium API
 
   ### Get a member score and rank
   `GET /l/:leaderboardID/members/:memberPublicID`
+  
+  ##### optional query string
+  * order=[asc|desc] 
+    * if set to asc, will treat the ranking with ascending scores (less is best) 
+    * e.g. `GET /l/:leaderboardID/members/:memberPublicID?order=asc`
+    * defaults to "desc"
 
   Gets a member score and rank within a leaderboard.
 
@@ -173,6 +179,12 @@ Podium API
 
   ### Get multiple member scores and rank
   `GET /l/:leaderboardID/members?ids=publicIDcsv`
+  
+  ##### optional query string
+  * order=[asc|desc] 
+    * if set to asc, will treat the ranking with ascending scores (less is best) 
+    * e.g. `GET /l/:leaderboardID/members?ids=publicIDcsv?order=asc`
+    * defaults to "desc"
 
   Gets multiple members' score and ranks within a leaderboard.
 
@@ -253,6 +265,12 @@ Podium API
   ### Get a member score and rank in many leaderboards
   `GET /m/:memberPublicID/scores?leaderboardIds=leaderboard1,leaderboard2,...`
 
+  ##### optional query string
+  * order=[asc|desc] 
+    * if set to asc, will treat the ranking with ascending scores (less is best) 
+    * e.g. `GET /m/:memberPublicID/scores?leaderboardIds=leaderboard1,leaderboard2,...?order=asc`
+    * defaults to "desc"
+
   Get a member score and rank within many leaderboards.
 
   Leaderboard Ids should be valid leaderboard names separated by commas.
@@ -293,6 +311,12 @@ Podium API
   ### Get a member rank
   `GET /l/:leaderboardID/members/:memberPublicID/rank`
 
+  ##### optional query string
+  * order=[asc|desc] 
+    * if set to asc, will treat the ranking with ascending scores (less is best) 
+    * e.g. `GET /l/:leaderboardID/members/:memberPublicID/rank?order=asc`
+    * defaults to "desc"
+
   Gets a member rank within a leaderboard.
 
   Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and memberPublicID should be a unique identifier for the desired member.
@@ -332,6 +356,12 @@ Podium API
 
   ### Get members around a member
   `GET /l/:leaderboardID/members/:memberPublicID/around?pageSize=10`
+
+  ##### optional query string
+  * order=[asc|desc] 
+    * if set to asc, will treat the ranking with ascending scores (less is best) 
+    * e.g. `GET /l/:leaderboardID/members/:memberPublicID/around?pageSize=10?order=asc`
+    * defaults to "desc"
 
   Gets a list of members with ranking around that of the specified member within a leaderboard.
 
@@ -416,6 +446,12 @@ Podium API
   ### Get the top N members in a leaderboard (by page)
   `GET /l/:leaderboardID/top/:pageNumber?pageSize=:pageSize`
 
+  ##### optional query string
+  * order=[asc|desc] 
+    * if set to asc, will treat the ranking with ascending scores (less is best) 
+    * e.g. `GET /l/:leaderboardID/top/:pageNumber?pageSize=:pageSize?order=asc`
+    * defaults to "desc"
+
   Gets the top N members in a leaderboard, by page.
 
   `leaderboardID` should be a valid [leaderboard name](leaderboard-names.html), `pageNumber` is the current page you are looking for and `pageSize` is the number of members per page that will be returned.
@@ -466,6 +502,12 @@ Podium API
 
   ### Get the top x% members in a leaderboard
   `GET /l/:leaderboardID/top-percent/:percentage`
+
+  ##### optional query string
+  * order=[asc|desc] 
+    * if set to asc, will treat the ranking with ascending scores (less is best) 
+    * e.g. `GET /l/:leaderboardID/top-percent/:percentage?order=asc`
+    * defaults to "desc"
 
   Gets the top x% members in a leaderboard.
 
