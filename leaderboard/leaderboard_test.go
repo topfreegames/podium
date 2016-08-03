@@ -178,9 +178,9 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(dayvson.Rank).To(Equal(1))
 			Expect(felipe.Rank).To(Equal(2))
 			friendScore.SetMemberScore("felipe", 12346)
-			felipe, err = friendScore.GetMember("felipe")
+			felipe, err = friendScore.GetMember("felipe", "desc")
 			Expect(err).NotTo(HaveOccurred())
-			dayvson, err = friendScore.GetMember("dayvson")
+			dayvson, err = friendScore.GetMember("dayvson", "desc")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(felipe.Rank).To(Equal(1))
 			Expect(dayvson.Rank).To(Equal(2))
@@ -190,7 +190,7 @@ var _ = Describe("Leaderboard Model", func() {
 			leaderboardID := uuid.NewV4().String()
 			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 			memberID := uuid.NewV4().String()
-			member, err := friendScore.GetMember(memberID)
+			member, err := friendScore.GetMember(memberID, "desc")
 			Expect(member).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(
@@ -201,7 +201,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should fail if faulty redis client", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			testLeaderboard.RedisClient = faultyRedisClient
-			_, err := testLeaderboard.GetMember("qwe")
+			_, err := testLeaderboard.GetMember("qwe", "desc")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
 		})
@@ -221,6 +221,21 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
 			Expect(firstAroundMe.PublicID).To(Equal("member_31"))
 			Expect(lastAroundMe.PublicID).To(Equal("member_7"))
+		})
+
+		It("should get members around specific member in reverse order", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 20, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetAroundMe("member_20", "asc")
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := members[0]
+			lastAroundMe := members[testLeaderboard.PageSize-1]
+			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.PublicID).To(Equal("member_11"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_30"))
 		})
 
 		It("should get members around specific member if repeated scores", func() {
@@ -338,6 +353,24 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(lastOnPage.Rank).To(Equal(25))
 		})
 
+		It("should get specific number of leaders in reverse order", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
+			for i := 0; i < 1000; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i+1), 1234*i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetLeaders(1, "asc")
+			Expect(err).NotTo(HaveOccurred())
+
+			firstOnPage := members[0]
+			lastOnPage := members[len(members)-1]
+			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstOnPage.PublicID).To(Equal("member_1"))
+			Expect(firstOnPage.Rank).To(Equal(1))
+			Expect(lastOnPage.PublicID).To(Equal("member_25"))
+			Expect(lastOnPage.Rank).To(Equal(25))
+		})
+
 		It("should get leaders if repeated scores", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
@@ -424,7 +457,7 @@ var _ = Describe("Leaderboard Model", func() {
 				members = append(members, member)
 			}
 
-			top10, err := leader.GetTopPercentage(10, 2000)
+			top10, err := leader.GetTopPercentage(10, 2000, "desc")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(top10).To(HaveLen(10))
@@ -438,6 +471,56 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(top10[9].Score).To(Equal(9100))
 		})
 
+		It("should not break if order is different from asc and desc, should only default to desc", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			members := []*Member{}
+			for i := 0; i < 100; i++ {
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				Expect(err).NotTo(HaveOccurred())
+				members = append(members, member)
+			}
+
+			top10, err := leader.GetTopPercentage(10, 2000, "lalala")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(top10).To(HaveLen(10))
+
+			Expect(top10[0].PublicID).To(Equal("friend-0"))
+			Expect(top10[0].Rank).To(Equal(1))
+			Expect(top10[0].Score).To(Equal(10000))
+
+			Expect(top10[9].PublicID).To(Equal("friend-9"))
+			Expect(top10[9].Rank).To(Equal(10))
+			Expect(top10[9].Score).To(Equal(9100))
+		})
+
+		It("should get top 10 percent members in the leaderboard in reverse order", func() {
+			leaderboardID := uuid.NewV4().String()
+			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
+
+			members := []*Member{}
+			for i := 0; i < 100; i++ {
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				Expect(err).NotTo(HaveOccurred())
+				members = append(members, member)
+			}
+
+			top10, err := leader.GetTopPercentage(10, 2000, "asc")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(top10).To(HaveLen(10))
+
+			Expect(top10[0].PublicID).To(Equal("friend-99"))
+			Expect(top10[0].Rank).To(Equal(1))
+			Expect(top10[0].Score).To(Equal(100))
+
+			Expect(top10[9].PublicID).To(Equal("friend-90"))
+			Expect(top10[9].Rank).To(Equal(10))
+			Expect(top10[9].Score).To(Equal(1000))
+		})
+
 		It("should get max members if query too broad", func() {
 			leaderboardID := uuid.NewV4().String()
 			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
@@ -449,7 +532,7 @@ var _ = Describe("Leaderboard Model", func() {
 				members = append(members, member)
 			}
 
-			top3, err := leader.GetTopPercentage(100, 3)
+			top3, err := leader.GetTopPercentage(100, 3, "desc")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(top3).To(HaveLen(3))
@@ -474,7 +557,7 @@ var _ = Describe("Leaderboard Model", func() {
 				members = append(members, member)
 			}
 
-			top10, err := leader.GetTopPercentage(1, 2000)
+			top10, err := leader.GetTopPercentage(1, 2000, "desc")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(top10).To(HaveLen(1))
@@ -495,7 +578,7 @@ var _ = Describe("Leaderboard Model", func() {
 				members = append(members, member)
 			}
 
-			top10, err := leader.GetTopPercentage(10, 2000)
+			top10, err := leader.GetTopPercentage(10, 2000, "desc")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(top10).To(HaveLen(10))
@@ -511,7 +594,7 @@ var _ = Describe("Leaderboard Model", func() {
 			leaderboardID := uuid.NewV4().String()
 			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 
-			top10, err := leader.GetTopPercentage(101, 2000)
+			top10, err := leader.GetTopPercentage(101, 2000, "desc")
 			Expect(top10).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Percentage must be a valid integer between 1 and 100."))
@@ -519,7 +602,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail if invalid redis connection", func() {
 			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), uuid.NewV4().String(), 25, logger)
-			members, err := testLeaderboard.GetTopPercentage(10, 2000)
+			members, err := testLeaderboard.GetTopPercentage(10, 2000, "desc")
 			Expect(members).To(BeEmpty())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
@@ -589,7 +672,7 @@ var _ = Describe("Leaderboard Model", func() {
 				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
 			}
 
-			members, err := lb.GetMembers("member-10", "member-30", "member-20")
+			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "desc")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members).To(HaveLen(3))
 
@@ -606,9 +689,32 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(members[2].Score).To(Equal(70))
 		})
 
+		It("should return all member details using reverse rank", func() {
+			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
+			for i := 0; i < 100; i++ {
+				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
+			}
+
+			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "asc")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(3))
+
+			Expect(members[0].PublicID).To(Equal("member-30"))
+			Expect(members[0].Rank).To(Equal(70))
+			Expect(members[0].Score).To(Equal(70))
+
+			Expect(members[1].PublicID).To(Equal("member-20"))
+			Expect(members[1].Rank).To(Equal(80))
+			Expect(members[1].Score).To(Equal(80))
+
+			Expect(members[2].PublicID).To(Equal("member-10"))
+			Expect(members[2].Rank).To(Equal(90))
+			Expect(members[2].Score).To(Equal(90))
+		})
+
 		It("should return empty list if invalid leaderboard id", func() {
 			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
-			members, err := lb.GetMembers("test")
+			members, err := lb.GetMembers([]string{"test"}, "desc")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(members).To(HaveLen(0))
@@ -621,7 +727,7 @@ var _ = Describe("Leaderboard Model", func() {
 				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
 			}
 
-			members, err := lb.GetMembers("member-0", "invalid-member")
+			members, err := lb.GetMembers([]string{"member-0", "invalid-member"}, "desc")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(members).To(HaveLen(1))
@@ -632,7 +738,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail with faulty redis", func() {
 			lb := NewLeaderboard(faultyRedisClient, uuid.NewV4().String(), 10, logger)
-			_, err := lb.GetMembers()
+			_, err := lb.GetMembers([]string{}, "desc")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})

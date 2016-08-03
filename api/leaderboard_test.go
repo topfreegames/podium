@@ -60,7 +60,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(int(result["score"].(float64))).To(Equal(payload["score"]))
 			Expect(int(result["rank"].(float64))).To(Equal(1))
 
-			member, err := l.GetMember("memberpublicid")
+			member, err := l.GetMember("memberpublicid", "desc")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(member.Rank).To(Equal(1))
 			Expect(member.Score).To(Equal(100))
@@ -124,7 +124,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 
-			_, err = l.GetMember("memberpublicid")
+			_, err = l.GetMember("memberpublicid", "desc")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
@@ -140,10 +140,10 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 
-			_, err = l.GetMember("memberpublicid")
+			_, err = l.GetMember("memberpublicid", "desc")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
-			_, err = l.GetMember("memberpublicid2")
+			_, err = l.GetMember("memberpublicid2", "desc")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
@@ -167,7 +167,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			json.Unmarshal([]byte(res.Body().Raw()), &result)
 			Expect(result["success"]).To(BeTrue())
 
-			_, err := l.GetMember("memberpublicid")
+			_, err := l.GetMember("memberpublicid", "desc")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
@@ -201,7 +201,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(int(result["score"].(float64))).To(Equal(100))
 			Expect(int(result["rank"].(float64))).To(Equal(1))
 
-			member, err := l.GetMember("memberpublicid")
+			member, err := l.GetMember("memberpublicid", "desc")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(member.Rank).To(Equal(1))
 			Expect(member.Score).To(Equal(100))
@@ -255,7 +255,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["publicID"]).To(Equal("memberpublicid"))
 			Expect(int(result["rank"].(float64))).To(Equal(1))
 
-			member, err := l.GetMember("memberpublicid")
+			member, err := l.GetMember("memberpublicid", "desc")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(member.Rank).To(Equal(1))
 			Expect(member.Score).To(Equal(100))
@@ -324,11 +324,34 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - pos))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
 				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should get member score and neighbours from redis in reverse order if member score exists", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/members/member_50/around", map[string]interface{}{
+				"order": "asc",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(20))
+			start := 50 + 20/2
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				pos := start - i
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos-1)))
 			}
 		})
 
@@ -351,7 +374,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(15 - i))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -379,7 +402,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos+1)))
 				Expect(int(member["score"].(float64))).To(Equal(15 - pos))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -410,7 +433,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - pos))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -440,7 +463,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(member["rank"].(float64))).To(Equal(pos))
 				Expect(int(member["score"].(float64))).To(Equal(100))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -499,7 +522,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - i - 1))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -526,7 +549,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", 80+i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - 80 - i - 1))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -633,11 +656,34 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - i))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
 				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should get one page of top members in reverse order from redis if leaderboard exists", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 101-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			res := api.Get(a, "/l/testkey/top/1", map[string]interface{}{
+				"order": "asc",
+			})
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(20))
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", 100-i)))
+				Expect(int(member["score"].(float64))).To(Equal(i + 1))
 			}
 		})
 
@@ -662,7 +708,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - pos))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -691,7 +737,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - i))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -734,7 +780,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int(member["score"].(float64))).To(Equal(100))
 
-				dbMember, err := l.GetMember(member["publicID"].(string))
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
 				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
@@ -962,7 +1008,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(score["leaderboardID"]).To(Equal(payload["leaderboards"].([]string)[i]))
 
 				ll := leaderboard.NewLeaderboard(a.RedisClient, score["leaderboardID"].(string), 0, lg)
-				member, err := ll.GetMember("memberpublicid")
+				member, err := ll.GetMember("memberpublicid", "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(member.Rank).To(Equal(1))
 				Expect(member.Score).To(Equal(100))
@@ -1196,7 +1242,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
 			})
 
-			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.06), "Getting members shouldn't take too long.")
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.08), "Getting members shouldn't take too long.")
 		}, 200)
 	})
 })

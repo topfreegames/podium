@@ -125,11 +125,16 @@ func GetMemberHandler(app *App) func(c *iris.Context) {
 			zap.String("handler", "GetMemberHandler"),
 		)
 
+		order := c.URLParam("order")
+		if order == "" || (order != "asc" && order != "desc") {
+			order = "desc"
+		}
+
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		member, err := l.GetMember(memberPublicID)
+		member, err := l.GetMember(memberPublicID, order)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			app.AddError()
@@ -182,6 +187,10 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
 		)
 		memberPublicID := c.Param("memberPublicID")
 		ids := c.URLParam("leaderboardIds")
+		order := c.URLParam("order")
+		if order == "" || (order != "asc" && order != "desc") {
+			order = "desc"
+		}
 
 		if ids == "" {
 			app.AddError()
@@ -194,7 +203,7 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
 
 		for i, leaderboardId := range leaderboardIds {
 			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardId, 0, lg)
-			member, err := l.GetMember(memberPublicID)
+			member, err := l.GetMember(memberPublicID, order)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 				app.AddError()
 				FailWith(404, "Leaderboard not found or member not found in leaderboard.", c)
@@ -225,7 +234,7 @@ func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 		)
 
 		order := c.URLParam("order")
-		if order == "" {
+		if order == "" || (order != "asc" && order != "desc") {
 			order = "desc"
 		}
 
@@ -297,9 +306,10 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 		leaderboardID := c.Param("leaderboardID")
 		pageNumber, err := c.ParamInt("pageNumber")
 		order := c.URLParam("order")
-		if order == "" {
+		if order == "" || (order != "asc" && order != "desc") {
 			order = "desc"
 		}
+
 		if err != nil {
 			app.AddError()
 			FailWith(400, fmt.Sprintf("Invalid pageNumber provided: %s", err.Error()), c)
@@ -340,6 +350,11 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 			zap.String("handler", "GetTopPercentageHandler"),
 		)
 
+		order := c.URLParam("order")
+		if order == "" || (order != "asc" && order != "desc") {
+			order = "desc"
+		}
+
 		leaderboardID := c.Param("leaderboardID")
 		percentage, err := c.ParamInt("percentage")
 		if err != nil {
@@ -349,7 +364,7 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 		}
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
-		members, err := l.GetTopPercentage(percentage, app.Config.GetInt("api.maxReturnedMembers"))
+		members, err := l.GetTopPercentage(percentage, app.Config.GetInt("api.maxReturnedMembers"), order)
 
 		if err != nil {
 			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
@@ -376,6 +391,11 @@ func GetMembersHandler(app *App) func(c *iris.Context) {
 			zap.String("handler", "GetMembersHandler"),
 		)
 
+		order := c.URLParam("order")
+		if order == "" || (order != "asc" && order != "desc") {
+			order = "desc"
+		}
+
 		leaderboardID := c.Param("leaderboardID")
 		ids := c.URLParam("ids")
 		if ids == "" {
@@ -387,7 +407,7 @@ func GetMembersHandler(app *App) func(c *iris.Context) {
 		memberIDs := strings.Split(ids, ",")
 
 		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
-		members, err := l.GetMembers(memberIDs...)
+		members, err := l.GetMembers(memberIDs, order)
 
 		if err != nil {
 			app.AddError()

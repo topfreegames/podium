@@ -243,14 +243,22 @@ func (lb *Leaderboard) TotalPages() (int, error) {
 }
 
 // GetMember returns the score and the rank of the member with the given ID
-func (lb *Leaderboard) GetMember(memberID string) (*Member, error) {
+func (lb *Leaderboard) GetMember(memberID string, order string) (*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetMember"),
 		zap.String("leaguePublicID", lb.PublicID),
 		zap.String("memberID", memberID),
 	)
 
+	if order != "desc" && order != "asc" {
+		order = "desc"
+	}
+
 	cli := lb.RedisClient.Client
+	var operations = map[string]string{
+		"rank_desc": "ZREVRANK",
+		"rank_asc":  "ZRANK",
+	}
 
 	l.Debug("Getting member information...")
 	script := redis.NewScript(`
@@ -259,7 +267,7 @@ func (lb *Leaderboard) GetMember(memberID string) (*Member, error) {
 		-- KEYS[2] is member's public ID
 
 		-- gets rank of the member
-		local rank = redis.call("ZREVRANK", KEYS[1], KEYS[2])
+		local rank = redis.call("` + operations["rank_"+order] + `", KEYS[1], KEYS[2])
 		local score = redis.call("ZSCORE", KEYS[1], KEYS[2])
 
 		return {rank,score}
@@ -288,13 +296,18 @@ func (lb *Leaderboard) GetMember(memberID string) (*Member, error) {
 }
 
 // GetMembers returns the score and the rank of the members with the given IDs
-func (lb *Leaderboard) GetMembers(memberIDs ...string) ([]*Member, error) {
+func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetMembers"),
 		zap.String("leaguePublicID", lb.PublicID),
 	)
 
 	cli := lb.RedisClient.Client
+
+	var operations = map[string]string{
+		"rank_desc": "ZREVRANK",
+		"rank_asc":  "ZRANK",
+	}
 
 	l.Debug("Getting members information...")
 	script := redis.NewScript(`
@@ -306,7 +319,7 @@ func (lb *Leaderboard) GetMembers(memberIDs ...string) ([]*Member, error) {
 
 		for publicID in string.gmatch(ARGV[1], '([^,]+)') do
 			-- gets rank of the member
-			local rank = redis.call("ZREVRANK", KEYS[1], publicID)
+			local rank = redis.call("` + operations["rank_"+order] + `", KEYS[1], publicID)
 			local score = redis.call("ZSCORE", KEYS[1], publicID)
 
 			table.insert(members, publicID)
@@ -355,8 +368,12 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string) ([]*Member, er
 		zap.String("memberID", memberID),
 	)
 
+	if order != "desc" && order != "asc" {
+		order = "desc"
+	}
+
 	l.Debug("Getting information about members around a specific member...")
-	currentMember, err := lb.GetMember(memberID)
+	currentMember, err := lb.GetMember(memberID, order)
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +400,7 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string) ([]*Member, er
 		l.Error("Failed to retrieve information around a specific member.", zap.Error(err))
 		return nil, err
 	}
+
 	l.Info("Retrieved information around member successfully.")
 	return members, nil
 }
@@ -440,7 +458,7 @@ func (lb *Leaderboard) GetLeaders(page int, order string) ([]*Member, error) {
 }
 
 //GetTopPercentage of members in the leaderboard.
-func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*Member, error) {
+func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int, order string) ([]*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetTopPercentage"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -453,7 +471,17 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*Member, erro
 		return nil, err
 	}
 
+	if order != "desc" && order != "asc" {
+		order = "desc"
+	}
+
 	cli := lb.RedisClient.Client
+	var operations = map[string]string{
+		"range_desc": "ZREVRANGE",
+		"rank_desc":  "ZREVRANK",
+		"range_asc":  "ZRANGE",
+		"rank_asc":   "ZRANK",
+	}
 
 	l.Debug("Getting top percentage of members...")
 	script := redis.NewScript(`
@@ -472,13 +500,13 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int) ([]*Member, erro
 			numberOfMembers = math.floor(ARGV[2])
 		end
 
-		local members = redis.call("ZREVRANGE", KEYS[1], 0, numberOfMembers - 1, "WITHSCORES")
+		local members = redis.call("` + operations["range_"+order] + `", KEYS[1], 0, numberOfMembers - 1, "WITHSCORES")
 		local fullMembers = {}
 
 		for index=1, #members, 2 do
 			local publicID = members[index]
 			local score = members[index + 1]
-		 	local rank = redis.call("ZREVRANK", KEYS[1], publicID)
+		 	local rank = redis.call("` + operations["rank_"+order] + `", KEYS[1], publicID)
 
 			table.insert(fullMembers, publicID)
 			table.insert(fullMembers, rank)
