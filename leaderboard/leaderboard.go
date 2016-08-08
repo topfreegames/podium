@@ -221,6 +221,27 @@ func (lb *Leaderboard) RemoveMembers(memberIDs []interface{}) error {
 	return nil
 }
 
+// RemoveMember removes the member with the given publicID from the leaderboard
+func (lb *Leaderboard) RemoveMember(memberID string) error {
+	l := lb.Logger.With(
+		zap.String("operation", "RemoveMember"),
+		zap.String("leaguePublicID", lb.PublicID),
+		zap.String("memberID", memberID),
+	)
+
+	cli := lb.RedisClient.Client
+
+	l.Debug("Removing member from leaderboard...")
+
+	_, err := cli.ZRem(lb.PublicID, memberID).Result()
+	if err != nil {
+		l.Error("Member removal failed...", zap.Error(err))
+		return err
+	}
+	l.Info("Member removed successfully.")
+	return nil
+}
+
 // TotalPages returns the number of pages of the leaderboard
 func (lb *Leaderboard) TotalPages() (int, error) {
 	l := lb.Logger.With(
