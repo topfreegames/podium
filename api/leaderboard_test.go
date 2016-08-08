@@ -129,6 +129,21 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
 
+		It("Should delete member score from redis if score exists", func() {
+			_, err := l.SetMemberScore("memberpublicid", 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			res := api.Delete(a, "/l/testkey/members/memberpublicid")
+			Expect(res.Raw().StatusCode).To(Equal(http.StatusOK), res.Body().Raw())
+			var result map[string]interface{}
+			json.Unmarshal([]byte(res.Body().Raw()), &result)
+			Expect(result["success"]).To(BeTrue())
+
+			_, err = l.GetMember("memberpublicid", "desc")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
+		})
+
 		It("Should delete many member score from redis if they exists", func() {
 			_, err := l.SetMemberScore("memberpublicid", 100)
 			_, err = l.SetMemberScore("memberpublicid2", 100)

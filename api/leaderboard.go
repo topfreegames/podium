@@ -84,6 +84,28 @@ func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 	}
 }
 
+func RemoveMemberHandler(app *App) func(c *iris.Context) {
+	return func(c *iris.Context) {
+		lg := app.Logger.With(
+			zap.String("handler", "RemoveMemberHandler"),
+		)
+
+		leaderboardID := c.Param("leaderboardID")
+		memberPublicID := c.Param("memberPublicID")
+
+		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+		err := l.RemoveMember(memberPublicID)
+
+		if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+			app.AddError()
+			FailWith(500, err.Error(), c)
+			return
+		}
+
+		SucceedWith(map[string]interface{}{}, c)
+	}
+}
+
 func RemoveMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
 		lg := app.Logger.With(

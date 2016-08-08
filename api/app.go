@@ -158,6 +158,7 @@ func (app *App) configureApplication() error {
 	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
 	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
 	a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
+	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
 	a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
