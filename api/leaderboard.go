@@ -229,7 +229,7 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
 
 		if ids == "" {
 			app.AddError()
-			FailWith(400, "Leaderboard IDs are required using the 'leaderboardIDs' querystring parameter", c)
+			FailWith(400, "Leaderboard IDs are required using the 'leaderboardIds' querystring parameter", c)
 			return
 		}
 
