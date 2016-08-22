@@ -130,7 +130,7 @@ bench-redis-kill:
 	@-redis-cli -p 1224 shutdown
 
 bench-run:
-	@go test -benchmem -bench . -benchtime 5s ./bench/...
+	@go test -run=XXX -benchmem -bench . -benchtime 5s ./bench/...
 
 bench-seed:
 	@go run bench/seed/main.go
@@ -153,3 +153,19 @@ rtfd:
 	@rm -rf docs/_build
 	@sphinx-build -b html -d ./docs/_build/doctrees ./docs/ docs/_build/html
 	@open docs/_build/html/index.html
+
+profile: build bench-redis profile-podium-app profile-run bench-podium-app-kill profile-view
+
+profile-podium-app: bench-podium-app-kill
+	@echo "Running profile app..."
+	@./bin/podium start -p 8888 --quiet -c ./config/perf.yaml --profile 2>&1 > /dev/null &
+
+profile-run:
+	@echo "Running profile tests..."
+	@go test -run=XXX -bench . ./bench &
+
+profile-view:
+	@rm -rf ~/pprof/pprof*
+	#@echo "Waiting for tests to run. Please wait... (45s)"
+	#@sleep 45
+	@go tool pprof http://localhost:8888/debug/profile

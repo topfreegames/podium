@@ -29,6 +29,7 @@ type JSON map[string]interface{}
 // App is a struct that represents a podium Application
 type App struct {
 	Debug       bool
+	Profile     bool
 	Port        int
 	Host        string
 	ConfigPath  string
@@ -40,13 +41,14 @@ type App struct {
 }
 
 // GetApp returns a new podium Application
-func GetApp(host string, port int, configPath string, debug bool, logger zap.Logger) (*App, error) {
+func GetApp(host string, port int, configPath string, debug bool, profile bool, logger zap.Logger) (*App, error) {
 	app := &App{
 		Host:       host,
 		Port:       port,
 		ConfigPath: configPath,
 		Config:     viper.New(),
 		Debug:      debug,
+		Profile:    profile,
 		Logger:     logger,
 	}
 	err := app.Configure()
@@ -141,6 +143,11 @@ func (app *App) configureApplication() error {
 
 	c := config.Iris{
 		DisableBanner: true,
+	}
+
+	if app.Profile {
+		l.Debug("Enabling pprof routes...")
+		c.ProfilePath = "/debug"
 	}
 
 	app.App = iris.New(c)
