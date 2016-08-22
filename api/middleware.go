@@ -79,7 +79,13 @@ func (l *LoggerMiddleware) Serve(ctx *iris.Context) {
 	status = ctx.Response.StatusCode()
 	ip = ctx.RemoteAddr()
 
+	route := ctx.Get("route")
+	if route == nil {
+		log.Warn("Route does not have route set in ctx")
+	}
+
 	reqLog := log.With(
+		zap.String("route", route.(string)),
 		zap.Time("endTime", endTime),
 		zap.Int("statusCode", status),
 		zap.Duration("latency", latency),

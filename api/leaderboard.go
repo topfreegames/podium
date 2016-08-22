@@ -58,6 +58,7 @@ func serializeMembers(members []*leaderboard.Member, includePosition bool) []map
 // UpsertMemberScoreHandler is the handler responsible for creating or updating the member score
 func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "UpsertMemberScore")
 		lg := app.Logger.With(
 			zap.String("handler", "UpsertMemberScoreHandler"),
 		)
@@ -84,8 +85,10 @@ func UpsertMemberScoreHandler(app *App) func(c *iris.Context) {
 	}
 }
 
+//RemoveMemberHandler removes a member from a leaderboard
 func RemoveMemberHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "RemoveMember")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveMemberHandler"),
 		)
@@ -106,8 +109,10 @@ func RemoveMemberHandler(app *App) func(c *iris.Context) {
 	}
 }
 
+//RemoveMembersHandler removes several members from a leaderboard
 func RemoveMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "RemoveMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveMembersHandler"),
 		)
@@ -143,6 +148,7 @@ func RemoveMembersHandler(app *App) func(c *iris.Context) {
 // GetMemberHandler is the handler responsible for retrieving a member score and rank
 func GetMemberHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetMember")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMemberHandler"),
 		)
@@ -175,6 +181,7 @@ func GetMemberHandler(app *App) func(c *iris.Context) {
 // GetMemberRankHandler is the handler responsible for retrieving a member rank
 func GetMemberRankHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetMemberRank")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMemberRankHandler"),
 		)
@@ -206,8 +213,10 @@ func GetMemberRankHandler(app *App) func(c *iris.Context) {
 	}
 }
 
+//GetMemberRankInManyLeaderboardsHandler returns the member rank in several leaderboards at once
 func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetMemberRankInManyLeaderboards")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMemberRankInManyLeaderboardsHandler"),
 		)
@@ -220,15 +229,15 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
 
 		if ids == "" {
 			app.AddError()
-			FailWith(400, "Leaderboard IDs are required using the 'leaderboardIds' querystring parameter", c)
+			FailWith(400, "Leaderboard IDs are required using the 'leaderboardIDs' querystring parameter", c)
 			return
 		}
 
-		leaderboardIds := strings.Split(ids, ",")
-		serializedScores := make([]map[string]interface{}, len(leaderboardIds))
+		leaderboardIDs := strings.Split(ids, ",")
+		serializedScores := make([]map[string]interface{}, len(leaderboardIDs))
 
-		for i, leaderboardId := range leaderboardIds {
-			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardId, 0, lg)
+		for i, leaderboardID := range leaderboardIDs {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
 			member, err := l.GetMember(memberPublicID, order)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 				app.AddError()
@@ -240,7 +249,7 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
 				return
 			}
 			serializedScores[i] = map[string]interface{}{
-				"leaderboardID": leaderboardId,
+				"leaderboardID": leaderboardID,
 				"rank":          member.Rank,
 				"score":         member.Score,
 			}
@@ -255,6 +264,7 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c *iris.Context) {
 // GetAroundMemberHandler retrieves a list of member score and rank centered in the given member
 func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetAroundMember")
 		lg := app.Logger.With(
 			zap.String("handler", "GetAroundMemberHandler"),
 		)
@@ -301,6 +311,7 @@ func GetAroundMemberHandler(app *App) func(c *iris.Context) {
 // GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
 func GetTotalMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetTotalMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTotalMembersHandler"),
 		)
@@ -325,6 +336,7 @@ func GetTotalMembersHandler(app *App) func(c *iris.Context) {
 // GetTopMembersHandler retrieves onePage of member score and rank
 func GetTopMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetTopMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTopMembersHandler"),
 		)
@@ -372,6 +384,7 @@ func GetTopMembersHandler(app *App) func(c *iris.Context) {
 // GetTopPercentageHandler retrieves top x % members in the leaderboard
 func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetTopPercentage")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTopPercentageHandler"),
 		)
@@ -413,6 +426,7 @@ func GetTopPercentageHandler(app *App) func(c *iris.Context) {
 // GetMembersHandler retrieves several members at once
 func GetMembersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "GetMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMembersHandler"),
 		)
@@ -466,6 +480,7 @@ func GetMembersHandler(app *App) func(c *iris.Context) {
 // UpsertMemberLeaderboardsScoreHandler sets the member score for all leaderboards
 func UpsertMemberLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "UpsertMemberLeaderboardsScore")
 		lg := app.Logger.With(
 			zap.String("handler", "UpsertMemberLeaderboardsScoreHandler"),
 		)
@@ -502,6 +517,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c *iris.Context) {
 // RemoveLeaderboardHandler is the handler responsible for removing a leaderboard
 func RemoveLeaderboardHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "RemoveLeaderboard")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveLeaderboardHandler"),
 		)

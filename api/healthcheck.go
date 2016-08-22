@@ -19,6 +19,7 @@ import (
 // HealthCheckHandler is the handler responsible for validating that the app is still up
 func HealthCheckHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		c.Set("route", "Healthcheck")
 		workingString := app.Config.GetString("healthcheck.workingText")
 		res, err := app.RedisClient.Client.Ping().Result()
 		if err != nil || res != "PONG" {
