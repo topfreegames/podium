@@ -16,7 +16,6 @@ import (
 
 	"github.com/getsentry/raven-go"
 	"github.com/kataras/iris"
-	"github.com/kataras/iris/config"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/util"
@@ -139,7 +138,7 @@ func (app *App) configureApplication() error {
 		zap.String("operation", "configureApplication"),
 	)
 
-	c := config.Iris{
+	c := iris.Configuration{
 		DisableBanner: true,
 	}
 
@@ -203,7 +202,7 @@ func (app *App) AddError() {
 
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() {
-	cfg := config.Server{
+	cfg := iris.ServerConfiguration{
 		ListeningAddr:  fmt.Sprintf("%s:%d", app.Host, app.Port),
 		ReadBufferSize: app.Config.GetInt("api.maxReadBufferSize"),
 	}

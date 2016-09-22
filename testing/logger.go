@@ -41,8 +41,18 @@ func (m *MockKeyValue) AddInt(key string, value int) {
 	m.Values[key] = value
 }
 
+//AddUint to the kv
+func (m *MockKeyValue) AddUint(key string, value uint) {
+	m.Values[key] = value
+}
+
 //AddInt64 to the kv
 func (m *MockKeyValue) AddInt64(key string, value int64) {
+	m.Values[key] = value
+}
+
+//AddUint64 to the kv
+func (m *MockKeyValue) AddUint64(key string, value uint64) {
 	m.Values[key] = value
 }
 
