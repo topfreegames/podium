@@ -18,7 +18,11 @@ LOCAL_TEST_REDIS_PORT=1234
 setup-hooks:
 	@cd .git/hooks && ln -sf ../../hooks/pre-commit.sh pre-commit
 
+clear-hooks:
+	@cd .git/hooks && rm pre-commit
+
 setup: setup-hooks
+	@go get github.com/mailru/easyjson/...
 	@go get -u github.com/Masterminds/glide/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
@@ -32,7 +36,7 @@ build:
 	@go build -o ./bin/podium ./main.go
 
 # run app
-run: redis
+run: schema-update redis
 	@go run main.go start
 
 # get a redis instance up (localhost:1212)
@@ -52,8 +56,8 @@ redis-shutdown:
 redis-clear:
 	@redis-cli -p 1212 FLUSHDB
 
-test: test-redis
-	@ginkgo --cover $(GODIRS)
+test: schema-update test-redis
+	@ginkgo --cover -r .
 	@make test-redis-kill
 
 test-coverage: test
@@ -153,3 +157,6 @@ rtfd:
 	@rm -rf docs/_build
 	@sphinx-build -b html -d ./docs/_build/doctrees ./docs/ docs/_build/html
 	@open docs/_build/html/index.html
+
+schema-update:
+	@go generate ./api/payload.go

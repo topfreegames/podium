@@ -27,6 +27,7 @@ import (
 	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/util"
 	"github.com/uber-go/zap"
+	"github.com/valyala/fasthttp"
 )
 
 //GetFaultyRedis returns an invalid connection to redis
@@ -138,4 +139,46 @@ func doRequest(app *api.App, method, url, body string) (int, string) {
 
 	req := GetRequest(app, ts, method, url, body)
 	return PerformRequest(ts, req)
+}
+
+func getRoute(ts *httptest.Server, url string) string {
+	return fmt.Sprintf("%s%s", ts.URL, url)
+}
+
+func fastGet(url string) (int, []byte, error) {
+	return fastSendTo("GET", url, nil)
+}
+
+func fastDelete(url string) (int, []byte, error) {
+	return fastSendTo("DELETE", url, nil)
+}
+
+func fastPostTo(url string, payload []byte) (int, []byte, error) {
+	return fastSendTo("POST", url, payload)
+}
+
+func fastPutTo(url string, payload []byte) (int, []byte, error) {
+	return fastSendTo("PUT", url, payload)
+}
+
+var fastClient *fasthttp.Client
+
+func fastGetClient() *fasthttp.Client {
+	if fastClient == nil {
+		fastClient = &fasthttp.Client{}
+	}
+	return fastClient
+}
+
+func fastSendTo(method, url string, payload []byte) (int, []byte, error) {
+	c := fastGetClient()
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(url)
+	req.Header.SetMethod(method)
+	if payload != nil {
+		req.AppendBody(payload)
+	}
+	resp := fasthttp.AcquireResponse()
+	err := c.Do(req, resp)
+	return resp.StatusCode(), resp.Body(), err
 }

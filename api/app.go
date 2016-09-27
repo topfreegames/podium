@@ -20,6 +20,7 @@ import (
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/fasthttp"
 	"github.com/labstack/echo/engine/standard"
+	"github.com/labstack/echo/middleware"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/log"
@@ -150,6 +151,7 @@ func (app *App) configureApplication() error {
 	_, w, _ := os.Pipe()
 	a.SetLogOutput(w)
 
+	a.Pre(middleware.RemoveTrailingSlash())
 	a.Use(NewLoggerMiddleware(app.Logger).Serve)
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
 	a.Use(NewVersionMiddleware().Serve)
@@ -157,19 +159,19 @@ func (app *App) configureApplication() error {
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Get("/status", StatusHandler(app))
-	//a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
-	//a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
-	//a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
-	//a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
-	//a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
-	//a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
-	//a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
-	//a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
-	//a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
-	//a.Get("/l/:leaderboardID/top/:pageNumber", GetTopMembersHandler(app))
-	//a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
-	//a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
-	//a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
+	a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
+	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
+	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
+	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
+	a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
+	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
+	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
+	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
+	a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
+	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopMembersHandler(app))
+	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
+	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
+	a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 

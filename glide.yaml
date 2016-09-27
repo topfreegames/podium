@@ -15,3 +15,6 @@ import:
   version: 431777a5117c8de4352a400dad1e2a55f484b189
 - package: github.com/labstack/echo
   version: ^2.0.2
+- package: github.com/mailru/easyjson
+- package: github.com/dgrijalva/jwt-go
+  version: ^3.0.0
