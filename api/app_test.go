@@ -18,7 +18,7 @@ var _ = Describe("App", func() {
 
 	Describe("App creation", func() {
 		It("should create new app", func() {
-			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", true, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", true, false, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(app).NotTo(BeNil())
 			Expect(app.Host).To(Equal("127.0.0.1"))
@@ -30,7 +30,7 @@ var _ = Describe("App", func() {
 
 	Describe("App Load Configuration", func() {
 		It("Should load configuration from file", func() {
-			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, false, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(app.Config).NotTo(BeNil())
 			expected := app.Config.GetString("healthcheck.workingText")
@@ -38,7 +38,7 @@ var _ = Describe("App", func() {
 		})
 
 		It("Should faild if configuration file does not exist", func() {
-			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid.yaml", false, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid.yaml", false, false, logger)
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not load configuration file from: ../config/invalid.yaml"))
@@ -47,7 +47,7 @@ var _ = Describe("App", func() {
 
 	Describe("App Connect To Redis", func() {
 		It("Should faild if invalid redis connection", func() {
-			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid-redis.yaml", false, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid-redis.yaml", false, false, logger)
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
@@ -56,15 +56,8 @@ var _ = Describe("App", func() {
 
 	Describe("Error Handler", func() {
 		It("should handle errors and send to raven", func() {
-			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, false, logger)
 			Expect(err).NotTo(HaveOccurred())
-
-			app.OnErrorHandler("some error occurred", []byte("stack"))
-			Expect(logger).To(HaveLogMessage(
-				zap.ErrorLevel, "Panic occurred.",
-				"panicText", "some error occurred",
-				"stack", "stack",
-			))
 
 			app.OnErrorHandler(fmt.Errorf("some other error occurred"), []byte("stack"))
 			Expect(logger).To(HaveLogMessage(
@@ -78,7 +71,7 @@ var _ = Describe("App", func() {
 
 	Describe("Error metrics", func() {
 		It("should add error rate", func() {
-			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, logger)
+			app, err := api.GetApp("127.0.0.1", 9999, "../config/test.yaml", false, false, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			app.AddError()

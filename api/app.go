@@ -11,14 +11,18 @@ package api
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/getsentry/raven-go"
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/config"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/engine"
+	"github.com/labstack/echo/engine/fasthttp"
+	"github.com/labstack/echo/engine/standard"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
+	"github.com/topfreegames/podium/log"
 	"github.com/topfreegames/podium/util"
 	"github.com/uber-go/zap"
 )
@@ -29,18 +33,20 @@ type JSON map[string]interface{}
 // App is a struct that represents a podium Application
 type App struct {
 	Debug       bool
+	Fast        bool
 	Port        int
 	Host        string
 	ConfigPath  string
 	Errors      metrics.EWMA
-	App         *iris.Framework
+	App         *echo.Echo
+	Engine      engine.Server
 	Config      *viper.Viper
 	Logger      zap.Logger
 	RedisClient *util.RedisClient
 }
 
 // GetApp returns a new podium Application
-func GetApp(host string, port int, configPath string, debug bool, logger zap.Logger) (*App, error) {
+func GetApp(host string, port int, configPath string, debug, fast bool, logger zap.Logger) (*App, error) {
 	app := &App{
 		Host:       host,
 		Port:       port,
@@ -111,27 +117,19 @@ func (app *App) loadConfiguration() error {
 	return nil
 }
 
-//OnErrorHandler handles application panics
-func (app *App) OnErrorHandler(err interface{}, stack []byte) {
+//OnErrorHandler handles panics
+func (app *App) OnErrorHandler(err error, stack []byte) {
 	app.Logger.Error(
 		"Panic occurred.",
 		zap.Object("panicText", err),
 		zap.String("stack", string(stack)),
 	)
 
-	var e error
-	switch err.(type) {
-	case error:
-		e = err.(error)
-	default:
-		e = fmt.Errorf("%v", err)
-	}
-
 	tags := map[string]string{
 		"source": "app",
 		"type":   "panic",
 	}
-	raven.CaptureError(e, tags)
+	raven.CaptureError(err, tags)
 }
 
 func (app *App) configureApplication() error {
@@ -139,33 +137,39 @@ func (app *App) configureApplication() error {
 		zap.String("operation", "configureApplication"),
 	)
 
-	c := config.Iris{
-		DisableBanner: true,
+	app.Engine = standard.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
+	if app.Fast {
+		rb := app.Config.GetInt("api.maxReadBufferSize")
+		engine := fasthttp.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
+		engine.ReadBufferSize = rb
+		app.Engine = engine
 	}
-
-	app.App = iris.New(c)
+	app.App = echo.New()
 	a := app.App
 
-	a.Use(NewLoggerMiddleware(app.Logger))
-	a.Use(&RecoveryMiddleware{OnError: app.OnErrorHandler})
-	a.Use(&VersionMiddleware{App: app})
-	a.Use(&SentryMiddleware{App: app})
+	_, w, _ := os.Pipe()
+	a.SetLogOutput(w)
+
+	a.Use(NewLoggerMiddleware(app.Logger).Serve)
+	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
+	a.Use(NewVersionMiddleware().Serve)
+	a.Use(NewSentryMiddleware(app).Serve)
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Get("/status", StatusHandler(app))
-	a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
-	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
-	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
-	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
-	a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
-	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
-	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
-	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
-	a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
-	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopMembersHandler(app))
-	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
-	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
-	a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
+	//a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
+	//a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
+	//a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
+	//a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
+	//a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
+	//a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
+	//a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
+	//a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
+	//a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
+	//a.Get("/l/:leaderboardID/top/:pageNumber", GetTopMembersHandler(app))
+	//a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
+	//a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
+	//a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 
@@ -203,9 +207,14 @@ func (app *App) AddError() {
 
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() {
-	cfg := config.Server{
-		ListeningAddr:  fmt.Sprintf("%s:%d", app.Host, app.Port),
-		ReadBufferSize: app.Config.GetInt("api.maxReadBufferSize"),
-	}
-	app.App.Must(app.App.ListenTo(cfg))
+	l := app.Logger.With(
+		zap.String("source", "app"),
+		zap.String("operation", "Start"),
+	)
+
+	log.D(l, "App started.", func(cm log.CM) {
+		cm.Write(zap.String("host", app.Host), zap.Int("port", app.Port))
+	})
+
+	app.App.Run(app.Engine)
 }

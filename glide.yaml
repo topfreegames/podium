@@ -3,16 +3,7 @@ import:
 - package: github.com/onsi/ginkgo
 - package: github.com/onsi/gomega
 - package: github.com/uber-go/zap
-- package: github.com/kataras/iris
-  version: 0dbab32
-  subpackages:
-  - middleware/logger
-  - logger
 - package: github.com/rcrowley/go-metrics
-- package: github.com/iris-contrib/middleware
-  subpackages:
-  - logger
-  - recovery
 - package: github.com/satori/go.uuid
   version: ^1.1.0
 - package: github.com/valyala/fasthttp
@@ -20,3 +11,7 @@ import:
 - package: gopkg.in/bsm/ratelimit.v1
 - package: github.com/getsentry/raven-go
 - package: github.com/gosuri/uiprogress
+- package: github.com/labstack/gommon
+  version: 431777a5117c8de4352a400dad1e2a55f484b189
+- package: github.com/labstack/echo
+  version: ^2.0.2

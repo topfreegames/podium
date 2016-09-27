@@ -14,35 +14,34 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/topfreegames/podium/api"
 )
 
 var _ = Describe("Healthcheck Handler", func() {
 	It("Should respond with default WORKING string", func() {
-		a := api.GetDefaultTestApp()
-		res := api.Get(a, "/healthcheck")
+		a := GetDefaultTestApp()
+		status, body := Get(a, "/healthcheck")
 
-		Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
-		Expect(res.Body().Raw()).To(Equal("WORKING"))
+		Expect(status).To(Equal(http.StatusOK))
+		Expect(body).To(Equal("WORKING"))
 	})
 
 	It("Should respond with customized WORKING string", func() {
-		a := api.GetDefaultTestApp()
+		a := GetDefaultTestApp()
 
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
-		res := api.Get(a, "/healthcheck")
+		status, body := Get(a, "/healthcheck")
 
-		Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
-		Expect(res.Body().Raw()).To(Equal("OTHERWORKING"))
+		Expect(status).To(Equal(http.StatusOK))
+		Expect(body).To(Equal("OTHERWORKING"))
 	})
 
 	It("Should fail if redis failing", func() {
-		a := api.GetDefaultTestApp()
-		a.RedisClient = api.GetFaultyRedis(a.Logger)
+		a := GetDefaultTestApp()
+		a.RedisClient = GetFaultyRedis(a.Logger)
 
-		res := api.Get(a, "/healthcheck")
+		status, body := Get(a, "/healthcheck")
 
-		Expect(res.Raw().StatusCode).To(Equal(500))
-		Expect(res.Body().Raw()).To(ContainSubstring("connection refused"))
+		Expect(status).To(Equal(500))
+		Expect(body).To(ContainSubstring("connection refused"))
 	})
 })

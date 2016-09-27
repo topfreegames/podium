@@ -11,25 +11,23 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
-	"github.com/kataras/iris"
+	"github.com/labstack/echo"
 )
 
 // HealthCheckHandler is the handler responsible for validating that the app is still up
-func HealthCheckHandler(app *App) func(c *iris.Context) {
-	return func(c *iris.Context) {
+func HealthCheckHandler(app *App) func(c echo.Context) error {
+	return func(c echo.Context) error {
 		c.Set("route", "Healthcheck")
 		workingString := app.Config.GetString("healthcheck.workingText")
 		res, err := app.RedisClient.Client.Ping().Result()
 		if err != nil || res != "PONG" {
-			c.Write(fmt.Sprintf("Error connecting to redis: %s", err))
-			c.SetStatusCode(500)
-			return
+			return FailWith(http.StatusInternalServerError, fmt.Sprintf("Error connecting to redis: %s", err), c)
 		}
 
-		c.SetStatusCode(iris.StatusOK)
 		workingString = strings.TrimSpace(workingString)
-		c.Write(workingString)
+		return c.String(http.StatusOK, workingString)
 	}
 }

@@ -15,18 +15,17 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/topfreegames/podium/api"
 )
 
 var _ = Describe("Status Handler", func() {
 	It("Should respond with status", func() {
-		a := api.GetDefaultTestApp()
-		res := api.Get(a, "/status")
+		a := GetDefaultTestApp()
+		status, body := Get(a, "/status")
 
-		Expect(res.Raw().StatusCode).To(Equal(http.StatusOK))
+		Expect(status).To(Equal(http.StatusOK))
 
 		var result map[string]interface{}
-		json.Unmarshal([]byte(res.Body().Raw()), &result)
+		json.Unmarshal([]byte(body), &result)
 
 		Expect(result["app"]).NotTo(BeNil())
 

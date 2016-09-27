@@ -11,60 +11,95 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"reflect"
-	"strings"
-	"unicode"
-	"unicode/utf8"
+	"io/ioutil"
 
-	"github.com/kataras/iris"
+	"github.com/labstack/echo"
 )
 
 // FailWith fails with the specified message
-func FailWith(status int, message string, c *iris.Context) {
-	c.JSON(status, map[string]interface{}{
-		"success": false,
-		"reason":  message,
-	})
+func FailWith(status int, message string, c echo.Context) error {
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	return c.String(status, fmt.Sprintf(`{"success":false,"reason":"%s"}`, message))
 }
 
 // SucceedWith sends payload to member with status 200
-func SucceedWith(payload map[string]interface{}, c *iris.Context) {
+func SucceedWith(payload map[string]interface{}, c echo.Context) error {
 	payload["success"] = true
-	c.JSON(200, payload)
+	return c.JSON(200, payload)
 }
 
-// LoadJSONPayload loads the JSON payload to the given struct validating all fields are not null
-func LoadJSONPayload(payloadStruct interface{}, c *iris.Context) error {
-	if err := c.ReadJSON(payloadStruct); err != nil {
-		if err != nil {
-			return err
-		}
-	}
+//LoadJSONPayload loads the JSON payload to the given struct validating all fields are not null
+//func LoadJSONPayload(payloadStruct interface{}, c echo.Context, l zap.Logger) error {
+//log.D(l, "Loading payload...")
 
-	data := c.RequestCtx.Request.Body()
-	var jsonPayload map[string]interface{}
-	err := json.Unmarshal(data, &jsonPayload)
+//data, err := GetRequestBody(c)
+//if err != nil {
+//log.E(l, "Loading payload failed.", func(cm log.CM) {
+//cm.Write(zap.Error(err))
+//})
+//return err
+//}
+
+//unmarshaler, ok := payloadStruct.(EasyJSONUnmarshaler)
+//if !ok {
+//err := fmt.Errorf("Can't unmarshal specified payload since it does not implement easyjson interface")
+//log.E(l, "Loading payload failed.", func(cm log.CM) {
+//cm.Write(zap.Error(err))
+//})
+//return err
+//}
+
+//lexer := jlexer.Lexer{Data: []byte(data)}
+//unmarshaler.UnmarshalEasyJSON(&lexer)
+//if err = lexer.Error(); err != nil {
+//log.E(l, "Loading payload failed.", func(cm log.CM) {
+//cm.Write(zap.Error(err))
+//})
+//return err
+//}
+
+//if validatable, ok := payloadStruct.(Validatable); ok {
+//missingFieldErrors := validatable.Validate()
+
+//if len(missingFieldErrors) != 0 {
+//err := errors.New(strings.Join(missingFieldErrors[:], ", "))
+//log.E(l, "Loading payload failed.", func(cm log.CM) {
+//cm.Write(zap.Error(err))
+//})
+//return err
+//}
+//}
+
+//log.D(l, "Payload loaded successfully.")
+//return nil
+//}
+
+//GetRequestBody from echo context
+func GetRequestBody(c echo.Context) ([]byte, error) {
+	bodyCache := c.Get("requestBody")
+	if bodyCache != nil {
+		return bodyCache.([]byte), nil
+	}
+	body := c.Request().Body()
+	b, err := ioutil.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+	c.Set("requestBody", b)
+	return b, nil
+}
+
+//GetRequestJSON as the specified interface from echo context
+func GetRequestJSON(payloadStruct interface{}, c echo.Context) error {
+	body, err := GetRequestBody(c)
 	if err != nil {
 		return err
 	}
 
-	var missingFieldErrors []string
-	v := reflect.ValueOf(payloadStruct).Elem()
-	t := v.Type()
-
-	for i := 0; i < v.NumField(); i++ {
-		r, n := utf8.DecodeRuneInString(t.Field(i).Name)
-		field := string(unicode.ToLower(r)) + t.Field(i).Name[n:]
-		if jsonPayload[field] == nil {
-			missingFieldErrors = append(missingFieldErrors, fmt.Sprintf("%s is required", field))
-		}
-	}
-
-	if len(missingFieldErrors) != 0 {
-		error := errors.New(strings.Join(missingFieldErrors[:], ", "))
-		return error
+	err = json.Unmarshal(body, payloadStruct)
+	if err != nil {
+		return err
 	}
 
 	return nil

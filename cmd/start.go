@@ -17,8 +17,7 @@ import (
 
 var host string
 var port int
-var debug bool
-var quiet bool
+var debug, quiet, fast bool
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -43,6 +42,7 @@ var startCmd = &cobra.Command{
 			port,
 			ConfigFile,
 			debug,
+			fast,
 			logger,
 		)
 
@@ -61,4 +61,5 @@ func init() {
 	startCmd.Flags().IntVarP(&port, "port", "p", 8880, "Port to bind podium to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode (log=debug)")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log=warn)")
+	startCmd.Flags().BoolVarP(&fast, "fast", "f", true, "FastHTTP server mode")
 }
