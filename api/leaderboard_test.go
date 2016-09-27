@@ -1285,6 +1285,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			status, body, err := fastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
-		}, 0.05)
+		}, 0.1)
 	})
 })
