@@ -231,6 +231,7 @@ func (nr *NewRelicMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 
 		err := next(c)
 		if err != nil {
+			txn.NoticeError(err)
 			return err
 		}
 
