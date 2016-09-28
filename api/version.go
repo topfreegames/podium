@@ -10,4 +10,4 @@
 package api
 
 // VERSION identifies podium's current version
-var VERSION = "3.1.3"
+var VERSION = "3.2.0"
