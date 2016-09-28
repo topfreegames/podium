@@ -175,14 +175,9 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		status = c.Response().Status()
 		ip = c.Request().RemoteAddress()
 
-		route := c.Get("route")
-		if route == nil {
-			log.D(l, "Route does not have route set in ctx")
-			return err
-		}
-
+		route := c.Path()
 		reqLog := l.With(
-			zap.String("route", route.(string)),
+			zap.String("route", route),
 			zap.Time("endTime", endTime),
 			zap.Int("statusCode", status),
 			zap.Duration("latency", latency),
@@ -208,5 +203,37 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			cm.Write()
 		}
 		return err
+	}
+}
+
+//NewNewRelicMiddleware returns the logger middleware
+func NewNewRelicMiddleware(app *App, theLogger zap.Logger) *NewRelicMiddleware {
+	l := &NewRelicMiddleware{App: app, Logger: theLogger}
+	return l
+}
+
+//NewRelicMiddleware is responsible for logging to Zap all requests
+type NewRelicMiddleware struct {
+	App    *App
+	Logger zap.Logger
+}
+
+// Serve serves the middleware
+func (nr *NewRelicMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		route := c.Path()
+		txn := nr.App.NewRelic.StartTransaction(route, nil, nil)
+		c.Set("txn", txn)
+		defer func() {
+			c.Set("txn", nil)
+			txn.End()
+		}()
+
+		err := next(c)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 }

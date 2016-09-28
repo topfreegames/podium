@@ -39,6 +39,10 @@ build:
 run: schema-update redis
 	@go run main.go start
 
+# run app
+run-prod: schema-update redis build
+	@./bin/podium start -q -f -c ./config/local.yaml
+
 # get a redis instance up (localhost:1212)
 redis: redis-shutdown
 	@if [ -z "$$REDIS_PORT" ]; then \
@@ -117,9 +121,12 @@ docker-dev-build:
 docker-dev-run:
 	@docker run -i -t --rm -p 8080:8080 podium-dev
 
-bench-podium-app: build bench-podium-app-kill
+bench-podium-app: build bench-podium-app-run
+
+bench-podium-app-run: bench-podium-app-kill
 	@rm -rf /tmp/podium-bench.log
-	@./bin/podium start -p 8888 --quiet -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
+	@./bin/podium start -p 8888 -f -q -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
+	@echo "Podium started at http://localhost:8888."
 
 bench-podium-app-kill:
 	@-ps aux | egrep 'podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9

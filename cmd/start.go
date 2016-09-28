@@ -47,10 +47,13 @@ var startCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			logger.Fatal("Could not start podium application.", zap.Error(err))
+			logger.Fatal("Could not get podium application.", zap.Error(err))
 		}
 
-		app.Start()
+		err = app.Start()
+		if err != nil {
+			logger.Fatal("Could not start podium application.", zap.Error(err))
+		}
 	},
 }
 

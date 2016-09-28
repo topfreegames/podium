@@ -10,3 +10,6 @@ redis:
 
 api:
   maxReturnedMembers: 2000
+
+newrelic:
+  key: ""

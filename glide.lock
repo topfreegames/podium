@@ -1,5 +1,5 @@
-hash: 4208e2c0641a1e09f28a640784394cf1961ba539121a25214c5468a425a62312
-updated: 2016-09-27T14:29:54.63319727-03:00
+hash: 7d4eb44236b73e474fdb7be69dd61cece8f1699cf606724a002c3cb661629c1c
+updated: 2016-09-28T14:07:11.650997221-03:00
 imports:
 - name: github.com/BurntSushi/toml
   version: ffaa107fbd880f6d18cd6fec9b511668dcad8639
@@ -68,6 +68,8 @@ imports:
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mitchellh/mapstructure
   version: d2dd0262208475919e1a362f675cfc0e7c10e905
+- name: github.com/newrelic/go-agent
+  version: a923caa59930cbb1b27d2a9fb2d5663d9e5c637c
 - name: github.com/onsi/ginkgo
   version: 38caab951a9ff39f0e61294a1dbaaa074a39228b
   subpackages:

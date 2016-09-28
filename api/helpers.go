@@ -20,6 +20,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/mailru/easyjson/jlexer"
 	"github.com/mailru/easyjson/jwriter"
+	newrelic "github.com/newrelic/go-agent"
 	"github.com/topfreegames/podium/log"
 	"github.com/uber-go/zap"
 )
@@ -42,6 +43,10 @@ func FailWith(status int, message string, c echo.Context) error {
 
 // SucceedWith sends payload to member with status 200
 func SucceedWith(payload map[string]interface{}, c echo.Context) error {
+	if len(payload) == 0 {
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		return c.String(200, `{"success":true}`)
+	}
 	payload["success"] = true
 	return c.JSON(200, payload)
 }
@@ -174,4 +179,25 @@ func GetPageSize(app *App, c echo.Context, defaultPageSize int) (int, error) {
 	}
 
 	return pageSize, nil
+}
+
+//GetTX returns new relic transaction
+func GetTX(c echo.Context) newrelic.Transaction {
+	tx := c.Get("txn")
+	if tx == nil {
+		return nil
+	}
+
+	return tx.(newrelic.Transaction)
+}
+
+//WithSegment adds a segment to new relic transaction
+func WithSegment(name string, c echo.Context, f func() error) error {
+	tx := GetTX(c)
+	if tx == nil {
+		return nil
+	}
+	segment := newrelic.StartSegment(tx, name)
+	defer segment.End()
+	return f()
 }

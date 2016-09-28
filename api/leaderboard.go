@@ -50,7 +50,6 @@ func serializeMembers(members []*leaderboard.Member, includePosition bool) []map
 // UpsertMemberScoreHandler is the handler responsible for creating or updating the member score
 func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "UpsertMemberScore")
 		lg := app.Logger.With(
 			zap.String("handler", "UpsertMemberScoreHandler"),
 		)
@@ -58,16 +57,30 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 		memberPublicID := c.Param("memberPublicID")
 
 		var payload setScorePayload
-		if err := LoadJSONPayload(&payload, c, lg); err != nil {
-			app.AddError()
+
+		err := WithSegment("Payload", c, func() error {
+			if err := LoadJSONPayload(&payload, c, lg); err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
+		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		member, err := l.SetMemberScore(memberPublicID, payload.Score)
+		var member *leaderboard.Member
+		err = WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			member, err = l.SetMemberScore(memberPublicID, payload.Score)
 
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			app.AddError()
 			return FailWith(500, err.Error(), c)
 		}
 
@@ -78,7 +91,6 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 //RemoveMemberHandler removes a member from a leaderboard
 func RemoveMemberHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "RemoveMember")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveMemberHandler"),
 		)
@@ -86,11 +98,17 @@ func RemoveMemberHandler(app *App) func(c echo.Context) error {
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		err := l.RemoveMember(memberPublicID)
+		err := WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			err := l.RemoveMember(memberPublicID)
 
-		if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
-			app.AddError()
+			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
+		if err != nil {
 			return FailWith(500, err.Error(), c)
 		}
 
@@ -101,7 +119,6 @@ func RemoveMemberHandler(app *App) func(c echo.Context) error {
 //RemoveMembersHandler removes several members from a leaderboard
 func RemoveMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "RemoveMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveMembersHandler"),
 		)
@@ -120,11 +137,17 @@ func RemoveMembersHandler(app *App) func(c echo.Context) error {
 			idsInter[i] = v
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		err := l.RemoveMembers(idsInter)
+		err := WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			err := l.RemoveMembers(idsInter)
 
-		if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
-			app.AddError()
+			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
+		if err != nil {
 			return FailWith(500, err.Error(), c)
 		}
 
@@ -135,7 +158,6 @@ func RemoveMembersHandler(app *App) func(c echo.Context) error {
 // GetMemberHandler is the handler responsible for retrieving a member score and rank
 func GetMemberHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetMember")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMemberHandler"),
 		)
@@ -148,15 +170,26 @@ func GetMemberHandler(app *App) func(c echo.Context) error {
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		member, err := l.GetMember(memberPublicID, order)
+		var member *leaderboard.Member
+		status := 404
+		err := WithSegment("Model", c, func() error {
+			var err error
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			member, err = l.GetMember(memberPublicID, order)
 
-		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			app.AddError()
-			return FailWith(404, "Member not found.", c)
-		} else if err != nil {
-			app.AddError()
-			return FailWith(500, err.Error(), c)
+			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+				app.AddError()
+				status = 404
+				return fmt.Errorf("Member not found.")
+			} else if err != nil {
+				app.AddError()
+				status = 500
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(status, err.Error(), c)
 		}
 
 		return SucceedWith(serializeMember(member, -1), c)
@@ -166,7 +199,6 @@ func GetMemberHandler(app *App) func(c echo.Context) error {
 // GetMemberRankHandler is the handler responsible for retrieving a member rank
 func GetMemberRankHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetMemberRank")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMemberRankHandler"),
 		)
@@ -178,15 +210,26 @@ func GetMemberRankHandler(app *App) func(c echo.Context) error {
 			order = "desc"
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		rank, err := l.GetRank(memberPublicID, order)
+		status := 404
+		rank := 0
+		err := WithSegment("Model", c, func() error {
+			var err error
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			rank, err = l.GetRank(memberPublicID, order)
 
-		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			app.AddError()
-			return FailWith(404, "Member not found.", c)
-		} else if err != nil {
-			app.AddError()
-			return FailWith(500, err.Error(), c)
+			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+				app.AddError()
+				status = 404
+				return fmt.Errorf("Member not found.")
+			} else if err != nil {
+				app.AddError()
+				status = 500
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(status, err.Error(), c)
 		}
 
 		return SucceedWith(map[string]interface{}{
@@ -199,7 +242,6 @@ func GetMemberRankHandler(app *App) func(c echo.Context) error {
 //GetMemberRankInManyLeaderboardsHandler returns the member rank in several leaderboards at once
 func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetMemberRankInManyLeaderboards")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMemberRankInManyLeaderboardsHandler"),
 		)
@@ -218,21 +260,30 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 		leaderboardIDs := strings.Split(ids, ",")
 		serializedScores := make([]map[string]interface{}, len(leaderboardIDs))
 
-		for i, leaderboardID := range leaderboardIDs {
-			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-			member, err := l.GetMember(memberPublicID, order)
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				app.AddError()
-				return FailWith(404, "Leaderboard not found or member not found in leaderboard.", c)
-			} else if err != nil {
-				app.AddError()
-				return FailWith(500, err.Error(), c)
+		status := 404
+		err := WithSegment("Model", c, func() error {
+			for i, leaderboardID := range leaderboardIDs {
+				l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+				member, err := l.GetMember(memberPublicID, order)
+				if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+					app.AddError()
+					status = 404
+					return fmt.Errorf("Leaderboard not found or member not found in leaderboard.")
+				} else if err != nil {
+					app.AddError()
+					status = 500
+					return err
+				}
+				serializedScores[i] = map[string]interface{}{
+					"leaderboardID": leaderboardID,
+					"rank":          member.Rank,
+					"score":         member.Score,
+				}
 			}
-			serializedScores[i] = map[string]interface{}{
-				"leaderboardID": leaderboardID,
-				"rank":          member.Rank,
-				"score":         member.Score,
-			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(status, err.Error(), c)
 		}
 
 		return SucceedWith(map[string]interface{}{
@@ -244,7 +295,6 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 // GetAroundMemberHandler retrieves a list of member score and rank centered in the given member
 func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetAroundMember")
 		lg := app.Logger.With(
 			zap.String("handler", "GetAroundMemberHandler"),
 		)
@@ -261,14 +311,24 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
-		members, err := l.GetAroundMe(memberPublicID, order)
-		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			app.AddError()
-			return FailWith(404, "Member not found.", c)
-		} else if err != nil {
-			app.AddError()
-			return FailWith(500, err.Error(), c)
+		var members []*leaderboard.Member
+		status := 404
+		err = WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
+			members, err = l.GetAroundMe(memberPublicID, order)
+			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+				app.AddError()
+				status = 404
+				return fmt.Errorf("Member not found.")
+			} else if err != nil {
+				app.AddError()
+				status = 500
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(status, err.Error(), c)
 		}
 
 		return SucceedWith(map[string]interface{}{
@@ -280,18 +340,25 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 // GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
 func GetTotalMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetTotalMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTotalMembersHandler"),
 		)
 
 		leaderboardID := c.Param("leaderboardID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		count, err := l.TotalMembers()
+		count := 0
+		err := WithSegment("Model", c, func() error {
+			var err error
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			count, err = l.TotalMembers()
 
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			app.AddError()
 			return FailWith(500, err.Error(), c)
 		}
 
@@ -304,7 +371,6 @@ func GetTotalMembersHandler(app *App) func(c echo.Context) error {
 // GetTopMembersHandler retrieves onePage of member score and rank
 func GetTopMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetTopMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTopMembersHandler"),
 		)
@@ -326,11 +392,18 @@ func GetTopMembersHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
-		members, err := l.GetLeaders(pageNumber, order)
+		var members []*leaderboard.Member
+		err = WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
+			members, err = l.GetLeaders(pageNumber, order)
 
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			app.AddError()
 			return FailWith(500, err.Error(), c)
 		}
 
@@ -343,7 +416,6 @@ func GetTopMembersHandler(app *App) func(c echo.Context) error {
 // GetTopPercentageHandler retrieves top x % members in the leaderboard
 func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetTopPercentage")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTopPercentageHandler"),
 		)
@@ -365,17 +437,27 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, "Percentage must be a valid integer between 1 and 100.", c)
 		}
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
-		members, err := l.GetTopPercentage(int(percentage), app.Config.GetInt("api.maxReturnedMembers"), order)
+		var members []*leaderboard.Member
+		status := 400
+		err = WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
+			members, err = l.GetTopPercentage(int(percentage), app.Config.GetInt("api.maxReturnedMembers"), order)
 
-		if err != nil {
-			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
+			if err != nil {
+				if err.Error() == "Percentage must be a valid integer between 1 and 100." {
+					app.AddError()
+					status = 400
+					return err
+				}
+
 				app.AddError()
-				return FailWith(400, err.Error(), c)
+				status = 500
+				return err
 			}
-
-			app.AddError()
-			return FailWith(500, err.Error(), c)
+			return nil
+		})
+		if err != nil {
+			return FailWith(status, err.Error(), c)
 		}
 
 		return SucceedWith(map[string]interface{}{
@@ -387,7 +469,6 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 // GetMembersHandler retrieves several members at once
 func GetMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "GetMembers")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMembersHandler"),
 		)
@@ -406,11 +487,19 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 
 		memberIDs := strings.Split(ids, ",")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
-		members, err := l.GetMembers(memberIDs, order)
+		var members []*leaderboard.Member
+		err := WithSegment("Model", c, func() error {
+			var err error
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, defaultPageSize, lg)
+			members, err = l.GetMembers(memberIDs, order)
 
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			app.AddError()
 			return FailWith(500, err.Error(), c)
 		}
 
@@ -439,30 +528,42 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 // UpsertMemberLeaderboardsScoreHandler sets the member score for all leaderboards
 func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "UpsertMemberLeaderboardsScore")
 		lg := app.Logger.With(
 			zap.String("handler", "UpsertMemberLeaderboardsScoreHandler"),
 		)
 		memberPublicID := c.Param("memberPublicID")
 
 		var payload setScoresPayload
-		if err := LoadJSONPayload(&payload, c, lg); err != nil {
+
+		err := WithSegment("Payload", c, func() error {
+			if err := LoadJSONPayload(&payload, c, lg); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
 
 		serializedScores := make([]map[string]interface{}, len(payload.Leaderboards))
 
-		for i, leaderboardID := range payload.Leaderboards {
-			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-			member, err := l.SetMemberScore(memberPublicID, payload.Score)
+		err = WithSegment("Model", c, func() error {
+			for i, leaderboardID := range payload.Leaderboards {
+				l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+				member, err := l.SetMemberScore(memberPublicID, payload.Score)
 
-			if err != nil {
-				app.AddError()
-				return FailWith(500, err.Error(), c)
+				if err != nil {
+					app.AddError()
+					return err
+				}
+				serializedScore := serializeMember(member, -1)
+				serializedScore["leaderboardID"] = leaderboardID
+				serializedScores[i] = serializedScore
 			}
-			serializedScore := serializeMember(member, -1)
-			serializedScore["leaderboardID"] = leaderboardID
-			serializedScores[i] = serializedScore
+			return nil
+		})
+		if err != nil {
+			return FailWith(500, err.Error(), c)
 		}
 
 		return SucceedWith(map[string]interface{}{
@@ -474,17 +575,22 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 // RemoveLeaderboardHandler is the handler responsible for removing a leaderboard
 func RemoveLeaderboardHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		c.Set("route", "RemoveLeaderboard")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveLeaderboardHandler"),
 		)
 		leaderboardID := c.Param("leaderboardID")
 
-		l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-		err := l.RemoveLeaderboard()
+		err := WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			err := l.RemoveLeaderboard()
 
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			app.AddError()
 			return FailWith(500, err.Error(), c)
 		}
 

@@ -11,3 +11,6 @@ redis:
 api:
   maxReturnedMembers: 2000
   maxReadBufferSize: 80240
+
+newrelic:
+  key: ""

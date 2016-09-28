@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/engine/fasthttp"
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
+	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/log"
@@ -44,6 +45,7 @@ type App struct {
 	Config      *viper.Viper
 	Logger      zap.Logger
 	RedisClient *util.RedisClient
+	NewRelic    newrelic.Application
 }
 
 // GetApp returns a new podium Application
@@ -73,6 +75,10 @@ func (app *App) Configure() error {
 	}
 
 	app.configureSentry()
+	err = app.configureNewRelic()
+	if err != nil {
+		return err
+	}
 
 	err = app.configureApplication()
 	if err != nil {
@@ -88,8 +94,33 @@ func (app *App) configureSentry() {
 		zap.String("operation", "configureSentry"),
 	)
 	sentryURL := app.Config.GetString("sentry.url")
-	l.Info(fmt.Sprintf("Configuring sentry with URL %s", sentryURL))
 	raven.SetDSN(sentryURL)
+	l.Info("Configured sentry successfully.")
+}
+
+func (app *App) configureNewRelic() error {
+	newRelicKey := app.Config.GetString("newrelic.key")
+
+	l := app.Logger.With(
+		zap.String("source", "app"),
+		zap.String("operation", "configureNewRelic"),
+	)
+
+	config := newrelic.NewConfig("Podium", newRelicKey)
+	if newRelicKey == "" {
+		l.Info("New Relic is not enabled..")
+		config.Enabled = false
+	}
+	nr, err := newrelic.NewApplication(config)
+	if err != nil {
+		l.Error("Failed to initialize New Relic.", zap.Error(err))
+		return err
+	}
+
+	app.NewRelic = nr
+	l.Info("Initialized New Relic successfully.")
+
+	return nil
 }
 
 func (app *App) setConfigurationDefaults() {
@@ -156,6 +187,7 @@ func (app *App) configureApplication() error {
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
 	a.Use(NewVersionMiddleware().Serve)
 	a.Use(NewSentryMiddleware(app).Serve)
+	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Get("/status", StatusHandler(app))
@@ -208,15 +240,26 @@ func (app *App) AddError() {
 }
 
 // Start starts listening for web requests at specified host and port
-func (app *App) Start() {
+func (app *App) Start() error {
 	l := app.Logger.With(
 		zap.String("source", "app"),
 		zap.String("operation", "Start"),
 	)
 
-	log.D(l, "App started.", func(cm log.CM) {
+	err := app.App.Run(app.Engine)
+	if err != nil {
+		log.E(l, "App failed to start.", func(cm log.CM) {
+			cm.Write(
+				zap.String("host", app.Host),
+				zap.Int("port", app.Port),
+				zap.Error(err),
+			)
+		})
+		return err
+	}
+
+	log.I(l, "App started.", func(cm log.CM) {
 		cm.Write(zap.String("host", app.Host), zap.Int("port", app.Port))
 	})
-
-	app.App.Run(app.Engine)
+	return nil
 }
