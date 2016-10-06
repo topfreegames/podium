@@ -195,7 +195,7 @@ func GetTX(c echo.Context) newrelic.Transaction {
 func WithSegment(name string, c echo.Context, f func() error) error {
 	tx := GetTX(c)
 	if tx == nil {
-		return nil
+		return f()
 	}
 	segment := newrelic.StartSegment(tx, name)
 	defer segment.End()
