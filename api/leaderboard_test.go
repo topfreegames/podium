@@ -69,16 +69,24 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.PublicID).To(Equal("memberpublicid"))
 		})
 
-		It("Should fail if missing parameters", func() {
+		It("Should work when setting score to 0", func() {
 			payload := map[string]interface{}{
-				"notscore": 100,
+				"score": 0,
 			}
 			status, body := PutJSON(a, "/l/testkey/members/memberpublicid/score", payload)
-			Expect(status).To(Equal(http.StatusBadRequest), body)
+			Expect(status).To(Equal(http.StatusOK), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
-			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("score is required"))
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["publicID"]).To(Equal("memberpublicid"))
+			Expect(int(result["score"].(float64))).To(Equal(payload["score"]))
+			Expect(int(result["rank"].(float64))).To(Equal(1))
+
+			member, err := l.GetMember("memberpublicid", "desc")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member.Rank).To(Equal(1))
+			Expect(member.Score).To(Equal(0))
+			Expect(member.PublicID).To(Equal("memberpublicid"))
 		})
 
 		It("Should fail if invalid payload", func() {
@@ -1052,18 +1060,6 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member.Score).To(Equal(100))
 				Expect(member.PublicID).To(Equal("memberpublicid"))
 			}
-		})
-
-		It("Should fail if missing score", func() {
-			payload := map[string]interface{}{
-				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
-			}
-			status, body := PutJSON(a, "/m/memberpublicid/scores", payload)
-			Expect(status).To(Equal(http.StatusBadRequest), body)
-			var result map[string]interface{}
-			json.Unmarshal([]byte(body), &result)
-			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("score is required"))
 		})
 
 		It("Should fail if missing leaderboards", func() {

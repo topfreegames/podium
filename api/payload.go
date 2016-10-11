@@ -65,7 +65,6 @@ type setScorePayload struct {
 
 func (s *setScorePayload) Validate() []string {
 	v := NewValidation()
-	v.validateRequiredInt("score", s.Score)
 	return v.Errors()
 }
 
@@ -76,7 +75,6 @@ type setScoresPayload struct {
 
 func (s *setScoresPayload) Validate() []string {
 	v := NewValidation()
-	v.validateRequiredInt("score", s.Score)
 
 	v.validateCustom("leaderboards", func() []string {
 		if len(s.Leaderboards) == 0 {
