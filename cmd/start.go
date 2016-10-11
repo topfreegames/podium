@@ -33,7 +33,10 @@ var startCmd = &cobra.Command{
 		if quiet {
 			ll = zap.WarnLevel
 		}
-		logger := zap.NewJSON(ll).With(
+		logger := zap.New(
+			zap.NewJSONEncoder(),
+			ll,
+		).With(
 			zap.String("source", "app"),
 		)
 

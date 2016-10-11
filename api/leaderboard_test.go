@@ -36,7 +36,11 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	BeforeEach(func() {
-		lg = zap.NewJSON(zap.FatalLevel)
+		lg = zap.New(
+			zap.NewJSONEncoder(),
+			zap.FatalLevel,
+		)
+
 		l = leaderboard.NewLeaderboard(a.RedisClient, "testkey", 0, lg)
 
 		conn := a.RedisClient.Client
@@ -89,13 +93,25 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.PublicID).To(Equal("memberpublicid"))
 		})
 
+		It("Should fail if missing parameters", func() {
+			payload := map[string]interface{}{
+				"notscore": 100,
+			}
+			status, body := PutJSON(a, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("score is required"))
+		})
+
 		It("Should fail if invalid payload", func() {
 			status, body := Put(a, "/l/testkey/members/memberpublicid/score", "invalid")
 			Expect(status).To(Equal(http.StatusBadRequest), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(ContainSubstring("parse error: syntax error near offset 0 of 'invalid'"))
+			Expect(result["reason"]).To(ContainSubstring("score is required"))
 		})
 
 		It("Should fail if error updating score", func() {
@@ -1062,6 +1078,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 		})
 
+		It("Should fail if missing score", func() {
+			payload := map[string]interface{}{
+				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+			}
+			status, body := PutJSON(a, "/m/memberpublicid/scores", payload)
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("score is required"))
+		})
+
 		It("Should fail if missing leaderboards", func() {
 			payload := map[string]interface{}{
 				"score": 100,
@@ -1080,7 +1108,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(ContainSubstring("parse error: syntax error near offset 0 of 'invalid'"))
+			Expect(result["reason"]).To(ContainSubstring("score is required"))
 		})
 
 		It("Should fail if error in Redis when upserting many leaderboards", func() {

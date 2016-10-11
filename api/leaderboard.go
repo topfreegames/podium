@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/leaderboard"
 	"github.com/uber-go/zap"
@@ -59,6 +60,15 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 		var payload setScorePayload
 
 		err := WithSegment("Payload", c, func() error {
+			b, err := GetRequestBody(c)
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			if _, err := jsonparser.GetInt(b, "score"); err != nil {
+				app.AddError()
+				return fmt.Errorf("score is required")
+			}
 			if err := LoadJSONPayload(&payload, c, lg); err != nil {
 				app.AddError()
 				return err
@@ -536,6 +546,15 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 		var payload setScoresPayload
 
 		err := WithSegment("Payload", c, func() error {
+			b, err := GetRequestBody(c)
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			if _, err := jsonparser.GetInt(b, "score"); err != nil {
+				app.AddError()
+				return fmt.Errorf("score is required")
+			}
 			if err := LoadJSONPayload(&payload, c, lg); err != nil {
 				return err
 			}

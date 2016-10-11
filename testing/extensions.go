@@ -51,7 +51,10 @@ func initializeTestServer(app *api.App) *httptest.Server {
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
 func getDefaultTestApp() *api.App {
-	logger := zap.NewJSON(zap.FatalLevel)
+	logger := zap.New(
+		zap.NewJSONEncoder(),
+		zap.FatalLevel,
+	)
 	app, err := api.GetApp("0.0.0.0", 8890, "../config/test.yaml", false, false, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
