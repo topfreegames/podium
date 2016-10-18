@@ -221,7 +221,8 @@ type NewRelicMiddleware struct {
 // Serve serves the middleware
 func (nr *NewRelicMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		route := c.Path()
+		method := c.Request().Method()
+		route := fmt.Sprintf("%s %s", method, c.Path())
 		txn := nr.App.NewRelic.StartTransaction(route, nil, nil)
 		c.Set("txn", txn)
 		defer func() {
