@@ -182,6 +182,15 @@ func (app *App) configureApplication() error {
 	_, w, _ := os.Pipe()
 	a.SetLogOutput(w)
 
+	basicAuthUser := app.Config.GetString("basicauth.username")
+	if basicAuthUser != "" {
+		basicAuthPass := app.Config.GetString("basicauth.password")
+
+		a.Use(middleware.BasicAuth(func(username, password string) bool {
+			return username == basicAuthUser && password == basicAuthPass
+		}))
+	}
+
 	a.Pre(middleware.RemoveTrailingSlash())
 	a.Use(NewLoggerMiddleware(app.Logger).Serve)
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)

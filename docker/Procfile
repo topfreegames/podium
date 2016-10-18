@@ -1,1 +1,0 @@
-api: /bin/sh -c "/go/bin/podium start --host 0.0.0.0 --port 8080 --redis-host=$PODIUM_REDIS_HOST --redis-port=$PODIUM_REDIS_PORT --redis-pass=$PODIUM_REDIS_PASSWORD --redis-db=$PODIUM_REDIS_DB --sentry-url=$PODIUM_SENTRY_URL"

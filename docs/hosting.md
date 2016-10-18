@@ -18,8 +18,8 @@ Other than that, there are a couple more configurations you can pass using envir
 
 * `PODIUM_NEWRELIC_KEY` - If you have a [New Relic](https://newrelic.com/) account, you can use this variable to specify your API Key to populate data with New Relic API;
 * `PODIUM_SENTRY_URL` - If you have a [sentry server](https://docs.getsentry.com/hosted/) you can use this variable to specify your project's URL to send errors to;
-* `BASICAUTH_USERNAME` - If you specify this key, Podium will be configured to use basic auth with this user;
-* `BASICAUTH_PASSWORD` - If you specify `BASICAUTH_USERNAME`, Podium will be configured to use basic auth with this password.
+* `PODIUM_BASICAUTH_USERNAME` - If you specify this key, Podium will be configured to use basic auth with this user;
+* `PODIUM_BASICAUTH_PASSWORD` - If you specify `BASICAUTH_USERNAME`, Podium will be configured to use basic auth with this password.
 
 ## Binaries
 
