@@ -30,4 +30,4 @@ ENV PODIUM_SENTRY_URL ""
 ENV PODIUM_BASICAUTH_USERNAME ""
 ENV PODIUM_BASICAUTH_PASSWORD ""
 
-CMD /go/bin/podium start -c /home/podium/default.yaml -p 8080
+CMD /go/bin/podium start -c /home/podium/default.yaml -p 80
