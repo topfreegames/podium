@@ -72,6 +72,13 @@ var _ = Describe("Expires Helper", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("has invalid duration -86400"))
 		})
+
+		It("should return error if duration is 0", func() {
+			exp, err := util.GetExpireAt("leaderboard_from20201010to20201010")
+			Expect(exp).To(BeEquivalentTo(-1))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("has invalid duration 0"))
+		})
 	})
 
 	Describe("Unix Timestamp expiration", func() {
@@ -92,6 +99,14 @@ var _ = Describe("Expires Helper", func() {
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("has invalid duration -86400"))
+		})
+
+		It("should get invalid expiration if same timestamps", func() {
+			start := time.Now()
+			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_from%dto%d", start.Unix(), start.Unix()))
+			Expect(exp).To(BeEquivalentTo(-1))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("has invalid duration 0"))
 		})
 	})
 

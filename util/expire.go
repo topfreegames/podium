@@ -29,7 +29,7 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 		startTimestamp, _ := strconv.ParseInt(substrings[1], 10, 32)
 		endTimestamp, _ := strconv.ParseInt(substrings[2], 10, 32)
 		durationInSeconds := endTimestamp - startTimestamp
-		if durationInSeconds < 0 {
+		if durationInSeconds <= 0 {
 			return -1, &InvalidDurationError{leaderboardPublicID, durationInSeconds}
 		}
 		return endTimestamp + durationInSeconds, nil
@@ -46,7 +46,7 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 			return -1, err
 		}
 		durationInSeconds := endTime.Sub(startTime)
-		if durationInSeconds.Seconds() < 0 {
+		if durationInSeconds.Seconds() <= 0 {
 			return -1, &InvalidDurationError{leaderboardPublicID, int64(durationInSeconds.Seconds())}
 		}
 		return endTime.Add(durationInSeconds).Unix(), nil
