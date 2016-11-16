@@ -46,6 +46,10 @@ func putTo(url string, payload map[string]interface{}) (int, string, error) {
 	return sendTo("PUT", url, payload)
 }
 
+func patchTo(url string, payload map[string]interface{}) (int, string, error) {
+	return sendTo("PATCH", url, payload)
+}
+
 func sendTo(method, url string, payload map[string]interface{}) (int, string, error) {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
