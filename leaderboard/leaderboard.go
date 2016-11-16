@@ -69,6 +69,35 @@ type Leaderboard struct {
 	PageSize    int
 }
 
+func getSetScoreScript(operation string) *redis.Script {
+	return redis.NewScript(fmt.Sprintf(`
+		-- Script params:
+		-- KEYS[1] is the name of the leaderboard
+		-- KEYS[2] is member's public ID
+		-- ARGV[1] is the member's score increment
+		-- ARGV[2] is the leaderboard's expiration
+
+		-- creates leaderboard or just sets score of member
+		local res = redis.call("%s", KEYS[1], tonumber(ARGV[1]), KEYS[2])
+
+		-- If expiration is required set expiration
+		if (ARGV[2] ~= "-1") then
+			local expiration = redis.call("TTL", KEYS[1])
+			if (expiration == -2) then
+				return redis.error_reply("Leaderboard Set was not created in %s! Don't know how to proceed.")
+			end
+			if (expiration == -1) then
+				redis.call("EXPIREAT", KEYS[1], ARGV[2])
+			end
+		end
+
+		-- return updated rank of member
+		local rank = tonumber(redis.call("ZREVRANK", KEYS[1], KEYS[2]))
+		local score = tonumber(redis.call("ZSCORE", KEYS[1], KEYS[2]))
+		return {rank,score}
+	`, operation, operation))
+}
+
 //GetMembersByRange for a given leaderboard
 func GetMembersByRange(redisClient *util.RedisClient, leaderboard string, startOffset int, endOffset int, order string, l zap.Logger) ([]*Member, error) {
 	cli := redisClient.Client
@@ -124,31 +153,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID 
 	}
 	l.Debug("Expiration calculated successfully.", zap.Int64("expiration", expireAt))
 
-	script := redis.NewScript(`
-		-- Script params:
-		-- KEYS[1] is the name of the leaderboard
-		-- KEYS[2] is member's public ID
-		-- ARGV[1] is the member's updated score
-		-- ARGV[2] is the leaderboard's expiration
-
-		-- creates leaderboard or just sets score of member
-		local res = redis.call("ZADD", KEYS[1], ARGV[1], KEYS[2])
-
-		-- If expiration is required set expiration
-		if (ARGV[2] ~= "-1") then
-			local expiration = redis.call("TTL", KEYS[1])
-			if (expiration == -2) then
-				return redis.error_reply("Leaderboard Set was not created in ZADD! Don't know how to proceed.")
-			end
-			if (expiration == -1) then
-				redis.call("EXPIREAT", KEYS[1], ARGV[2])
-			end
-		end
-
-		-- return updated rank of member
-		local rank = redis.call("ZREVRANK", KEYS[1], KEYS[2])
-		return rank
-	`)
+	script := getSetScoreScript("ZADD")
 
 	l.Debug("Updating rank for member.")
 	newRank, err := script.Run(cli, []string{lb.PublicID, memberID}, score, expireAt).Result()
@@ -158,9 +163,44 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID 
 		return -1, err
 	}
 
-	r := int(newRank.(int64))
+	r := int(newRank.([]interface{})[0].(int64))
 	l.Info("Rank for member retrieved successfully.", zap.Int("newRank", r))
 	return r, err
+}
+
+// IncrementMemberScore sets the score to the member with the given ID
+func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int) (*Member, error) {
+	l := lb.Logger.With(
+		zap.String("operation", "IncrementMemberScore"),
+		zap.String("leaguePublicID", lb.PublicID),
+		zap.String("memberID", memberID),
+		zap.Int("increment", increment),
+	)
+	l.Debug("Setting member score increment...")
+	cli := lb.RedisClient.Client
+
+	script := getSetScoreScript("ZINCRBY")
+
+	l.Debug("Calculating expiration for leaderboard...")
+	expireAt, err := util.GetExpireAt(lb.PublicID)
+	if err != nil {
+		l.Error("Could not get expiration.", zap.Error(err))
+		return nil, err
+	}
+	l.Debug("Expiration calculated successfully.", zap.Int64("expiration", expireAt))
+
+	l.Debug("Incrementing score for member...")
+	result, err := script.Run(cli, []string{lb.PublicID, memberID}, increment, expireAt).Result()
+	if err != nil {
+		l.Error("Could not increment score for member.", zap.Error(err))
+		return nil, err
+	}
+	rank := int(result.([]interface{})[0].(int64)) + 1
+	score := int(result.([]interface{})[1].(int64))
+
+	l.Info("Member score increment set successfully.")
+	nMember := Member{PublicID: memberID, Score: score, Rank: rank}
+	return &nMember, err
 }
 
 // SetMemberScore sets the score to the member with the given ID

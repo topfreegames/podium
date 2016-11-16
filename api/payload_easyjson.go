@@ -143,7 +143,53 @@ func (v setScorePayload) MarshalEasyJSON(w *jwriter.Writer) {
 func (v *setScorePayload) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi1(l, v)
 }
-func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi2(in *jlexer.Lexer, out *Validation) {
+func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi2(in *jlexer.Lexer, out *incrementScorePayload) {
+	if in.IsNull() {
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "increment":
+			out.Increment = int(in.Int())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+}
+func easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi2(out *jwriter.Writer, in incrementScorePayload) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"increment\":")
+	out.Int(int(in.Increment))
+	out.RawByte('}')
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v incrementScorePayload) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi2(w, v)
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *incrementScorePayload) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi2(l, v)
+}
+func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi3(in *jlexer.Lexer, out *Validation) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -165,7 +211,7 @@ func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi2(in *jlexer.Lexer, out
 	}
 	in.Delim('}')
 }
-func easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi2(out *jwriter.Writer, in Validation) {
+func easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi3(out *jwriter.Writer, in Validation) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -174,10 +220,10 @@ func easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi2(out *jwriter.Writer, 
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Validation) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi2(w, v)
+	easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi3(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Validation) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi2(l, v)
+	easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi3(l, v)
 }

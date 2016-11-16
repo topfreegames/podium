@@ -90,6 +90,46 @@ var _ = Describe("Leaderboard Model", func() {
 		})
 	})
 
+	Describe("increment member scores", func() {
+		It("should increment member score and return ranks", func() {
+			lbID := uuid.NewV4().String()
+			testLeaderboard := NewLeaderboard(redisClient, lbID, 10, logger)
+
+			_, err := testLeaderboard.SetMemberScore("dayvson", 1000)
+			Expect(err).NotTo(HaveOccurred())
+
+			member, err := testLeaderboard.IncrementMemberScore("dayvson", 10)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member.Score).To(Equal(1010))
+			Expect(member.PublicID).To(Equal("dayvson"))
+
+			score, err := redisClient.Client.ZScore(lbID, "dayvson").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(int(score)).To(Equal(1010))
+		})
+
+		It("should increment member score when leaderboard does not exist and return ranks", func() {
+			lbID := uuid.NewV4().String()
+			testLeaderboard := NewLeaderboard(redisClient, lbID, 10, logger)
+
+			member, err := testLeaderboard.IncrementMemberScore("dayvson", 10)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member.Score).To(Equal(10))
+			Expect(member.PublicID).To(Equal("dayvson"))
+
+			score, err := redisClient.Client.ZScore(lbID, "dayvson").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(int(score)).To(Equal(10))
+		})
+
+		It("should fail if invalid connection to Redis", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), "test-leaderboard", 10, logger)
+			_, err := testLeaderboard.IncrementMemberScore("dayvson", 16)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
+	})
+
 	Describe("getting number of members", func() {
 		It("should retrieve the number of members in a leaderboard", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)

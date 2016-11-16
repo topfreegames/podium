@@ -98,6 +98,47 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 	}
 }
 
+// IncrementMemberScoreHandler is the handler responsible for incrementing the member score
+func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		lg := app.Logger.With(
+			zap.String("handler", "IncrementMemberScoreHandler"),
+		)
+		leaderboardID := c.Param("leaderboardID")
+		memberPublicID := c.Param("memberPublicID")
+
+		var payload incrementScorePayload
+
+		err := WithSegment("Payload", c, func() error {
+			if err := LoadJSONPayload(&payload, c, lg); err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(400, err.Error(), c)
+		}
+
+		var member *leaderboard.Member
+		err = WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
+			member, err = l.IncrementMemberScore(memberPublicID, payload.Increment)
+
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(500, err.Error(), c)
+		}
+
+		return SucceedWith(serializeMember(member, -1), c)
+	}
+}
+
 //RemoveMemberHandler removes a member from a leaderboard
 func RemoveMemberHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {

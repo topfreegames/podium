@@ -202,6 +202,7 @@ func (app *App) configureApplication() error {
 	a.Get("/status", StatusHandler(app))
 	a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
 	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
+	a.Patch("/l/:leaderboardID/members/:memberPublicID/score", IncrementMemberScoreHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
 	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
 	a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))

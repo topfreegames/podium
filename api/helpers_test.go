@@ -85,6 +85,20 @@ func PutJSON(app *api.App, url string, body interface{}) (int, string) {
 	return Put(app, url, string(result))
 }
 
+//Patch to server
+func Patch(app *api.App, url, body string) (int, string) {
+	return doRequest(app, "PATCH", url, body)
+}
+
+//PatchJSON to server
+func PatchJSON(app *api.App, url string, body interface{}) (int, string) {
+	result, err := json.Marshal(body)
+	if err != nil {
+		return 510, "Failed to marshal specified body to JSON format"
+	}
+	return Patch(app, url, string(result))
+}
+
 //Delete from server
 func Delete(app *api.App, url string) (int, string) {
 	return doRequest(app, "DELETE", url, "")
@@ -159,6 +173,10 @@ func fastPostTo(url string, payload []byte) (int, []byte, error) {
 
 func fastPutTo(url string, payload []byte) (int, []byte, error) {
 	return fastSendTo("PUT", url, payload)
+}
+
+func fastPatchTo(url string, payload []byte) (int, []byte, error) {
+	return fastSendTo("PATCH", url, payload)
 }
 
 var fastClient *fasthttp.Client

@@ -141,6 +141,115 @@ var _ = Describe("Leaderboard Handler", func() {
 		}, 0.05)
 	})
 
+	Describe("Increment Member Score", func() {
+		It("Should increment correct member score in redis and respond with the correct values", func() {
+			payload := map[string]interface{}{
+				"increment": 10,
+			}
+
+			_, err := l.SetMemberScore("memberpublicid", 100)
+			Expect(err).NotTo(HaveOccurred())
+
+			status, body := PatchJSON(a, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(status).To(Equal(http.StatusOK), body)
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["publicID"]).To(Equal("memberpublicid"))
+			Expect(int(result["score"].(float64))).To(Equal(110))
+			Expect(int(result["rank"].(float64))).To(Equal(1))
+
+			member, err := l.GetMember("memberpublicid", "desc")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member.Rank).To(Equal(1))
+			Expect(member.Score).To(Equal(110))
+			Expect(member.PublicID).To(Equal("memberpublicid"))
+		})
+
+		It("Should increment correct member score when member does not exist", func() {
+			payload := map[string]interface{}{
+				"increment": 10,
+			}
+
+			status, body := PatchJSON(a, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(status).To(Equal(http.StatusOK), body)
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["publicID"]).To(Equal("memberpublicid"))
+			Expect(int(result["score"].(float64))).To(Equal(10))
+			Expect(int(result["rank"].(float64))).To(Equal(1))
+
+			member, err := l.GetMember("memberpublicid", "desc")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member.Rank).To(Equal(1))
+			Expect(member.Score).To(Equal(10))
+			Expect(member.PublicID).To(Equal("memberpublicid"))
+		})
+
+		It("Should not work when incrementing by 0", func() {
+			payload := map[string]interface{}{
+				"increment": 0,
+			}
+			status, body := PatchJSON(a, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("increment is required"))
+		})
+
+		It("Should fail if missing parameters", func() {
+			payload := map[string]interface{}{
+				"notscore": 100,
+			}
+			status, body := PatchJSON(a, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("increment is required"))
+		})
+
+		It("Should fail if invalid payload", func() {
+			status, body := Patch(a, "/l/testkey/members/memberpublicid/score", "invalid")
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(ContainSubstring("parse error: syntax error"))
+		})
+
+		It("Should fail if error updating score", func() {
+			payload := map[string]interface{}{
+				"increment": 100,
+			}
+			app := GetDefaultTestApp()
+			app.RedisClient = GetFaultyRedis(a.Logger)
+
+			status, body := PatchJSON(app, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(status).To(Equal(500), body)
+			Expect(body).To(ContainSubstring("connection refused"))
+		})
+
+		HTTPMeasure("it should update member score", func(ctx map[string]interface{}) {
+			payload := map[string]interface{}{
+				"increment": 100,
+			}
+			payloadJSON, err := json.Marshal(payload)
+			Expect(err).NotTo(HaveOccurred())
+			ctx["payload"] = payloadJSON
+		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+			url := getRoute(ts, "/l/testkey/members/memberpublicid/score")
+			status, body, err := fastPatchTo(url, ctx["payload"].([]byte))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(status).To(Equal(http.StatusOK), string(body))
+		}, 0.05)
+	})
+
 	Describe("Remove Member Score", func() {
 		It("Should delete member score from redis if score exists", func() {
 			_, err := l.SetMemberScore("memberpublicid", 100)

@@ -101,6 +101,60 @@ Podium API
       }
       ```
 
+  ### Increment a Member Score
+  `PATCH /l/:leaderboardID/members/:memberPublicID/score`
+
+  Atomically creates a new member within a leaderboard with the given increment as score. If member already exists in leaderboard just increment their score.
+
+  Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and memberPublicID should be a unique identifier for the member associated with the score.
+
+  **WARNING:** Incrementing a member score by 0 is not a valid operation and will return a 400 Bad Request result.
+
+  * Payload
+
+    ```
+    {
+      "increment":      [integer]  // Integer representing increment in member score
+    }
+    ```
+
+  * Success Response
+    * Code: `200`
+    * Content:
+      ```
+      {
+        "success": true,
+        "member": {
+          "publicID": [string]  // member public id
+          "score":    [int],    // member updated score
+          "rank":     [int],    // member current rank in leaderboard
+        }
+      }
+      ```
+
+  * Error Response
+
+    It will return an error if an invalid payload is sent or if there are missing parameters.
+
+    * Code: `400`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
+    * Code: `500`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
+
   ### Remove a leaderboard
   `DELETE /l/:leaderboardID`
 
@@ -132,10 +186,10 @@ Podium API
 
   ### Get a member score and rank
   `GET /l/:leaderboardID/members/:memberPublicID`
-  
+
   ##### optional query string
-  * order=[asc|desc] 
-    * if set to asc, will treat the ranking with ascending scores (less is best) 
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/members/:memberPublicID?order=asc`
     * defaults to "desc"
 
@@ -179,10 +233,10 @@ Podium API
 
   ### Get multiple member scores and rank
   `GET /l/:leaderboardID/members?ids=publicIDcsv`
-  
+
   ##### optional query string
-  * order=[asc|desc] 
-    * if set to asc, will treat the ranking with ascending scores (less is best) 
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/members?ids=publicIDcsv?order=asc`
     * defaults to "desc"
 
@@ -266,8 +320,8 @@ Podium API
   `GET /m/:memberPublicID/scores?leaderboardIds=leaderboard1,leaderboard2,...`
 
   ##### optional query string
-  * order=[asc|desc] 
-    * if set to asc, will treat the ranking with ascending scores (less is best) 
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /m/:memberPublicID/scores?leaderboardIds=leaderboard1,leaderboard2,...?order=asc`
     * defaults to "desc"
 
@@ -294,7 +348,7 @@ Podium API
           }
         ],
         "success": true
-      }   
+      }
       ```
 
   * Error Response
@@ -307,13 +361,13 @@ Podium API
       "success": false
     }
     ```
-    
+
   ### Get a member rank
   `GET /l/:leaderboardID/members/:memberPublicID/rank`
 
   ##### optional query string
-  * order=[asc|desc] 
-    * if set to asc, will treat the ranking with ascending scores (less is best) 
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/members/:memberPublicID/rank?order=asc`
     * defaults to "desc"
 
@@ -358,8 +412,8 @@ Podium API
   `GET /l/:leaderboardID/members/:memberPublicID/around?pageSize=10`
 
   ##### optional query string
-  * order=[asc|desc] 
-    * if set to asc, will treat the ranking with ascending scores (less is best) 
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/members/:memberPublicID/around?pageSize=10?order=asc`
     * defaults to "desc"
 
@@ -447,8 +501,8 @@ Podium API
   `GET /l/:leaderboardID/top/:pageNumber?pageSize=:pageSize`
 
   ##### optional query string
-  * order=[asc|desc] 
-    * if set to asc, will treat the ranking with ascending scores (less is best) 
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/top/:pageNumber?pageSize=:pageSize?order=asc`
     * defaults to "desc"
 
@@ -504,8 +558,8 @@ Podium API
   `GET /l/:leaderboardID/top-percent/:percentage`
 
   ##### optional query string
-  * order=[asc|desc] 
-    * if set to asc, will treat the ranking with ascending scores (less is best) 
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/top-percent/:percentage?order=asc`
     * defaults to "desc"
 

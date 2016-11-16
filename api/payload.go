@@ -59,6 +59,16 @@ func (v *Validation) Errors() []string {
 	return v.errors
 }
 
+type incrementScorePayload struct {
+	Increment int `json:"increment"`
+}
+
+func (s *incrementScorePayload) Validate() []string {
+	v := NewValidation()
+	v.validateRequiredInt("increment", s.Increment)
+	return v.Errors()
+}
+
 type setScorePayload struct {
 	Score int `json:"score"`
 }
