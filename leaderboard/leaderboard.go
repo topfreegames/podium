@@ -101,7 +101,11 @@ func getSetScoreScript(operation string) *redis.Script {
 //GetMembersByRange for a given leaderboard
 func GetMembersByRange(redisClient *util.RedisClient, leaderboard string, startOffset int, endOffset int, order string, l zap.Logger) ([]*Member, error) {
 	cli := redisClient.Client
-	l.Debug(fmt.Sprintf("Retrieving members for range: %d - %d", startOffset, endOffset))
+	l.Debug(
+		"Retrieving members for range.",
+		zap.Int("startOffset", startOffset),
+		zap.Int("endOffset", endOffset),
+	)
 
 	var values []redis.Z
 	var err error
@@ -111,10 +115,19 @@ func GetMembersByRange(redisClient *util.RedisClient, leaderboard string, startO
 		values, err = cli.ZRangeWithScores(leaderboard, int64(startOffset), int64(endOffset)).Result()
 	}
 	if err != nil {
-		l.Error(fmt.Sprintf("Retrieval of members for range %d - %d failed.", startOffset, endOffset), zap.Error(err))
+		l.Error(
+			"Retrieval of members for range failed.",
+			zap.Int("startOffset", startOffset),
+			zap.Int("endOffset", endOffset),
+			zap.Error(err),
+		)
 		return nil, err
 	}
-	l.Info(fmt.Sprintf("Retrieval of members for range %d - %d succeeded.", startOffset, endOffset))
+	l.Debug(
+		"Retrieving members for range succeeded.",
+		zap.Int("startOffset", startOffset),
+		zap.Int("endOffset", endOffset),
+	)
 
 	l.Debug("Building details of leaderboard members...")
 	members := make([]*Member, len(values))
@@ -124,7 +137,7 @@ func GetMembersByRange(redisClient *util.RedisClient, leaderboard string, startO
 		nMember := Member{PublicID: publicID, Score: score, Rank: int(startOffset + i + 1)}
 		members[i] = &nMember
 	}
-	l.Info("Retrieval of leaderboard members' details succeeded.")
+	l.Debug("Retrieval of leaderboard members' details succeeded.")
 
 	return members, nil
 }
@@ -164,7 +177,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID 
 	}
 
 	r := int(newRank.([]interface{})[0].(int64))
-	l.Info("Rank for member retrieved successfully.", zap.Int("newRank", r))
+	l.Debug("Rank for member retrieved successfully.", zap.Int("newRank", r))
 	return r, err
 }
 
@@ -198,7 +211,7 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int) (*Me
 	rank := int(result.([]interface{})[0].(int64)) + 1
 	score := int(result.([]interface{})[1].(int64))
 
-	l.Info("Member score increment set successfully.")
+	l.Debug("Member score increment set successfully.")
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank}
 	return &nMember, err
 }
@@ -218,7 +231,7 @@ func (lb *Leaderboard) SetMemberScore(memberID string, score int) (*Member, erro
 		return nil, err
 	}
 
-	l.Info("Member score set successfully.")
+	l.Debug("Member score set successfully.")
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank + 1}
 	return &nMember, err
 }
@@ -237,11 +250,11 @@ func (lb *Leaderboard) TotalMembers() (int, error) {
 		l.Error("Retrieval of total members failed.", zap.Error(err))
 		return 0, err
 	}
-	l.Info("Total members of leaderboard retrieved successfully.")
+	l.Debug("Total members of leaderboard retrieved successfully.")
 	return int(total), nil
 }
 
-// RemoveMember removes the member with the given publicID from the leaderboard
+// RemoveMembers removes the members with the given publicIDs from the leaderboard
 func (lb *Leaderboard) RemoveMembers(memberIDs []interface{}) error {
 	l := lb.Logger.With(
 		zap.String("operation", "RemoveMembers"),
@@ -257,7 +270,7 @@ func (lb *Leaderboard) RemoveMembers(memberIDs []interface{}) error {
 		l.Error("Members removal failed...", zap.Error(err))
 		return err
 	}
-	l.Info("Members removed successfully.")
+	l.Debug("Members removed successfully.")
 	return nil
 }
 
@@ -278,7 +291,7 @@ func (lb *Leaderboard) RemoveMember(memberID string) error {
 		l.Error("Member removal failed...", zap.Error(err))
 		return err
 	}
-	l.Info("Member removed successfully.")
+	l.Debug("Member removed successfully.")
 	return nil
 }
 
@@ -299,7 +312,7 @@ func (lb *Leaderboard) TotalPages() (int, error) {
 		return 0, err
 	}
 	pages = int(math.Ceil(float64(total) / float64(lb.PageSize)))
-	l.Info("Number of pages for leaderboard retrieved successfully.", zap.Int("numberOfPages", pages))
+	l.Debug("Number of pages for leaderboard retrieved successfully.", zap.Int("numberOfPages", pages))
 	return pages, nil
 }
 
@@ -351,7 +364,7 @@ func (lb *Leaderboard) GetMember(memberID string, order string) (*Member, error)
 	scoreParsed, _ := strconv.ParseInt(res[1].(string), 10, 32)
 	score := int(scoreParsed)
 
-	l.Info("Member information found.", zap.Int("rank", rank), zap.Int("score", score))
+	l.Debug("Member information found.", zap.Int("rank", rank), zap.Int("score", score))
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank + 1}
 	return &nMember, nil
 }
@@ -416,7 +429,7 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, 
 		})
 	}
 
-	l.Info("Members information found.")
+	l.Debug("Members information found.")
 	sort.Sort(members)
 	return members, nil
 }
@@ -462,7 +475,7 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string) ([]*Member, er
 		return nil, err
 	}
 
-	l.Info("Retrieved information around member successfully.")
+	l.Debug("Retrieved information around member successfully.")
 	return members, nil
 }
 
@@ -493,7 +506,7 @@ func (lb *Leaderboard) GetRank(memberID string, order string) (int, error) {
 		l.Error("Failed to retrieve rank of specific member.", zap.Error(err))
 		return -1, err
 	}
-	l.Info("Rank retrieval succeeded.")
+	l.Debug("Rank retrieval succeeded.")
 	return int(rank + 1), nil
 }
 
@@ -607,7 +620,7 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int, order string) ([
 		})
 	}
 
-	l.Info("Top percentage of members retrieved successfully.")
+	l.Debug("Top percentage of members retrieved successfully.")
 
 	return members, nil
 }
@@ -628,6 +641,6 @@ func (lb *Leaderboard) RemoveLeaderboard() error {
 		return err
 	}
 
-	l.Info("Leaderboard removed.")
+	l.Debug("Leaderboard removed.")
 	return nil
 }
