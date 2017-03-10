@@ -254,7 +254,7 @@ var _ = Describe("Leaderboard Model", func() {
 				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			members, err := testLeaderboard.GetAroundMe("member_20", "desc")
+			members, err := testLeaderboard.GetAroundMe("member_20", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			firstAroundMe := members[0]
 			lastAroundMe := members[testLeaderboard.PageSize-1]
@@ -269,7 +269,7 @@ var _ = Describe("Leaderboard Model", func() {
 				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			members, err := testLeaderboard.GetAroundMe("member_20", "asc")
+			members, err := testLeaderboard.GetAroundMe("member_20", "asc", false)
 			Expect(err).NotTo(HaveOccurred())
 			firstAroundMe := members[0]
 			lastAroundMe := members[testLeaderboard.PageSize-1]
@@ -284,7 +284,7 @@ var _ = Describe("Leaderboard Model", func() {
 				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			members, err := testLeaderboard.GetAroundMe("member_20", "desc")
+			members, err := testLeaderboard.GetAroundMe("member_20", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
 			firstAroundMe := members[0]
@@ -299,7 +299,7 @@ var _ = Describe("Leaderboard Model", func() {
 				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			members, err := testLeaderboard.GetAroundMe("member_2", "desc")
+			members, err := testLeaderboard.GetAroundMe("member_2", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
 			firstAroundMe := members[0]
@@ -314,7 +314,7 @@ var _ = Describe("Leaderboard Model", func() {
 				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			members, err := testLeaderboard.GetAroundMe("member_99", "desc")
+			members, err := testLeaderboard.GetAroundMe("member_99", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
 			firstAroundMe := members[0]
@@ -329,7 +329,7 @@ var _ = Describe("Leaderboard Model", func() {
 				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			members, err := testLeaderboard.GetAroundMe("member_2", "desc")
+			members, err := testLeaderboard.GetAroundMe("member_2", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members).To(HaveLen(10))
 			firstAroundMe := members[0]
@@ -340,7 +340,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail if faulty redis client", func() {
 			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), "test-leaderboard", 10, logger)
-			_, err := testLeaderboard.GetAroundMe("qwe", "desc")
+			_, err := testLeaderboard.GetAroundMe("qwe", "desc", false)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
 		})

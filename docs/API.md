@@ -416,6 +416,11 @@ Podium API
     * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/members/:memberPublicID/around?pageSize=10?order=asc`
     * defaults to "desc"
+  * getLastIfNotFound=[true|false]
+    * if set to true, will treat members not in ranking as being in last position
+    * if set to false, will return 404 when the member is not in the ranking
+    * e.g. `GET /l/:leaderboardID/members/:memberPublicID/around?getLastIfNotFound=true`
+    * defaults to "false"
 
   Gets a list of members with ranking around that of the specified member within a leaderboard.
 
