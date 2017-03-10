@@ -354,6 +354,11 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 		if order == "" || (order != "asc" && order != "desc") {
 			order = "desc"
 		}
+		getLastIfNotFound := false
+		getLastIfNotFoundStr := c.QueryParam("getLastIfNotFound")
+		if getLastIfNotFoundStr != "" && getLastIfNotFoundStr == "true" {
+			getLastIfNotFound = true
+		}
 
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
@@ -366,7 +371,7 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 		status := 404
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, pageSize, lg)
-			members, err = l.GetAroundMe(memberPublicID, order)
+			members, err = l.GetAroundMe(memberPublicID, order, getLastIfNotFound)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 				app.AddError()
 				status = 404

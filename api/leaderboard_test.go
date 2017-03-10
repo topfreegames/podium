@@ -644,6 +644,35 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 		})
 
+		It("Should get last positions if not in ranking", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			status, body := Get(a, "/l/testkey/members/member_999/around?pageSize=20&getLastIfNotFound=true")
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(20))
+			start := int(members[0].(map[string]interface{})["rank"].(float64))
+			Expect(start).To(Equal(81))
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				pos := start + i
+				Expect(int(member["rank"].(float64))).To(Equal(pos))
+				Expect(int(member["score"].(float64))).To(Equal(100 - pos))
+
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
+				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
+				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
 		It("Should fail with 404 if score for member does not exist", func() {
 			status, body := Get(a, "/l/testkey/members/memberpublicid/around")
 			Expect(status).To(Equal(http.StatusNotFound), body)
@@ -732,6 +761,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			app.RedisClient = GetFaultyRedis(a.Logger)
 
 			status, body := Get(app, "/l/testkey/members/member_99/around")
+			Expect(status).To(Equal(500), body)
+			Expect(body).To(ContainSubstring("connection refused"))
+		})
+
+		It("Should fail if error in Redis", func() {
+			app := GetDefaultTestApp()
+			app.RedisClient = GetFaultyRedis(a.Logger)
+
+			status, body := Get(app, "/l/testkey/members/member_99/around?getLastIfNotFound=true")
 			Expect(status).To(Equal(500), body)
 			Expect(body).To(ContainSubstring("connection refused"))
 		})

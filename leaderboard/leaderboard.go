@@ -435,7 +435,7 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, 
 }
 
 // GetAroundMe returns a page of results centered in the member with the given ID
-func (lb *Leaderboard) GetAroundMe(memberID string, order string) ([]*Member, error) {
+func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFound bool) ([]*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetAroundMe"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -448,19 +448,25 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string) ([]*Member, er
 
 	l.Debug("Getting information about members around a specific member...")
 	currentMember, err := lb.GetMember(memberID, order)
-	if err != nil {
+	_, memberNotFound := err.(*MemberNotFoundError)
+	if (err != nil && !memberNotFound) || (memberNotFound && !getLastIfNotFound) {
 		return nil, err
 	}
-	startOffset := currentMember.Rank - (lb.PageSize / 2)
-	if startOffset < 0 {
-		startOffset = 0
-	}
-	endOffset := (startOffset + lb.PageSize) - 1
 
 	totalMembers, err := lb.TotalMembers()
 	if err != nil {
 		return nil, err
 	}
+
+	if memberNotFound && getLastIfNotFound {
+		currentMember = &Member{PublicID: memberID, Score: 0, Rank: totalMembers + 1}
+	}
+
+	startOffset := currentMember.Rank - (lb.PageSize / 2)
+	if startOffset < 0 {
+		startOffset = 0
+	}
+	endOffset := (startOffset + lb.PageSize) - 1
 	if totalMembers < endOffset {
 		endOffset = totalMembers
 		startOffset = endOffset - lb.PageSize
