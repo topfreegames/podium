@@ -159,9 +159,8 @@ var _ = Describe("Leaderboard Model", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 			Expect(testLeaderboard.TotalMembers()).To(Equal(10))
-			members := make([]interface{}, 1)
-			members[0] = "member_5"
-			testLeaderboard.RemoveMembers(members)
+			member := "member_5"
+			testLeaderboard.RemoveMember(member)
 			Expect(testLeaderboard.TotalMembers()).To(Equal(9))
 		})
 

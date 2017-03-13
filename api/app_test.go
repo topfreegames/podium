@@ -37,7 +37,7 @@ var _ = Describe("App", func() {
 			Expect(expected).To(Equal("WORKING"))
 		})
 
-		It("Should faild if configuration file does not exist", func() {
+		It("Should fail if configuration file does not exist", func() {
 			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid.yaml", false, false, logger)
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
