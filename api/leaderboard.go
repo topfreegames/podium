@@ -356,7 +356,7 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 		}
 		getLastIfNotFound := false
 		getLastIfNotFoundStr := c.QueryParam("getLastIfNotFound")
-		if getLastIfNotFoundStr != "" && getLastIfNotFoundStr == "true" {
+		if getLastIfNotFoundStr == "true" {
 			getLastIfNotFound = true
 		}
 
