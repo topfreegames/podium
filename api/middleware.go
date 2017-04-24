@@ -36,8 +36,8 @@ type VersionMiddleware struct {
 // Serve serves the middleware
 func (v *VersionMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		c.Response().Header().Set(echo.HeaderServer, fmt.Sprintf("Khan/v%s", v.Version))
-		c.Response().Header().Set("Khan-Server", fmt.Sprintf("Khan/v%s", v.Version))
+		c.Response().Header().Set(echo.HeaderServer, fmt.Sprintf("Podium/v%s", v.Version))
+		c.Response().Header().Set("Podium-Server", fmt.Sprintf("Podium/v%s", v.Version))
 		return next(c)
 	}
 }
