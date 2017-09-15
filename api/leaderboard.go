@@ -30,6 +30,9 @@ func serializeMember(member *leaderboard.Member, position int) map[string]interf
 		"score":    member.Score,
 		"rank":     member.Rank,
 	}
+	if member.PreviousRank != 0 {
+		memberData["previousRank"] = member.PreviousRank
+	}
 	if position >= 0 {
 		memberData["position"] = position
 	}
@@ -58,6 +61,11 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 		memberPublicID := c.Param("memberPublicID")
 
 		var payload setScorePayload
+		prevRank := false
+		prevRankStr := c.QueryParam("prevRank")
+		if prevRankStr != "" && prevRankStr == "true" {
+			prevRank = true
+		}
 
 		err := WithSegment("Payload", c, func() error {
 			b, err := GetRequestBody(c)
@@ -82,7 +90,7 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 		var member *leaderboard.Member
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-			member, err = l.SetMemberScore(memberPublicID, payload.Score)
+			member, err = l.SetMemberScore(memberPublicID, payload.Score, prevRank)
 
 			if err != nil {
 				app.AddError()
@@ -591,6 +599,12 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 
 		var payload setScoresPayload
 
+		prevRank := false
+		prevRankStr := c.QueryParam("prevRank")
+		if prevRankStr != "" && prevRankStr == "true" {
+			prevRank = true
+		}
+
 		err := WithSegment("Payload", c, func() error {
 			b, err := GetRequestBody(c)
 			if err != nil {
@@ -615,7 +629,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 		err = WithSegment("Model", c, func() error {
 			for i, leaderboardID := range payload.Leaderboards {
 				l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-				member, err := l.SetMemberScore(memberPublicID, payload.Score)
+				member, err := l.SetMemberScore(memberPublicID, payload.Score, prevRank)
 
 				if err != nil {
 					app.AddError()

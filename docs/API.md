@@ -53,6 +53,12 @@ Podium API
   ### Create or Update a Member Score
   `PUT /l/:leaderboardID/members/:memberPublicID/score`
 
+  ##### optional query string
+  * prevRank=[true|false]
+    * if set to true, it will also return the previous rank of the player in the leaderboard, -1 if the player didn't exist in the leaderboard
+    * e.g. `PUT /l/:leaderboardID/members/:memberPublicID/score?prevRank=true`
+    * defaults to "false"
+
   Atomically creates a new member within a leaderboard or if member already exists in leaderboard, update their score.
 
   Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and memberPublicID should be a unique identifier for the member associated with the score.
@@ -75,6 +81,7 @@ Podium API
           "publicID": [string]  // member public id
           "score":    [int],    // member updated score
           "rank":     [int],    // member current rank in leaderboard
+          "previousRank": [int]     // the previous rank of the player in the leaderboard, if requests
         }
       }
       ```
@@ -623,6 +630,12 @@ Podium API
   ### Create or update score for a member in several leaderboards
   `PUT /m/:memberPublicID/scores`
 
+  ##### optional query string
+  * prevRank=[true|false]
+    * if set to true, it will also return the previous rank of the player in the leaderboard, -1 if the player didn't exist in the leaderboard
+    * e.g. `PUT /l/:leaderboardID/members/:memberPublicID/score?prevRank=true`
+    * defaults to "false"
+
   Atomically creates a new member within many leaderboard or if member already exists in each leaderboard, updates their score.
 
   `memberPublicID` should be a unique identifier for the member associated with the score. Each `leaderboardID` should be a valid [leaderboard name](leaderboard-names.html).
@@ -648,12 +661,14 @@ Podium API
             "publicID": [string]      // member public id
             "score":    [int],        // member updated score
             "rank":     [int],        // member current rank in leaderboard
+            "previousRank": [int]     // the previous rank of the player in the leaderboard, if requests
           },
           {
             "leaderboardID": [string] // leaderboard where this score was set
             "publicID": [string]      // member public id
             "score":    [int],        // member updated score
             "rank":     [int],        // member current rank in leaderboard
+            "previousRank": [int]     // the previous rank of the player in the leaderboard, if requests
           },
           //...
         ]

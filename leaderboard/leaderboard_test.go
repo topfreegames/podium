@@ -74,17 +74,33 @@ var _ = Describe("Leaderboard Model", func() {
 	Describe("setting member scores", func() {
 		It("should set scores and return ranks", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
-			dayvson, err := testLeaderboard.SetMemberScore("dayvson", 481516)
+			dayvson, err := testLeaderboard.SetMemberScore("dayvson", 481516, false)
 			Expect(err).NotTo(HaveOccurred())
-			arthur, err := testLeaderboard.SetMemberScore("arthur", 1000)
+			arthur, err := testLeaderboard.SetMemberScore("arthur", 1000, false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(dayvson.Rank).To(Equal(1))
 			Expect(arthur.Rank).To(Equal(2))
 		})
 
+		It("should set scores and return previous ranks", func() {
+			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
+			member1, err := testLeaderboard.SetMemberScore("member1", 481516, true)
+			Expect(err).NotTo(HaveOccurred())
+			member2, err := testLeaderboard.SetMemberScore("member2", 1000, false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member1.Rank).To(Equal(1))
+			Expect(member1.PreviousRank).To(Equal(-1))
+			Expect(member2.Rank).To(Equal(2))
+			Expect(member2.PreviousRank).To(Equal(0))
+			nmember1, err := testLeaderboard.SetMemberScore("member1", 1, true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(nmember1.Rank).To(Equal(2))
+			Expect(nmember1.PreviousRank).To(Equal(1))
+		})
+
 		It("should fail if invalid connection to Redis", func() {
 			testLeaderboard := NewLeaderboard(getFaultyRedis(logger), "test-leaderboard", 10, logger)
-			_, err := testLeaderboard.SetMemberScore("dayvson", 481516)
+			_, err := testLeaderboard.SetMemberScore("dayvson", 481516, false)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
@@ -95,7 +111,7 @@ var _ = Describe("Leaderboard Model", func() {
 			lbID := uuid.NewV4().String()
 			testLeaderboard := NewLeaderboard(redisClient, lbID, 10, logger)
 
-			_, err := testLeaderboard.SetMemberScore("dayvson", 1000)
+			_, err := testLeaderboard.SetMemberScore("dayvson", 1000, false)
 			Expect(err).NotTo(HaveOccurred())
 
 			member, err := testLeaderboard.IncrementMemberScore("dayvson", 10)
@@ -134,7 +150,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should retrieve the number of members in a leaderboard", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			for i := 0; i < 10; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			count, err := testLeaderboard.TotalMembers()
@@ -155,7 +171,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should remove member", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			for i := 0; i < 10; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			Expect(testLeaderboard.TotalMembers()).To(Equal(10))
@@ -167,7 +183,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should remove many members", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 10, logger)
 			for i := 0; i < 10; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			Expect(testLeaderboard.TotalMembers()).To(Equal(10))
@@ -192,7 +208,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should return total number of pages", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			Expect(testLeaderboard.TotalPages()).To(Equal(5))
@@ -210,13 +226,13 @@ var _ = Describe("Leaderboard Model", func() {
 	Describe("getting member details for a given leaderboard", func() {
 		It("should return member details", func() {
 			friendScore := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
-			dayvson, err := friendScore.SetMemberScore("dayvson", 12345)
+			dayvson, err := friendScore.SetMemberScore("dayvson", 12345, false)
 			Expect(err).NotTo(HaveOccurred())
-			felipe, err := friendScore.SetMemberScore("felipe", 12344)
+			felipe, err := friendScore.SetMemberScore("felipe", 12344, false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(dayvson.Rank).To(Equal(1))
 			Expect(felipe.Rank).To(Equal(2))
-			friendScore.SetMemberScore("felipe", 12346)
+			friendScore.SetMemberScore("felipe", 12346, false)
 			felipe, err = friendScore.GetMember("felipe", "desc")
 			Expect(err).NotTo(HaveOccurred())
 			dayvson, err = friendScore.GetMember("dayvson", "desc")
@@ -250,7 +266,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get members around specific member", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetAroundMe("member_20", "desc", false)
@@ -265,7 +281,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get members around specific member in reverse order", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 20, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetAroundMe("member_20", "asc", false)
@@ -280,7 +296,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get members around specific member if repeated scores", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetAroundMe("member_20", "desc", false)
@@ -295,7 +311,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get PageSize members around specific member even if member in ranking top", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 1; i <= 100; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetAroundMe("member_2", "desc", false)
@@ -310,7 +326,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get PageSize members around specific member even if member in ranking bottom", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 1; i <= 100; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetAroundMe("member_99", "desc", false)
@@ -325,7 +341,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get PageSize members when interval larger than total members", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 1; i <= 10; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100-i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetAroundMe("member_2", "desc", false)
@@ -349,20 +365,20 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should return specific member ranking", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			testLeaderboard.SetMemberScore("member_6", 1000)
+			testLeaderboard.SetMemberScore("member_6", 1000, false)
 			Expect(testLeaderboard.GetRank("member_6", "desc")).To(Equal(100))
 		})
 
 		It("should return specific member ranking if asc order", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			testLeaderboard.SetMemberScore("member_6", 1000)
+			testLeaderboard.SetMemberScore("member_6", 1000, false)
 			Expect(testLeaderboard.GetRank("member_6", "asc")).To(Equal(2))
 		})
 
@@ -387,7 +403,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get specific number of leaders", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 1000; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i+1), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i+1), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetLeaders(1, "desc")
@@ -405,7 +421,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get specific number of leaders in reverse order", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 1000; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i+1), 1234*i)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i+1), 1234*i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetLeaders(1, "asc")
@@ -423,7 +439,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get leaders if repeated scores", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetLeaders(1, "desc")
@@ -438,7 +454,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get leaders for negative pages get page 1", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetLeaders(-1, "desc")
@@ -453,7 +469,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should get empty leaders for pages greater than total pages", func() {
 			testLeaderboard := NewLeaderboard(redisClient, "test-leaderboard", 25, logger)
 			for i := 0; i < 101; i++ {
-				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100)
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 100, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			members, err := testLeaderboard.GetLeaders(99999, "desc")
@@ -473,7 +489,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should fail if invalid leaderboard", func() {
 			leaderboardID := "leaderboard_from20201039to20201011"
 			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
-			_, err := friendScore.SetMemberScore("dayvson", 12345)
+			_, err := friendScore.SetMemberScore("dayvson", 12345, false)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("day out of range"))
 		})
@@ -481,7 +497,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should add yearly expiration if leaderboard supports it", func() {
 			leaderboardID := "test-leaderboard-year2016"
 			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
-			_, err := friendScore.SetMemberScore("dayvson", 12345)
+			_, err := friendScore.SetMemberScore("dayvson", 12345, false)
 			Expect(err).NotTo(HaveOccurred())
 
 			conn := redisClient.GetConnection()
@@ -501,7 +517,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			members := []*Member{}
 			for i := 0; i < 100; i++ {
-				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100, false)
 				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
@@ -526,7 +542,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			members := []*Member{}
 			for i := 0; i < 100; i++ {
-				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100, false)
 				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
@@ -551,7 +567,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			members := []*Member{}
 			for i := 0; i < 100; i++ {
-				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100, false)
 				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
@@ -576,7 +592,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			members := []*Member{}
 			for i := 0; i < 10; i++ {
-				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100, false)
 				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
@@ -601,7 +617,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			members := []*Member{}
 			for i := 0; i < 2; i++ {
-				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100)
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), (100-i)*100, false)
 				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
@@ -622,7 +638,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			members := []*Member{}
 			for i := 0; i < 100; i++ {
-				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100)
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100, false)
 				Expect(err).NotTo(HaveOccurred())
 				members = append(members, member)
 			}
@@ -665,7 +681,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			expMembers := []*Member{}
 			for i := 0; i < 100; i++ {
-				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100-i)
+				member, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100-i, false)
 				Expect(err).NotTo(HaveOccurred())
 				expMembers = append(expMembers, member)
 			}
@@ -693,7 +709,7 @@ var _ = Describe("Leaderboard Model", func() {
 			leader := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 
 			for i := 0; i < 10; i++ {
-				_, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100-i)
+				_, err := leader.SetMemberScore(fmt.Sprintf("friend-%d", i), 100-i, false)
 				Expect(err).NotTo(HaveOccurred())
 			}
 
@@ -718,7 +734,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should return all member details", func() {
 			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
 			for i := 0; i < 100; i++ {
-				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
+				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i, false)
 			}
 
 			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "desc")
@@ -741,7 +757,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should return all member details using reverse rank", func() {
 			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
 			for i := 0; i < 100; i++ {
-				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
+				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i, false)
 			}
 
 			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "asc")
@@ -773,7 +789,7 @@ var _ = Describe("Leaderboard Model", func() {
 			lb := NewLeaderboard(redisClient, uuid.NewV4().String(), 10, logger)
 
 			for i := 0; i < 10; i++ {
-				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i)
+				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i, false)
 			}
 
 			members, err := lb.GetMembers([]string{"member-0", "invalid-member"}, "desc")
