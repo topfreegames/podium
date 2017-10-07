@@ -125,6 +125,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.PublicID).To(Equal("memberpublicid"))
 		})
 
+		It("Should fail if wrong type for score", func() {
+			payload := map[string]interface{}{
+				"score": "100",
+			}
+			status, body := PutJSON(a, "/l/testkey/members/memberpublicid/score", payload)
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("invalid type for score: string"))
+		})
+
 		It("Should fail if missing parameters", func() {
 			payload := map[string]interface{}{
 				"notscore": 100,
