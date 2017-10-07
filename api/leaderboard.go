@@ -75,6 +75,9 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 			}
 			if _, err := jsonparser.GetInt(b, "score"); err != nil {
 				app.AddError()
+				if _, t, _, err := jsonparser.Get(b, "score"); err == nil {
+					return fmt.Errorf("invalid type for score: %v", t)
+				}
 				return fmt.Errorf("score is required")
 			}
 			if err := LoadJSONPayload(&payload, c, lg); err != nil {
