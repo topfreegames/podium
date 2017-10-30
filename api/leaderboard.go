@@ -66,6 +66,7 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 		if prevRankStr != "" && prevRankStr == "true" {
 			prevRank = true
 		}
+		scoreTTL := c.QueryParam("scoreTTL")
 
 		err := WithSegment("Payload", c, func() error {
 			b, err := GetRequestBody(c)
@@ -93,7 +94,7 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 		var member *leaderboard.Member
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-			member, err = l.SetMemberScore(memberPublicID, payload.Score, prevRank)
+			member, err = l.SetMemberScore(memberPublicID, payload.Score, prevRank, scoreTTL)
 
 			if err != nil {
 				app.AddError()
@@ -117,6 +118,7 @@ func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
 		)
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
+		scoreTTL := c.QueryParam("scoreTTL")
 
 		var payload incrementScorePayload
 
@@ -134,7 +136,7 @@ func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
 		var member *leaderboard.Member
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-			member, err = l.IncrementMemberScore(memberPublicID, payload.Increment)
+			member, err = l.IncrementMemberScore(memberPublicID, payload.Increment, scoreTTL)
 
 			if err != nil {
 				app.AddError()
@@ -599,6 +601,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 			zap.String("handler", "UpsertMemberLeaderboardsScoreHandler"),
 		)
 		memberPublicID := c.Param("memberPublicID")
+		scoreTTL := c.QueryParam("scoreTTL")
 
 		var payload setScoresPayload
 
@@ -632,7 +635,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 		err = WithSegment("Model", c, func() error {
 			for i, leaderboardID := range payload.Leaderboards {
 				l := leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 0, lg)
-				member, err := l.SetMemberScore(memberPublicID, payload.Score, prevRank)
+				member, err := l.SetMemberScore(memberPublicID, payload.Score, prevRank, scoreTTL)
 
 				if err != nil {
 					app.AddError()

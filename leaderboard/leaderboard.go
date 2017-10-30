@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/topfreegames/podium/util"
 	"github.com/uber-go/zap"
@@ -78,9 +79,14 @@ func getSetScoreScript(operation string) *redis.Script {
 		-- ARGV[1] is the member's score increment
 		-- ARGV[2] is the leaderboard's expiration
 		-- ARGV[3] defines if the previous rank should be returned
+		-- ARGV[4] defines the ttl of the player score
 
 		-- creates leaderboard or just sets score of member
 		local prev_rank = -1
+		local score_ttl = ARGV[4]
+		if score_ttl == nil or score_ttl == "" then
+			score_ttl = "inf"
+		end
 		if (ARGV[3] == "1") then
 			prev_rank = tonumber(redis.call("ZREVRANK", KEYS[1], KEYS[2])) or -2
 		end
@@ -97,11 +103,17 @@ func getSetScoreScript(operation string) *redis.Script {
 			end
 		end
 
+		if (score_ttl ~= "inf") then
+		  local expiration_set_key = KEYS[1]..":ttl:"..score_ttl
+			redis.call("ZADD", expiration_set_key, %d, KEYS[2])
+			redis.call("SADD", "expiration-sets", expiration_set_key)
+		end
+
 		-- return updated rank of member
 		local rank = tonumber(redis.call("ZREVRANK", KEYS[1], KEYS[2]))
 		local score = tonumber(redis.call("ZSCORE", KEYS[1], KEYS[2]))
 		return {rank,score,prev_rank}
-	`, operation, operation))
+	`, operation, operation, time.Now().Unix()))
 }
 
 //GetMembersByRange for a given leaderboard
@@ -154,13 +166,14 @@ func NewLeaderboard(redisClient *util.RedisClient, publicID string, pageSize int
 }
 
 //AddToLeaderboardSet adds a score to a leaderboard set respecting expiration
-func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID string, score int, prevRank bool) (*Member, error) {
+func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID string, score int, prevRank bool, scoreTTL string) (*Member, error) {
 	cli := redisCli.Client
 
 	l := lb.Logger.With(
 		zap.String("operation", "AddToLeaderboardSet"),
 		zap.String("leaguePublicID", lb.PublicID),
 		zap.String("memberID", memberID),
+		zap.String("scoreTTL", scoreTTL),
 		zap.Int("score", score),
 	)
 
@@ -175,7 +188,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID 
 	script := getSetScoreScript("ZADD")
 
 	l.Debug("Updating rank for member.")
-	newRank, err := script.Run(cli, []string{lb.PublicID, memberID}, score, expireAt, prevRank).Result()
+	newRank, err := script.Run(cli, []string{lb.PublicID, memberID}, score, expireAt, prevRank, scoreTTL).Result()
 
 	if err != nil {
 		l.Error("Failed to update rank for member.", zap.Error(err))
@@ -190,11 +203,12 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID 
 }
 
 // IncrementMemberScore sets the score to the member with the given ID
-func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int) (*Member, error) {
+func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scoreTTL string) (*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "IncrementMemberScore"),
 		zap.String("leaguePublicID", lb.PublicID),
 		zap.String("memberID", memberID),
+		zap.String("scoreTTL", scoreTTL),
 		zap.Int("increment", increment),
 	)
 	l.Debug("Setting member score increment...")
@@ -211,7 +225,8 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int) (*Me
 	l.Debug("Expiration calculated successfully.", zap.Int64("expiration", expireAt))
 
 	l.Debug("Incrementing score for member...")
-	result, err := script.Run(cli, []string{lb.PublicID, memberID}, increment, expireAt).Result()
+	// TODO use prevRank instead of hard coded false
+	result, err := script.Run(cli, []string{lb.PublicID, memberID}, increment, expireAt, false, scoreTTL).Result()
 	if err != nil {
 		l.Error("Could not increment score for member.", zap.Error(err))
 		return nil, err
@@ -225,16 +240,17 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int) (*Me
 }
 
 // SetMemberScore sets the score to the member with the given ID
-func (lb *Leaderboard) SetMemberScore(memberID string, score int, prevRank bool) (*Member, error) {
+func (lb *Leaderboard) SetMemberScore(memberID string, score int, prevRank bool, scoreTTL string) (*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "SetMemberScore"),
 		zap.String("leaguePublicID", lb.PublicID),
 		zap.String("memberID", memberID),
+		zap.String("scoreTTL", scoreTTL),
 		zap.Int("score", score),
 	)
 	l.Debug("Setting member score...")
 
-	nMember, err := lb.AddToLeaderboardSet(lb.RedisClient, memberID, score, prevRank)
+	nMember, err := lb.AddToLeaderboardSet(lb.RedisClient, memberID, score, prevRank, scoreTTL)
 	if err != nil {
 		return nil, err
 	}

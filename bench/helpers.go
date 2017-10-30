@@ -102,7 +102,7 @@ func generateNMembers(amount int) *leaderboard.Leaderboard {
 	l := leaderboard.NewLeaderboard(redisClient, lbID, 10, redisClient.Logger)
 
 	for i := 0; i < amount; i++ {
-		l.SetMemberScore(fmt.Sprintf("bench-member-%d", i), 100+i, false)
+		l.SetMemberScore(fmt.Sprintf("bench-member-%d", i), 100+i, false, "inf")
 	}
 
 	return l
