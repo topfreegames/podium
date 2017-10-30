@@ -11,3 +11,6 @@ api:
 
 newrelic:
   key: ""
+
+worker:
+  expirationCheckInterval: 1s
