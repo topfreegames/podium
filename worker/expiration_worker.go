@@ -135,6 +135,8 @@ func (w *ExpirationWorker) getExpireScoresScript() *redis.Script {
 		if deleted_set == 0 then
 			local members_to_remove = redis.call("ZRANGEBYSCORE", expiration_set, "-inf", activity_deadline)
 			if #members_to_remove > 0 then
+				-- unpack is limited to the stack size, if we pass a lot of members here, this function will fail,
+				-- that being said, it is better to use low expiration check interval
 				redis.call("ZREM", expiration_set, unpack(members_to_remove))
 				deleted_members = redis.call("ZREM", leaderboard_name, unpack(members_to_remove))
 			end
@@ -144,6 +146,9 @@ func (w *ExpirationWorker) getExpireScoresScript() *redis.Script {
 }
 
 func (w *ExpirationWorker) expireScores() ([]*ExpirationResult, error) {
+	defer func() {
+		w.running = false
+	}()
 	res := make([]*ExpirationResult, 0)
 	l := w.Logger.With(
 		zap.String("operation", "expireScores"),
@@ -230,7 +235,6 @@ func (w *ExpirationWorker) Run() {
 					l.Error("error expiring scores", zap.Error(err))
 				}
 				l.Debug("expiration results", zap.Object("result", result))
-				w.running = false
 			}
 		}
 	}()
