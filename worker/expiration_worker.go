@@ -38,6 +38,7 @@ type ExpirationWorker struct {
 	Config                  *viper.Viper
 	ConfigPath              string
 	ExpirationCheckInterval time.Duration
+	ExpirationLimitPerRun   int
 	running                 bool
 	shouldRun               bool
 }
@@ -63,6 +64,7 @@ func (w *ExpirationWorker) configure() error {
 	}
 	w.setConfigurationDefaults()
 	w.ExpirationCheckInterval = w.Config.GetDuration("worker.expirationCheckInterval")
+	w.ExpirationLimitPerRun = w.Config.GetInt("worker.expirationLimitPerRun")
 
 	l := w.Logger.With(
 		zap.String("operation", "configureWorker"),
@@ -113,10 +115,11 @@ func (w *ExpirationWorker) setConfigurationDefaults() {
 	w.Config.SetDefault("redis.db", 0)
 	w.Config.SetDefault("redis.maxPoolSize", 20)
 	w.Config.SetDefault("worker.expirationCheckInterval", "60s")
+	w.Config.SetDefault("worker.expirationLimitPerRun", "1000")
 }
 
 func (w *ExpirationWorker) getExpireScoresScript() *redis.Script {
-	return redis.NewScript(`
+	return redis.NewScript(fmt.Sprintf(`
 		-- Script params:
 		-- KEYS[1] is the name of the leaderboard
 		-- KEYS[2] is the name of the expiration set
@@ -133,7 +136,7 @@ func (w *ExpirationWorker) getExpireScoresScript() *redis.Script {
 			redis.call("SREM", "expiration-sets", expiration_set)
 		end
 		if deleted_set == 0 then
-			local members_to_remove = redis.call("ZRANGEBYSCORE", expiration_set, "-inf", activity_deadline)
+			local members_to_remove = redis.call("ZRANGEBYSCORE", expiration_set, "-inf", activity_deadline, "LIMIT", 0, %d)
 			if #members_to_remove > 0 then
 				-- unpack is limited to the stack size, if we pass a lot of members here, this function will fail,
 				-- that being said, it is better to use low expiration check interval
@@ -142,7 +145,7 @@ func (w *ExpirationWorker) getExpireScoresScript() *redis.Script {
 			end
 		end
 		return {deleted_members, deleted_set}
-	`)
+	`, w.ExpirationLimitPerRun))
 }
 
 func (w *ExpirationWorker) expireScores() ([]*ExpirationResult, error) {
