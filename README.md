@@ -4,8 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/topfreegames/podium/badge.svg?branch=master)](https://coveralls.io/github/topfreegames/podium?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/topfreegames/podium)](https://goreportcard.com/report/github.com/topfreegames/podium)
 [![Docs](https://readthedocs.org/projects/podium/badge/?version=latest
-)](http://podium.readthedocs.io/en/latest/)
-[![](https://imagelayers.io/badge/tfgco/podium:latest.svg)](https://imagelayers.io/?images=tfgco/podium:latest 'Podium Image Layers')
+)](http://podium.readthedocs.io/en/latest/) [![](https://imagelayers.io/badge/tfgco/podium:latest.svg)](https://imagelayers.io/?images=tfgco/podium:latest 'Podium Image Layers')
 
 A leaderboard system written in [Go](http://golang.org/) using [Redis](http://redis.io/) database. For more info, [read the docs](http://podium.readthedocs.io/en/latest/).
 
@@ -19,6 +18,7 @@ Features
 * **Members around me** - Podium easily returns members around a specific member in the leaderboard. It will even compensate if you ask for the top member or last member to make sure you get a consistent amount of members;
 * **Batch score update** - Send a member score to many different leaderboards in a single operation. This allows easy tracking of member rankings in several leaderboards at once (global, regional, clan, etc.);
 * **Easy to deploy** - Podium comes with containers already exported to docker hub for every single of our successful builds. Just pick your choice!
+* **Leaderboards with expiration** - If a player last update is older than (timeNow - X seconds), delete it from the leaderboard
 
 Installation
 ------------
