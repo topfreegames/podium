@@ -58,6 +58,10 @@ Podium API
     * if set to true, it will also return the previous rank of the player in the leaderboard, -1 if the player didn't exist in the leaderboard
     * e.g. `PUT /l/:leaderboardID/members/:memberPublicID/score?prevRank=true`
     * defaults to "false"
+  * scoreTTL=[integer]
+    * if set, the score of the player will be expired from the leaderboard past [integer] seconds if it does not update it within this interval
+    * e.g. `PUT /l/:leaderboardID/members/:memberPublicID/score?scoreTTL=100`
+    * defaults to none (the score will never expire)
 
   Atomically creates a new member within a leaderboard or if member already exists in leaderboard, update their score.
 
@@ -110,6 +114,12 @@ Podium API
 
   ### Increment a Member Score
   `PATCH /l/:leaderboardID/members/:memberPublicID/score`
+
+  ##### optional query string
+  * scoreTTL=[integer]
+    * if set, the score of the player will be expired from the leaderboard past [integer] seconds if it does not update it within this interval
+    * e.g. `PUT /l/:leaderboardID/members/:memberPublicID/score?scoreTTL=100`
+    * defaults to none (the score will never expire)
 
   Atomically creates a new member within a leaderboard with the given increment as score. If member already exists in leaderboard just increment their score.
 
@@ -635,6 +645,10 @@ Podium API
     * if set to true, it will also return the previous rank of the player in the leaderboard, -1 if the player didn't exist in the leaderboard
     * e.g. `PUT /l/:leaderboardID/members/:memberPublicID/score?prevRank=true`
     * defaults to "false"
+  * scoreTTL=[integer]
+    * if set, the score of the player will be expired from the leaderboards past [integer] seconds if it does not update it within this interval
+    * e.g. `PUT /l/:leaderboardID/members/:memberPublicID/score?scoreTTL=100`
+    * defaults to none (the score will never expire
 
   Atomically creates a new member within many leaderboard or if member already exists in each leaderboard, updates their score.
 
