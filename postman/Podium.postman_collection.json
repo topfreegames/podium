@@ -1,0 +1,173 @@
+{
+	"variables": [],
+	"info": {
+		"name": "Podium",
+		"_postman_id": "4767b71f-e99d-6f3a-a42d-42ce442e7e48",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Insert player in leaderboard",
+			"request": {
+				"url": {
+					"raw": "{{podiumUrl}}/l/somegame/members/somed2member/score?scoreTTL=100",
+					"host": [
+						"{{podiumUrl}}"
+					],
+					"path": [
+						"l",
+						"somegame",
+						"members",
+						"somed2member",
+						"score"
+					],
+					"query": [
+						{
+							"key": "scoreTTL",
+							"value": "100",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"score\": 100\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Insert player in leaderboard and put a ttl on it",
+			"request": {
+				"url": {
+					"raw": "{{podiumUrl}}/l/somegame/members/somemember/score?scoreTTL=10",
+					"host": [
+						"{{podiumUrl}}"
+					],
+					"path": [
+						"l",
+						"somegame",
+						"members",
+						"somemember",
+						"score"
+					],
+					"query": [
+						{
+							"key": "scoreTTL",
+							"value": "10",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"score\": 10\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Increment player score in leaderboard and put a ttl",
+			"request": {
+				"url": {
+					"raw": "{{podiumUrl}}/l/somegame/members/somemember/score?scoreTTL=100",
+					"host": [
+						"{{podiumUrl}}"
+					],
+					"path": [
+						"l",
+						"somegame",
+						"members",
+						"somemember",
+						"score"
+					],
+					"query": [
+						{
+							"key": "scoreTTL",
+							"value": "100",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"increment\": 10\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Change player score in many leaderboards with TTL",
+			"request": {
+				"url": {
+					"raw": "{{podiumUrl}}/m/somemember/scores?scoreTTL=10",
+					"host": [
+						"{{podiumUrl}}"
+					],
+					"path": [
+						"m",
+						"somemember",
+						"scores"
+					],
+					"query": [
+						{
+							"key": "scoreTTL",
+							"value": "10",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"score\": 10,\n\t\"leaderboards\": [\"somegame\"]\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
