@@ -169,4 +169,55 @@ var _ = Describe("Scores Expirer Worker", func() {
 		Expect(exists).To(BeFalse())
 	})
 
+	It("a call to expireScores should only remove ExpirationLimitPerRun members from a set", func() {
+		expirationWorker.ExpirationLimitPerRun = 1
+		expirationWorker.ExpirationCheckInterval = time.Duration(4) * time.Second
+
+		ttl := "2"
+		lbName := "test-expire-leaderboard"
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient, lbName, 10, logger)
+		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
+		_, err = testLeaderboard.SetMemberScore("denix2", 481512, false, ttl)
+		Expect(err).NotTo(HaveOccurred())
+		redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
+		result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
+		Expect(err).NotTo(HaveOccurred())
+		redisExpirationSetKey := "expiration-sets"
+		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(Equal(true))
+		result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result2).To(ContainElement(redisLBExpirationKey))
+		result3, err := redisClient.Client.ZRangeWithScores(redisLBExpirationKey, 0, 1).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result3[0].Member).To(Equal("denix"))
+		Expect(result3[1].Member).To(Equal("denix2"))
+		result4, err := redisClient.Client.ZRangeWithScores(lbName, 0, 2).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(result4)).To(Equal(2))
+		Expect(result4[0].Member).To(Equal("denix2"))
+		Expect(result4[1].Member).To(Equal("denix"))
+
+		go func() {
+			time.Sleep(time.Duration(6) * time.Second)
+			expirationWorker.Stop()
+		}()
+
+		expirationWorker.Run()
+
+		res, err := redisClient.Client.ZRangeWithScores(lbName, 0, 2).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(res)).To(Equal(1))
+		Expect(res[0].Member).To(Equal("denix2"))
+
+		members, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(members)).To(Equal(1))
+
+		exists, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exists).To(BeTrue())
+	})
+
 })

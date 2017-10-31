@@ -14,3 +14,4 @@ newrelic:
 
 worker:
   expirationCheckInterval: 1s
+  expirationLimitPerRun: 100
