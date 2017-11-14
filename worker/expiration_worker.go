@@ -163,8 +163,10 @@ func (w *ExpirationWorker) expireScores() ([]*ExpirationResult, error) {
 	l.Debug("expiring scores", zap.Object("sets", expirationSets))
 	for _, set := range expirationSets {
 		setSplitted := strings.Split(set, ":")
-		leaderboardName := setSplitted[0]
-		expirationTTL, err := strconv.Atoi(setSplitted[2])
+		expirationTTLStr := setSplitted[len(setSplitted)-1]
+		// remove :ttl:<expirationTTL> from the key
+		leaderboardName := strings.Join(setSplitted[:len(setSplitted)-2], ":")
+		expirationTTL, err := strconv.Atoi(expirationTTLStr)
 		if err != nil {
 			l.Error("error expiring scores", zap.Error(err))
 			continue
