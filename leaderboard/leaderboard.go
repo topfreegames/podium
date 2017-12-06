@@ -80,6 +80,7 @@ func getSetScoreScript(operation string) *redis.Script {
 		-- ARGV[2] is the leaderboard's expiration
 		-- ARGV[3] defines if the previous rank should be returned
 		-- ARGV[4] defines the ttl of the player score
+		-- ARGV[5] defines the current unix timestamp
 
 		-- creates leaderboard or just sets score of member
 		local prev_rank = -1
@@ -105,7 +106,7 @@ func getSetScoreScript(operation string) *redis.Script {
 
 		if (score_ttl ~= "inf") then
 		  local expiration_set_key = KEYS[1]..":ttl:"..score_ttl
-			redis.call("ZADD", expiration_set_key, %d, KEYS[2])
+			redis.call("ZADD", expiration_set_key, ARGV[5], KEYS[2])
 			redis.call("SADD", "expiration-sets", expiration_set_key)
 		end
 
@@ -113,7 +114,7 @@ func getSetScoreScript(operation string) *redis.Script {
 		local rank = tonumber(redis.call("ZREVRANK", KEYS[1], KEYS[2]))
 		local score = tonumber(redis.call("ZSCORE", KEYS[1], KEYS[2]))
 		return {rank,score,prev_rank}
-	`, operation, operation, time.Now().Unix()))
+	`, operation, operation))
 }
 
 //GetMembersByRange for a given leaderboard
@@ -188,7 +189,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(redisCli *util.RedisClient, memberID 
 	script := getSetScoreScript("ZADD")
 
 	l.Debug("Updating rank for member.")
-	newRank, err := script.Run(cli, []string{lb.PublicID, memberID}, score, expireAt, prevRank, scoreTTL).Result()
+	newRank, err := script.Run(cli, []string{lb.PublicID, memberID}, score, expireAt, prevRank, scoreTTL, time.Now().Unix()).Result()
 
 	if err != nil {
 		l.Error("Failed to update rank for member.", zap.Error(err))
@@ -226,7 +227,7 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 
 	l.Debug("Incrementing score for member...")
 	// TODO use prevRank instead of hard coded false
-	result, err := script.Run(cli, []string{lb.PublicID, memberID}, increment, expireAt, false, scoreTTL).Result()
+	result, err := script.Run(cli, []string{lb.PublicID, memberID}, increment, expireAt, false, scoreTTL, time.Now().Unix()).Result()
 	if err != nil {
 		l.Error("Could not increment score for member.", zap.Error(err))
 		return nil, err
