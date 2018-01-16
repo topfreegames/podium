@@ -232,6 +232,7 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 		l.Error("Could not increment score for member.", zap.Error(err))
 		return nil, err
 	}
+	l.Debug("Increment result from redis", zap.Object("result", result))
 	rank := int(result.([]interface{})[0].(int64)) + 1
 	score := int(result.([]interface{})[1].(int64))
 
