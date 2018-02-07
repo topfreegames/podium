@@ -12,7 +12,7 @@ package util
 import (
 	"fmt"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 	"gopkg.in/redis.v4"
 )
 

@@ -12,7 +12,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/podium/worker"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 // workerCmd represents the worker command

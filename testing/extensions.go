@@ -19,7 +19,7 @@ import (
 	"github.com/onsi/ginkgo/types"
 	"github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 //BeforeOnce runs the before each block only once

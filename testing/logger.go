@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/onsi/gomega/types"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 //NewMockKV is a mock key value store

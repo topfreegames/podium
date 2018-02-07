@@ -17,7 +17,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/leaderboard"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var notFoundError = "Could not find data for member"
@@ -103,7 +103,7 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 			return nil
 		})
 		if err != nil {
-			return FailWith(500, err.Error(), c)
+			return FailWithError(err, c)
 		}
 
 		return SucceedWith(serializeMember(member, -1), c)
@@ -145,7 +145,7 @@ func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
 			return nil
 		})
 		if err != nil {
-			return FailWith(500, err.Error(), c)
+			return FailWithError(err, c)
 		}
 
 		return SucceedWith(serializeMember(member, -1), c)

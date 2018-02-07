@@ -1,5 +1,5 @@
-hash: 51f0b4bec9f80396d42b608957f5e7800e60233fdf03641cd42471387b252e45
-updated: 2017-11-23T18:08:11.673375212-02:00
+hash: 563478ea7c3c5ff2876dcf86baf398f394d80b6b8533d39f10b4606b9ee6f2e6
+updated: 2018-02-07T10:23:55.830730918-02:00
 imports:
 - name: github.com/buger/jsonparser
   version: f04e003e4115787c6272636780bc206e5ffad6c4
@@ -73,9 +73,10 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: ca63d7c062ee3c9f34db231e352b60012b4fd0c1
 - name: github.com/newrelic/go-agent
-  version: 462a146a1270954750aac98c5b3e83dec6a9adfd
+  version: f5bce3387232559bcbe6a5f8227c4bf508dac1ba
   subpackages:
   - internal
+  - internal/cat
   - internal/jsonx
   - internal/logger
   - internal/sysinfo
@@ -122,7 +123,7 @@ imports:
 - name: github.com/rcrowley/go-metrics
   version: ab2277b1c5d15c3cba104e9cbddbdfc622df5ad8
 - name: github.com/satori/go.uuid
-  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/spf13/afero
   version: 52e4a6cfac46163658bd4f123c49b6ee7dc75f78
   subpackages:
@@ -140,8 +141,6 @@ imports:
   version: 670c42a85b2a2215949acd943cb8f11add317e3f
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
-- name: github.com/uber-go/zap
-  version: c4939d1166b2220bb45338e21506623b4bbdec50
 - name: github.com/valyala/bytebufferpool
   version: e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7
 - name: github.com/valyala/fasthttp
@@ -150,6 +149,8 @@ imports:
   - fasthttputil
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
+- name: go.uber.org/zap
+  version: c4939d1166b2220bb45338e21506623b4bbdec50
 - name: golang.org/x/crypto
   version: 7682e7e3945130cf3cde089834664f68afdd1523
   subpackages:

@@ -9,7 +9,7 @@
 
 package log
 
-import "github.com/uber-go/zap"
+import "go.uber.org/zap"
 
 //CM is a Checked Message like
 type CM interface {
