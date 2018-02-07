@@ -71,6 +71,7 @@ var _ = Describe("Leaderboard Handler", func() {
 					time.Now().UTC().Add(time.Duration(-2)*time.Second).Unix(),
 					time.Now().UTC().Add(time.Duration(-1)*time.Second).Unix(),
 				),
+				fmt.Sprintf("testkey-from20180101to20180105"),
 				fmt.Sprintf(
 					"testkey-year%d",
 					time.Now().UTC().AddDate(-2, 0, 0).Year(),

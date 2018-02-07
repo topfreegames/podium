@@ -76,11 +76,7 @@ func GetExpireAt(leaderboardPublicID string) (int64, error) {
 		if err != nil {
 			return -1, err
 		}
-		durationInSeconds := endTime.Sub(startTime)
-		if durationInSeconds.Seconds() <= 0 {
-			return -1, &InvalidDurationError{leaderboardPublicID, int64(durationInSeconds.Seconds())}
-		}
-		return endTime.Add(durationInSeconds).Unix(), nil
+		return checkExpireAtErrors(leaderboardPublicID, startTime.Unix(), endTime.Unix())
 	}
 
 	now := time.Now().UTC().Unix()
