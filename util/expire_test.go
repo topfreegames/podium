@@ -112,13 +112,19 @@ var _ = Describe("Expires Helper", func() {
 
 	Describe("Montly expiration", func() {
 		It("should get monthly expiration", func() {
-			exp, err := util.GetExpireAt("leaderboard_year2016month01")
+			now := time.Now().UTC()
+			year := now.Year()
+			month := now.Month()
+			monthS := fmt.Sprintf("%d", month)
+			if month < 10 {
+				monthS = fmt.Sprintf("0%s", monthS)
+			}
+			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%dmonth%s", year, monthS))
 			Expect(err).NotTo(HaveOccurred())
 
-			start, err := time.Parse("20060102", "20160101")
-			Expect(err).NotTo(HaveOccurred())
-
-			ts := start.AddDate(0, 2, 0).Unix()
+			startTime, _ := time.Parse("200601", fmt.Sprintf("%d%s", year, monthS))
+			end := util.MonthlyExpiration(startTime)
+			ts := end.Unix()
 			Expect(exp).To(BeEquivalentTo(ts))
 		})
 
@@ -132,28 +138,29 @@ var _ = Describe("Expires Helper", func() {
 
 	Describe("Weekly expiration", func() {
 		It("should get weekly expiration", func() {
-			exp, err := util.GetExpireAt("leaderboard_year2016week01")
+			year, week := time.Now().UTC().ISOWeek()
+			weekS := fmt.Sprintf("%d", week)
+			if week < 10 {
+				weekS = fmt.Sprintf("0%s", weekS)
+			}
+			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%dweek%s", year, weekS))
 			Expect(err).NotTo(HaveOccurred())
 
-			end, err := time.Parse("20060102", "20160118")
-			Expect(err).NotTo(HaveOccurred())
-
-			ts := end.Unix()
+			twoWeeksFromNow := util.WeeklyExpiration(int64(year), int64(week))
+			ts := twoWeeksFromNow.Unix()
 			Expect(exp).To(BeEquivalentTo(ts))
 		})
 	})
 
 	Describe("Quarter expiration", func() {
 		It("should get quarter expiration", func() {
-			exp, err := util.GetExpireAt("leaderboard_year2016quarter02")
+			now := time.Now().UTC()
+			year := now.Year()
+			quarter := int(now.Month())/3 + 1
+			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%dquarter0%d", year, quarter))
 			Expect(err).NotTo(HaveOccurred())
 
-			dummyDate, err := time.Parse("2006", "2016")
-			Expect(err).NotTo(HaveOccurred())
-
-			start := dummyDate.AddDate(0, 3, 0)
-			end := start.AddDate(0, 6, 0)
-
+			end := util.QuarterlyExpiration(int64(year), int64(quarter))
 			ts := end.Unix()
 			Expect(exp).To(BeEquivalentTo(ts))
 		})

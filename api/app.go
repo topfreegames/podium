@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/log"
 	"github.com/topfreegames/podium/util"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 // JSON type

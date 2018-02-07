@@ -18,7 +18,7 @@ import (
 	"github.com/getsentry/raven-go"
 	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/log"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 //NewVersionMiddleware with API version

@@ -2,7 +2,7 @@ package: github.com/topfreegames/podium
 import:
 - package: github.com/onsi/ginkgo
 - package: github.com/onsi/gomega
-- package: github.com/uber-go/zap
+- package: go.uber.org/zap
 - package: github.com/rcrowley/go-metrics
 - package: gopkg.in/bsm/ratelimit.v1
 - package: github.com/satori/go.uuid

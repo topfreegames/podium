@@ -20,3 +20,12 @@ type InvalidDurationError struct {
 func (e *InvalidDurationError) Error() string {
 	return fmt.Sprintf("Leaderboard %s has invalid duration %v", e.LeaderboardPublicID, e.DurationInSeconds)
 }
+
+// LeaderboardExpiredError identifies that a given key generates an already expired leaderboard
+type LeaderboardExpiredError struct {
+	LeaderboardPublicID string
+}
+
+func (e *LeaderboardExpiredError) Error() string {
+	return fmt.Sprintf("Leaderboard %s has already expired", e.LeaderboardPublicID)
+}

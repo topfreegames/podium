@@ -26,7 +26,7 @@ import (
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/util"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 	"github.com/valyala/fasthttp"
 )
 

@@ -24,7 +24,7 @@ import (
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/leaderboard"
 	. "github.com/topfreegames/podium/testing"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var _ = Describe("Leaderboard Handler", func() {
@@ -51,6 +51,75 @@ var _ = Describe("Leaderboard Handler", func() {
 		conn.Del("testkey3")
 		conn.Del("testkey4")
 		conn.Del("testkey5")
+	})
+
+	Describe("When leaderboard has expired", func() {
+		var (
+			year, week               = time.Now().UTC().AddDate(0, 0, -14).ISOWeek()
+			lastQuarter, quarterYear = func() (int, int) {
+				quarter := int(time.Now().UTC().Month())/3 + 1
+				quarterYear := time.Now().UTC().Year()
+				if quarter-2 < 0 {
+					quarterYear--
+					quarter = 4 + (quarter - 2)
+				}
+				return quarter, quarterYear
+			}()
+			keys = []string{
+				fmt.Sprintf(
+					"testkey-from%dto%d",
+					time.Now().UTC().Add(time.Duration(-2)*time.Second).Unix(),
+					time.Now().UTC().Add(time.Duration(-1)*time.Second).Unix(),
+				),
+				fmt.Sprintf("testkey-from20180101to20180105"),
+				fmt.Sprintf(
+					"testkey-year%d",
+					time.Now().UTC().AddDate(-2, 0, 0).Year(),
+				),
+				fmt.Sprintf("testkey-year%dweek%d", year, week),
+				fmt.Sprintf(
+					"testkey-year%dmonth%d",
+					time.Now().UTC().AddDate(0, -2, 0).Year(),
+					time.Now().UTC().AddDate(0, -2, 0).Month(),
+				),
+				fmt.Sprintf(
+					"testkey-year%dquarter0%d",
+					quarterYear,
+					lastQuarter,
+				),
+			}
+		)
+
+		checkBody := func(key, body string) {
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(
+				Equal(
+					fmt.Sprintf("Leaderboard %s has already expired", key),
+				),
+			)
+		}
+
+		It("PUT upsert score", func() {
+			payload := map[string]interface{}{"score": 100}
+			for _, k := range keys {
+				httpPath := fmt.Sprintf("/l/%s/members/memberpublicid/score", k)
+				status, body := PutJSON(a, httpPath, payload)
+				Expect(status).To(Equal(http.StatusBadRequest))
+				checkBody(k, body)
+			}
+		})
+
+		It("PATCH increment score", func() {
+			payload := map[string]interface{}{"increment": 100}
+			for _, k := range keys {
+				httpPath := fmt.Sprintf("/l/%s/members/memberpublicid/score", k)
+				status, body := PatchJSON(a, httpPath, payload)
+				Expect(status).To(Equal(http.StatusBadRequest))
+				checkBody(k, body)
+			}
+		})
 	})
 
 	Describe("Upsert Member Score", func() {

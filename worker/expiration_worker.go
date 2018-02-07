@@ -20,7 +20,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/util"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 	redis "gopkg.in/redis.v4"
 )
 

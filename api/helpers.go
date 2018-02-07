@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -22,7 +23,8 @@ import (
 	"github.com/mailru/easyjson/jwriter"
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/topfreegames/podium/log"
-	"github.com/uber-go/zap"
+	"github.com/topfreegames/podium/util"
+	"go.uber.org/zap"
 )
 
 //EasyJSONUnmarshaler describes a struct able to unmarshal json
@@ -39,6 +41,18 @@ type EasyJSONMarshaler interface {
 func FailWith(status int, message string, c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	return c.String(status, fmt.Sprintf(`{"success":false,"reason":"%s"}`, message))
+}
+
+// FailWithError fails with the specified error
+func FailWithError(e error, c echo.Context) error {
+	var statusCode int
+	switch e.(type) {
+	default:
+		statusCode = http.StatusInternalServerError
+	case *util.LeaderboardExpiredError:
+		statusCode = http.StatusBadRequest
+	}
+	return FailWith(statusCode, e.Error(), c)
 }
 
 // SucceedWith sends payload to member with status 200

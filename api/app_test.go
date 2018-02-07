@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
 	. "github.com/topfreegames/podium/testing"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var _ = Describe("App", func() {

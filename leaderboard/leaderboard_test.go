@@ -12,7 +12,6 @@ package leaderboard_test
 import (
 	"fmt"
 	"strconv"
-
 	"time"
 
 	"gopkg.in/redis.v4"
@@ -21,7 +20,7 @@ import (
 	. "github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/util"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -519,7 +518,7 @@ var _ = Describe("Leaderboard Model", func() {
 		})
 
 		It("should add yearly expiration if leaderboard supports it", func() {
-			leaderboardID := "test-leaderboard-year2016"
+			leaderboardID := fmt.Sprintf("test-leaderboard-year%d", time.Now().UTC().Year())
 			friendScore := NewLeaderboard(redisClient, leaderboardID, 10, logger)
 			_, err := friendScore.SetMemberScore("dayvson", 12345, false, "")
 			Expect(err).NotTo(HaveOccurred())
