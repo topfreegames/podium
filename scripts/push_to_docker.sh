@@ -7,7 +7,7 @@ cp ./config/default.yaml ./dev
 docker build -t podium .
 docker build -t podium-dev -f ./DevDockerfile .
 
-docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 
 docker tag podium:latest tfgco/podium:$VERSION.$TRAVIS_BUILD_NUMBER
 docker push tfgco/podium:$VERSION.$TRAVIS_BUILD_NUMBER
