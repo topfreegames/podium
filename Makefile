@@ -7,7 +7,6 @@
 # https://github.com/dayvson/go-leaderboard
 # Copyright © 2013 Maxwell Dayvson da Silva
 
-PACKAGES = $(shell glide novendor)
 GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/podium@.@g | egrep -v "^[.]$$")
 MYIP = $(shell ifconfig | egrep inet | egrep -v inet6 | egrep -v 127.0.0.1 | awk ' { print $$2 } ')
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
@@ -23,10 +22,9 @@ clear-hooks:
 
 setup: setup-hooks
 	@go get github.com/mailru/easyjson/...
-	@go get -u github.com/Masterminds/glide/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
-	@glide install
+	@dep ensure -v
 
 setup-docs:
 	@pip install -q --log /tmp/pip.log --no-cache-dir sphinx recommonmark sphinx_rtd_theme

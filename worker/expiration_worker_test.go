@@ -13,9 +13,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/spf13/viper"
+	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/testing"
-	"github.com/topfreegames/podium/util"
 	"github.com/topfreegames/podium/worker"
 
 	. "github.com/onsi/ginkgo"
@@ -24,19 +25,23 @@ import (
 
 var _ = Describe("Scores Expirer Worker", func() {
 
-	var redisClient *util.RedisClient
+	var redisClient *redis.Client
 	var logger *testing.MockLogger
 	var expirationWorker *worker.ExpirationWorker
+	var config *viper.Viper
 
 	BeforeEach(func() {
 		var err error
 
+		config = viper.New()
+		config.Set("redis.url", "redis://localhost:1234/0")
+		config.Set("redis.connectionTimeout", 200)
+
 		logger = testing.NewMockLogger()
-		redisClient, err = util.GetRedisClient("localhost", 1234, "", 0, 50, logger)
+		redisClient, err = redis.NewClient("redis", config)
 		Expect(err).NotTo(HaveOccurred())
 
-		conn := redisClient.GetConnection()
-		_, err = conn.Del("test-expire-leaderboard", "expiration-sets", "test-expire-leaderboard:ttl:2", "test-expire-leaderboard:ttl:20").Result()
+		_, err = redisClient.Client.Del("test-expire-leaderboard", "expiration-sets", "test-expire-leaderboard:ttl:2", "test-expire-leaderboard:ttl:20").Result()
 		Expect(err).NotTo(HaveOccurred())
 
 		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml", logger)
@@ -44,15 +49,14 @@ var _ = Describe("Scores Expirer Worker", func() {
 	})
 
 	AfterEach(func() {
-		conn := redisClient.GetConnection()
-		_, err := conn.Del("test-expire-leaderboard", "expiration-sets", "test-expire-leaderboard:ttl:2", "test-expire-leaderboard:ttl:20").Result()
+		_, err := redisClient.Client.Del("test-expire-leaderboard", "expiration-sets", "test-expire-leaderboard:ttl:2", "test-expire-leaderboard:ttl:20").Result()
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should expire scores and delete set", func() {
 		ttl := "2"
 		lbName := "test-expire-leaderboard"
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
@@ -94,7 +98,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 	It("should not expire scores that are in the future", func() {
 		ttl := "20"
 		lbName := "test-expire-leaderboard"
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
@@ -136,7 +140,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 	It("should not expire scores that are not inserted with scoreTTL set", func() {
 		ttl := ""
 		lbName := "test-expire-leaderboard"
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
@@ -175,7 +179,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 
 		ttl := "2"
 		lbName := "test-expire-leaderboard"
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		_, err = testLeaderboard.SetMemberScore("denix2", 481512, false, ttl)
 		Expect(err).NotTo(HaveOccurred())

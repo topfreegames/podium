@@ -2,11 +2,8 @@ healthcheck:
   workingText: WORKING
 
 redis:
-  host: localhost
-  port: 9473
-  password: ""
-  db: 0
-  maxPoolSize: 20
+  url: redis://localhost:9473/0
+  connectionTimeout: 1
 
 api:
   maxReturnedMembers: 2000

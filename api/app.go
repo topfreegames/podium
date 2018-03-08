@@ -24,8 +24,8 @@ import (
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
+	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/log"
-	"github.com/topfreegames/podium/util"
 	"go.uber.org/zap"
 )
 
@@ -44,7 +44,7 @@ type App struct {
 	Engine      engine.Server
 	Config      *viper.Viper
 	Logger      zap.Logger
-	RedisClient *util.RedisClient
+	RedisClient *redis.Client
 	NewRelic    newrelic.Application
 }
 
@@ -127,11 +127,8 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
 	app.Config.SetDefault("api.maxReturnedMembers", 2000)
 	app.Config.SetDefault("api.maxReadBufferSize", 32000)
-	app.Config.SetDefault("redis.host", "localhost")
-	app.Config.SetDefault("redis.port", 1212)
-	app.Config.SetDefault("redis.password", "")
-	app.Config.SetDefault("redis.db", 0)
-	app.Config.SetDefault("redis.maxPoolSize", 20)
+	app.Config.SetDefault("redis.url", "redis://localhost:1212/0")
+	app.Config.SetDefault("redis.connectionTimeout", 200)
 }
 
 func (app *App) loadConfiguration() error {
@@ -222,20 +219,15 @@ func (app *App) configureApplication() error {
 		time.Sleep(5 * time.Second)
 	}()
 
-	redisHost := app.Config.GetString("redis.host")
-	redisPort := app.Config.GetInt("redis.port")
-	redisPass := app.Config.GetString("redis.password")
-	redisDB := app.Config.GetInt("redis.db")
-	redisMaxPoolSize := app.Config.GetInt("redis.maxPoolSize")
+	redisURL := app.Config.GetString("redis.url")
+	redisConnectionTimeout := app.Config.GetString("redis.connectionTimeout")
 
 	rl := l.With(
-		zap.String("host", redisHost),
-		zap.Int("port", redisPort),
-		zap.Int("db", redisDB),
-		zap.Int("maxPoolSize", redisMaxPoolSize),
+		zap.String("url", redisURL),
+		zap.String("connectionTimeout", redisConnectionTimeout),
 	)
 	rl.Debug("Connecting to redis...")
-	cli, err := util.GetRedisClient(redisHost, redisPort, redisPass, redisDB, redisMaxPoolSize, app.Logger)
+	cli, err := redis.NewClient("redis", app.Config)
 	if err != nil {
 		return err
 	}

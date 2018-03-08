@@ -42,7 +42,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			zap.FatalLevel,
 		)
 
-		l = leaderboard.NewLeaderboard(a.RedisClient, "testkey", 0, lg)
+		l = leaderboard.NewLeaderboard(a.RedisClient.Client, "testkey", 0, lg)
 
 		conn := a.RedisClient.Client
 		conn.Del("testkey")
@@ -169,11 +169,11 @@ var _ = Describe("Leaderboard Handler", func() {
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
 			result2, err := a.RedisClient.Client.Exists(redisLBExpirationKey).Result()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result2).To(Equal(true))
+			Expect(result2).To(Equal(int64(1)))
 			redisExpirationSetKey := "expiration-sets"
 			result2, err = a.RedisClient.Client.Exists(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result2).To(Equal(true))
+			Expect(result2).To(Equal(int64(1)))
 			result3, err := a.RedisClient.Client.SMembers(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3).To(ContainElement(redisLBExpirationKey))
@@ -272,7 +272,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				"score": 100,
 			}
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := PutJSON(app, "/l/testkey/members/memberpublicid/score", payload)
 			Expect(status).To(Equal(500), body)
@@ -381,7 +381,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				"increment": 100,
 			}
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := PatchJSON(app, "/l/testkey/members/memberpublicid/score", payload)
 			Expect(status).To(Equal(500), body)
@@ -458,7 +458,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Delete(app, "/l/testkey/members?ids=memberpublicid")
 			Expect(status).To(Equal(500), body)
@@ -479,7 +479,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		HTTPMeasure("it should remove member score", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, app.Logger)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, uuid.NewV4().String(), 0, app.Logger)
 			memberID := uuid.NewV4().String()
 			_, err := lead.SetMemberScore(memberID, 100, false, "")
 			Expect(err).NotTo(HaveOccurred())
@@ -527,7 +527,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99")
 			Expect(status).To(Equal(500), body)
@@ -536,7 +536,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		HTTPMeasure("it should get member", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, app.Logger)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, uuid.NewV4().String(), 0, app.Logger)
 			memberID := uuid.NewV4().String()
 			_, err := lead.SetMemberScore(memberID, 500, false, "")
 			Expect(err).NotTo(HaveOccurred())
@@ -603,7 +603,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99/rank")
 			Expect(status).To(Equal(500), body)
@@ -612,7 +612,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		HTTPMeasure("it should get member rank", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, app.Logger)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, uuid.NewV4().String(), 0, app.Logger)
 			memberID := uuid.NewV4().String()
 			_, err := lead.SetMemberScore(memberID, 500, false, "")
 			Expect(err).NotTo(HaveOccurred())
@@ -911,7 +911,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99/around")
 			Expect(status).To(Equal(500), body)
@@ -920,7 +920,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99/around?getLastIfNotFound=true")
 			Expect(status).To(Equal(500), body)
@@ -929,7 +929,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		HTTPMeasure("it should get around member", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, app.Logger)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, uuid.NewV4().String(), 0, app.Logger)
 			memberID := uuid.NewV4().String()
 			_, err := lead.SetMemberScore(memberID, 500, false, "")
 			Expect(err).NotTo(HaveOccurred())
@@ -976,7 +976,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members-count")
 			Expect(status).To(Equal(500), body)
@@ -985,7 +985,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		HTTPMeasure("it should get total members", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, app.Logger)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, uuid.NewV4().String(), 0, app.Logger)
 			memberID := uuid.NewV4().String()
 			_, err := lead.SetMemberScore(memberID, 500, false, "")
 			Expect(err).NotTo(HaveOccurred())
@@ -1181,7 +1181,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error getting top members from Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/top/1")
 			Expect(status).To(Equal(500), body)
@@ -1190,7 +1190,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		HTTPMeasure("it should get top members", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, app.Logger)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, uuid.NewV4().String(), 0, app.Logger)
 			memberID := uuid.NewV4().String()
 			_, err := lead.SetMemberScore(memberID, 500, false, "")
 			Expect(err).NotTo(HaveOccurred())
@@ -1213,7 +1213,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	Describe("Get Top Percentage Handler", func() {
 		It("Should get top members from redis if leaderboard exists", func() {
 			leaderboardID := uuid.NewV4().String()
-			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+			l = leaderboard.NewLeaderboard(a.RedisClient.Client, leaderboardID, 10, lg)
 
 			for i := 1; i <= 100; i++ {
 				_, err := l.SetMemberScore(fmt.Sprintf("member_%d", i), 101-i, false, "")
@@ -1240,7 +1240,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should get top members from redis if leaderboard exists and repeated scores", func() {
 			leaderboardID := uuid.NewV4().String()
-			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+			l = leaderboard.NewLeaderboard(a.RedisClient.Client, leaderboardID, 10, lg)
 
 			for i := 1; i <= 100; i++ {
 				_, err := l.SetMemberScore(fmt.Sprintf("member_%d", i), 100, false, "")
@@ -1266,7 +1266,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if invalid percentage", func() {
 			leaderboardID := uuid.NewV4().String()
-			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+			l = leaderboard.NewLeaderboard(a.RedisClient.Client, leaderboardID, 10, lg)
 
 			status, body := Get(a, fmt.Sprintf("/l/%s/top-percent/l", leaderboardID))
 			Expect(status).To(Equal(http.StatusBadRequest), body)
@@ -1289,7 +1289,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/top-percent/10")
 			Expect(status).To(Equal(500), body)
@@ -1298,7 +1298,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		HTTPMeasure("it should get top percentage of members", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
-			lead := leaderboard.NewLeaderboard(a.RedisClient, uuid.NewV4().String(), 0, app.Logger)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, uuid.NewV4().String(), 0, app.Logger)
 
 			for i := 0; i < 100; i++ {
 				_, err := lead.SetMemberScore(fmt.Sprintf("member-%d", i), 500, false, "")
@@ -1370,7 +1370,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(score["previousRank"].(float64))).To(Equal(-1))
 				Expect(score["leaderboardID"]).To(Equal(payload["leaderboards"].([]string)[i]))
 
-				ll := leaderboard.NewLeaderboard(a.RedisClient, score["leaderboardID"].(string), 0, lg)
+				ll := leaderboard.NewLeaderboard(a.RedisClient.Client, score["leaderboardID"].(string), 0, lg)
 				member, err := ll.GetMember("memberpublicid", "desc")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(member.Rank).To(Equal(1))
@@ -1414,7 +1414,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis when upserting many leaderboards", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			payload := map[string]interface{}{
 				"score":        100,
@@ -1445,7 +1445,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	Describe("Remove Leaderboard", func() {
 		It("should remove a leaderboard", func() {
 			leaderboardID := uuid.NewV4().String()
-			lead := leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 0, lg)
+			lead := leaderboard.NewLeaderboard(a.RedisClient.Client, leaderboardID, 0, lg)
 
 			for i := 0; i < 10; i++ {
 				_, err := lead.SetMemberScore(fmt.Sprintf("member-%d", i), 500, false, "")
@@ -1469,7 +1469,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Delete(app, fmt.Sprintf("/l/%s", uuid.NewV4().String()))
 			Expect(status).To(Equal(500), body)
@@ -1480,7 +1480,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	Describe("Get Members Handler", func() {
 		It("should get several members from leaderboard", func() {
 			leaderboardID := uuid.NewV4().String()
-			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+			l = leaderboard.NewLeaderboard(a.RedisClient.Client, leaderboardID, 10, lg)
 
 			for i := 1; i <= 100; i++ {
 				_, err := l.SetMemberScore(fmt.Sprintf("member_%d", i), 101-i, false, "")
@@ -1534,7 +1534,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("should return not found members", func() {
 			leaderboardID := uuid.NewV4().String()
-			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+			l = leaderboard.NewLeaderboard(a.RedisClient.Client, leaderboardID, 10, lg)
 
 			for i := 1; i <= 10; i++ {
 				_, err := l.SetMemberScore(fmt.Sprintf("member_%d", i), 101-i, false, "")
@@ -1566,7 +1566,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("should fail if no public ids sent", func() {
 			leaderboardID := uuid.NewV4().String()
-			l = leaderboard.NewLeaderboard(a.RedisClient, leaderboardID, 10, lg)
+			l = leaderboard.NewLeaderboard(a.RedisClient.Client, leaderboardID, 10, lg)
 
 			status, body := Get(a, fmt.Sprintf("/l/%s/members/", l.PublicID))
 			Expect(status).To(Equal(http.StatusBadRequest), body)
@@ -1580,7 +1580,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if error in Redis", func() {
 			app := GetDefaultTestApp()
-			app.RedisClient = GetFaultyRedis(a.Logger)
+			app.RedisClient.Client = GetFaultyRedis()
 
 			status, body := Get(
 				app,
@@ -1594,7 +1594,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		HTTPMeasure("it should get members", func(ctx map[string]interface{}) {
 			app := ctx["app"].(*api.App)
 			leaderboardID := uuid.NewV4().String()
-			l = leaderboard.NewLeaderboard(app.RedisClient, leaderboardID, 10, app.Logger)
+			l = leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 10, app.Logger)
 
 			memberIDs := []string{}
 			for i := 1; i <= 1000; i++ {

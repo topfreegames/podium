@@ -2,11 +2,8 @@ healthcheck:
   workingText: WORKING
 
 redis:
-  host: localhost
-  port: 1224
-  password: ""
-  db: 0
-  maxPoolSize: 50
+  url: redis://localhost:1224/0
+  connectionTimeout: 200
 
 newrelic:
   key: ""

@@ -37,7 +37,7 @@ var _ = Describe("Healthcheck Handler", func() {
 
 	It("Should fail if redis failing", func() {
 		a := GetDefaultTestApp()
-		a.RedisClient = GetFaultyRedis(a.Logger)
+		a.RedisClient.Client = GetFaultyRedis()
 
 		status, body := Get(a, "/healthcheck")
 
