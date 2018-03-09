@@ -12,6 +12,7 @@ package api
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/jaeger"
+	jecho "github.com/topfreegames/extensions/jaeger/echo"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
@@ -131,13 +133,20 @@ func (app *App) configureJaeger() {
 		zap.String("operation", "configureJaeger"),
 	)
 
+	disabled := os.Getenv("JAEGER_DISABLED") == "true"
+	probability, err := strconv.ParseFloat(os.Getenv("JAEGER_SAMPLING_PROBABILITY"), 64)
+
+	if err != nil {
+		probability = 0.001
+	}
+
 	opts := jaeger.Options{
-		Disabled:    false,
-		Probability: 1.0,
+		Disabled:    disabled,
+		Probability: probability,
 		ServiceName: "podium",
 	}
 
-	_, err := jaeger.Configure(opts)
+	_, err = jaeger.Configure(opts)
 	if err != nil {
 		l.Error("Failed to initialize Jaeger.")
 	}
@@ -147,7 +156,10 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
 	app.Config.SetDefault("api.maxReturnedMembers", 2000)
 	app.Config.SetDefault("api.maxReadBufferSize", 32000)
-	app.Config.SetDefault("redis.url", "redis://localhost:1212/0")
+	app.Config.SetDefault("redis.host", "localhost")
+	app.Config.SetDefault("redis.port", 1212)
+	app.Config.SetDefault("redis.password", "")
+	app.Config.SetDefault("redis.db", 0)
 	app.Config.SetDefault("redis.connectionTimeout", 200)
 }
 
@@ -215,7 +227,7 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	jaeger.InstrumentEcho(a)
+	jecho.Instrument(a)
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Get("/status", StatusHandler(app))
@@ -241,8 +253,14 @@ func (app *App) configureApplication() error {
 		time.Sleep(5 * time.Second)
 	}()
 
-	redisURL := app.Config.GetString("redis.url")
+	redisHost := app.Config.GetString("redis.host")
+	redisPort := app.Config.GetInt("redis.port")
+	redisPass := app.Config.GetString("redis.password")
+	redisDB := app.Config.GetInt("redis.db")
 	redisConnectionTimeout := app.Config.GetString("redis.connectionTimeout")
+
+	redisURL := fmt.Sprintf("redis://:%s@%s:%d/%d", redisPass, redisHost, redisPort, redisDB)
+	app.Config.Set("redis.url", redisURL)
 
 	rl := l.With(
 		zap.String("url", redisURL),

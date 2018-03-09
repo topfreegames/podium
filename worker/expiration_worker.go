@@ -70,8 +70,14 @@ func (w *ExpirationWorker) configure() error {
 		zap.String("operation", "configureWorker"),
 	)
 
-	redisURL := w.Config.GetString("redis.url")
+	redisHost := w.Config.GetString("redis.host")
+	redisPort := w.Config.GetInt("redis.port")
+	redisPass := w.Config.GetString("redis.password")
+	redisDB := w.Config.GetInt("redis.db")
 	redisConnectionTimeout := w.Config.GetString("redis.connectionTimeout")
+
+	redisURL := fmt.Sprintf("redis://:%s@%s:%d/%d", redisPass, redisHost, redisPort, redisDB)
+	w.Config.Set("redis.url", redisURL)
 
 	rl := l.With(
 		zap.String("url", redisURL),

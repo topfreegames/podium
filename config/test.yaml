@@ -2,7 +2,8 @@ healthcheck:
   workingText: WORKING
 
 redis:
-  url: redis://localhost:1234/0
+  host: localhost
+  port: 1234
   connectionTimeout: 200
 
 api:

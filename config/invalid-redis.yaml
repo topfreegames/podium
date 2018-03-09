@@ -2,7 +2,10 @@ healthcheck:
   workingText: WORKING
 
 redis:
-  url: redis://localhost:9473/0
+  host: localhost
+  port: 9473
+  password: ""
+  db: 0
   connectionTimeout: 1
 
 api:

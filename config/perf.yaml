@@ -2,7 +2,10 @@ healthcheck:
   workingText: WORKING
 
 redis:
-  url: redis://localhost:1224/0
+  host: localhost
+  port: 1224
+  password: ""
+  db: 0
   connectionTimeout: 200
 
 newrelic:
