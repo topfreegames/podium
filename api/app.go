@@ -132,8 +132,6 @@ func (app *App) configureJaeger() {
 		zap.String("operation", "configureJaeger"),
 	)
 
-	app.Config.SetDefault("jaeger.samplingProbability", 0.001)
-
 	opts := jaeger.Options{
 		Disabled:    app.Config.GetBool("jaeger.disabled"),
 		Probability: app.Config.GetFloat64("jaeger.samplingProbability"),
@@ -155,6 +153,8 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("redis.password", "")
 	app.Config.SetDefault("redis.db", 0)
 	app.Config.SetDefault("redis.connectionTimeout", 200)
+	app.Config.SetDefault("jaeger.disabled", true)
+	app.Config.SetDefault("jaeger.samplingProbability", 0.001)
 }
 
 func (app *App) loadConfiguration() error {
