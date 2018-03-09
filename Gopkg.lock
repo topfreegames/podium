@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/apache/thrift"
+  packages = ["lib/go/thrift"]
+  revision = "b2a4d4ae21c789b689dd162deb819665567f481c"
+  version = "0.10.0"
+
+[[projects]]
   name = "github.com/bsm/redis-lock"
   packages = ["."]
   revision = "0a3c01f764b4864e340afce6ffa26c97da6927bb"
@@ -17,6 +23,12 @@
   packages = ["."]
   revision = "a61bf5eafa3aee233ec8043e9da052447e5463dd"
   version = "2016.09.26"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/codahale/hdrhistogram"
+  packages = ["."]
+  revision = "3a0bb77429bd3a61596f5e8a3172445844342120"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -220,6 +232,16 @@
   revision = "d59fa0ac68bb5dd932ee8d24eed631cdd519efc3"
 
 [[projects]]
+  name = "github.com/opentracing/opentracing-go"
+  packages = [
+    ".",
+    "ext",
+    "log"
+  ]
+  revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
+  version = "v1.0.2"
+
+[[projects]]
   name = "github.com/pelletier/go-buffruneio"
   packages = ["."]
   revision = "df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d"
@@ -287,19 +309,48 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "tracing"
   name = "github.com/topfreegames/extensions"
   packages = [
+    "jaeger",
+    "jaeger/middleware",
+    "jaeger/util",
     "redis",
     "redis/interfaces"
   ]
-  revision = "cbae4c484dc0f9a2b66622137e374c43f14d3555"
-  version = "v5.2.0"
+  revision = "0406730b6887a0a92d7a68755fe532625b95566c"
 
 [[projects]]
   name = "github.com/uber-go/atomic"
   packages = ["."]
   revision = "0c9e689d64f004564b79d9a663634756df322902"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/uber/jaeger-client-go"
+  packages = [
+    ".",
+    "config",
+    "internal/baggage",
+    "internal/baggage/remote",
+    "internal/spanlog",
+    "log",
+    "rpcmetrics",
+    "thrift-gen/agent",
+    "thrift-gen/baggage",
+    "thrift-gen/jaeger",
+    "thrift-gen/sampling",
+    "thrift-gen/zipkincore",
+    "utils"
+  ]
+  revision = "3ac96c6e679cb60a74589b0d0aa7c70a906183f7"
+  version = "v2.11.2"
+
+[[projects]]
+  name = "github.com/uber/jaeger-lib"
+  packages = ["metrics"]
+  revision = "4267858c0679cd4e47cefed8d7f70fd386cfb567"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
@@ -365,6 +416,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ccfb635108a493f5eb80011ea88182986da4b28a3f9f64012610e2e760c6f8c1"
+  inputs-digest = "2536dd0f7e4610d66b9540d8eddf2be90e160b2a2748a59615bda9b40dd0eeb6"
   solver-name = "gps-cdcl"
   solver-version = 1

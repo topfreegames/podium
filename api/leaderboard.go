@@ -93,7 +93,7 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 
 		var member *leaderboard.Member
 		err = WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			member, err = l.SetMemberScore(memberPublicID, payload.Score, prevRank, scoreTTL)
 
 			if err != nil {
@@ -135,7 +135,7 @@ func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
 
 		var member *leaderboard.Member
 		err = WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			member, err = l.IncrementMemberScore(memberPublicID, payload.Increment, scoreTTL)
 
 			if err != nil {
@@ -163,7 +163,7 @@ func RemoveMemberHandler(app *App) func(c echo.Context) error {
 		memberPublicID := c.Param("memberPublicID")
 
 		err := WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			err := l.RemoveMember(memberPublicID)
 
 			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
@@ -202,7 +202,7 @@ func RemoveMembersHandler(app *App) func(c echo.Context) error {
 		}
 
 		err := WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			err := l.RemoveMembers(idsInter)
 
 			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
@@ -238,7 +238,7 @@ func GetMemberHandler(app *App) func(c echo.Context) error {
 		status := 404
 		err := WithSegment("Model", c, func() error {
 			var err error
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			member, err = l.GetMember(memberPublicID, order)
 
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
@@ -278,7 +278,7 @@ func GetMemberRankHandler(app *App) func(c echo.Context) error {
 		rank := 0
 		err := WithSegment("Model", c, func() error {
 			var err error
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			rank, err = l.GetRank(memberPublicID, order)
 
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
@@ -327,7 +327,7 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 		status := 404
 		err := WithSegment("Model", c, func() error {
 			for i, leaderboardID := range leaderboardIDs {
-				l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+				l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 				member, err := l.GetMember(memberPublicID, order)
 				if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 					app.AddError()
@@ -383,7 +383,7 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 		var members []*leaderboard.Member
 		status := 404
 		err = WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, pageSize, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, pageSize, lg)
 			members, err = l.GetAroundMe(memberPublicID, order, getLastIfNotFound)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 				app.AddError()
@@ -418,7 +418,7 @@ func GetTotalMembersHandler(app *App) func(c echo.Context) error {
 		count := 0
 		err := WithSegment("Model", c, func() error {
 			var err error
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			count, err = l.TotalMembers()
 
 			if err != nil {
@@ -463,7 +463,7 @@ func GetTopMembersHandler(app *App) func(c echo.Context) error {
 
 		var members []*leaderboard.Member
 		err = WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, pageSize, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, pageSize, lg)
 			members, err = l.GetLeaders(pageNumber, order)
 
 			if err != nil {
@@ -509,7 +509,7 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 		var members []*leaderboard.Member
 		status := 400
 		err = WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, defaultPageSize, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, defaultPageSize, lg)
 			members, err = l.GetTopPercentage(int(percentage), app.Config.GetInt("api.maxReturnedMembers"), order)
 
 			if err != nil {
@@ -559,7 +559,7 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 		var members []*leaderboard.Member
 		err := WithSegment("Model", c, func() error {
 			var err error
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, defaultPageSize, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, defaultPageSize, lg)
 			members, err = l.GetMembers(memberIDs, order)
 
 			if err != nil {
@@ -634,7 +634,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 
 		err = WithSegment("Model", c, func() error {
 			for i, leaderboardID := range payload.Leaderboards {
-				l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+				l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 				member, err := l.SetMemberScore(memberPublicID, payload.Score, prevRank, scoreTTL)
 
 				if err != nil {
@@ -666,7 +666,7 @@ func RemoveLeaderboardHandler(app *App) func(c echo.Context) error {
 		leaderboardID := c.Param("leaderboardID")
 
 		err := WithSegment("Model", c, func() error {
-			l := leaderboard.NewLeaderboard(app.RedisClient.Client, leaderboardID, 0, lg)
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
 			err := l.RemoveLeaderboard()
 
 			if err != nil {

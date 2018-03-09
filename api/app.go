@@ -24,6 +24,7 @@ import (
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
+	"github.com/topfreegames/extensions/jaeger"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
@@ -74,6 +75,7 @@ func (app *App) Configure() error {
 		return err
 	}
 
+	app.configureJaeger()
 	app.configureSentry()
 	err = app.configureNewRelic()
 	if err != nil {
@@ -121,6 +123,24 @@ func (app *App) configureNewRelic() error {
 	l.Info("Initialized New Relic successfully.")
 
 	return nil
+}
+
+func (app *App) configureJaeger() {
+	l := app.Logger.With(
+		zap.String("source", "app"),
+		zap.String("operation", "configureJaeger"),
+	)
+
+	opts := jaeger.Options{
+		Disabled:    false,
+		Probability: 1.0,
+		ServiceName: "podium",
+	}
+
+	_, err := jaeger.Configure(opts)
+	if err != nil {
+		l.Error("Failed to initialize Jaeger.")
+	}
 }
 
 func (app *App) setConfigurationDefaults() {
@@ -194,6 +214,8 @@ func (app *App) configureApplication() error {
 	a.Use(NewVersionMiddleware().Serve)
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
+
+	jaeger.InstrumentEcho(a)
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Get("/status", StatusHandler(app))
