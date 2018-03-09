@@ -8,6 +8,10 @@ redis:
   db: 0
   connectionTimeout: 200
 
+jaeger:
+  disabled: false
+  samplingProbability: 0.1
+
 api:
   maxReturnedMembers: 2000
 

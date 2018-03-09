@@ -12,7 +12,6 @@ package api
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -133,20 +132,15 @@ func (app *App) configureJaeger() {
 		zap.String("operation", "configureJaeger"),
 	)
 
-	disabled := os.Getenv("JAEGER_DISABLED") == "true"
-	probability, err := strconv.ParseFloat(os.Getenv("JAEGER_SAMPLING_PROBABILITY"), 64)
-
-	if err != nil {
-		probability = 0.001
-	}
+	app.Config.SetDefault("jaeger.samplingProbability", 0.001)
 
 	opts := jaeger.Options{
-		Disabled:    disabled,
-		Probability: probability,
+		Disabled:    app.Config.GetBool("jaeger.disabled"),
+		Probability: app.Config.GetFloat64("jaeger.samplingProbability"),
 		ServiceName: "podium",
 	}
 
-	_, err = jaeger.Configure(opts)
+	_, err := jaeger.Configure(opts)
 	if err != nil {
 		l.Error("Failed to initialize Jaeger.")
 	}

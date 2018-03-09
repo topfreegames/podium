@@ -8,6 +8,10 @@ redis:
   db: 0
   connectionTimeout: 200
 
+jaeger:
+  disabled: true
+  samplingProbability: 0.001
+
 api:
   maxReturnedMembers: 2000
   maxReadBufferSize: 80240

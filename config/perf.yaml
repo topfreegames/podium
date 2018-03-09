@@ -8,5 +8,9 @@ redis:
   db: 0
   connectionTimeout: 200
 
+jaeger:
+  disabled: false
+  samplingProbability: 0.1
+
 newrelic:
   key: ""
