@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/getsentry/raven-go"
-	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/fasthttp"
 	"github.com/labstack/echo/engine/standard"
@@ -24,8 +23,8 @@ import (
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
+	"github.com/topfreegames/extensions/echo"
 	"github.com/topfreegames/extensions/jaeger"
-	jecho "github.com/topfreegames/extensions/jaeger/echo"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
@@ -220,8 +219,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewVersionMiddleware().Serve)
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
-
-	jecho.Instrument(a)
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Get("/status", StatusHandler(app))

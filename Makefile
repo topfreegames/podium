@@ -25,7 +25,7 @@ setup: setup-hooks
 	@go get github.com/mailru/easyjson/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
-	@dep ensure -v
+	@dep ensure
 
 setup-docs:
 	@pip install -q --log /tmp/pip.log --no-cache-dir sphinx recommonmark sphinx_rtd_theme

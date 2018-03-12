@@ -312,13 +312,14 @@
   branch = "tracing"
   name = "github.com/topfreegames/extensions"
   packages = [
+    "echo",
     "jaeger",
     "jaeger/echo",
     "jaeger/redis",
     "redis",
     "redis/interfaces"
   ]
-  revision = "c7d75f7e5f9b8d5a5fc8a47cd53e39d794d8c43f"
+  revision = "3f73de858a1b4fe87d79b45640ffd368d66b6660"
 
 [[projects]]
   name = "github.com/uber-go/atomic"
@@ -416,6 +417,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3c6443a22094f4a4881a22ec2bf39eabc6d1c29c61895e2cc460488ed0168712"
+  inputs-digest = "5bbe618404ece561c72aa08cd00c12a0fe72d506c523ee36674c1e523a1137b9"
   solver-name = "gps-cdcl"
   solver-version = 1
