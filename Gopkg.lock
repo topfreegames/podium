@@ -309,7 +309,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "tracing"
   name = "github.com/topfreegames/extensions"
   packages = [
     "echo",
@@ -319,7 +318,8 @@
     "redis",
     "redis/interfaces"
   ]
-  revision = "3f73de858a1b4fe87d79b45640ffd368d66b6660"
+  revision = "7c342553c88eaee09561b8272d66b59972204d82"
+  version = "v5.4.0"
 
 [[projects]]
   name = "github.com/uber-go/atomic"
@@ -417,6 +417,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5bbe618404ece561c72aa08cd00c12a0fe72d506c523ee36674c1e523a1137b9"
+  inputs-digest = "64586c398d1e83f2711917a97d53ef690d8156757598aa274e818feb261e3b6f"
   solver-name = "gps-cdcl"
   solver-version = 1
