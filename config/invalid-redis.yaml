@@ -6,7 +6,11 @@ redis:
   port: 9473
   password: ""
   db: 0
-  maxPoolSize: 20
+  connectionTimeout: 1
+
+jaeger:
+  disabled: false
+  samplingProbability: 1.0
 
 api:
   maxReturnedMembers: 2000

@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/getsentry/raven-go"
-	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/fasthttp"
 	"github.com/labstack/echo/engine/standard"
@@ -24,8 +23,10 @@ import (
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
+	"github.com/topfreegames/extensions/echo"
+	"github.com/topfreegames/extensions/jaeger"
+	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/log"
-	"github.com/topfreegames/podium/util"
 	"go.uber.org/zap"
 )
 
@@ -44,7 +45,7 @@ type App struct {
 	Engine      engine.Server
 	Config      *viper.Viper
 	Logger      zap.Logger
-	RedisClient *util.RedisClient
+	RedisClient *redis.Client
 	NewRelic    newrelic.Application
 }
 
@@ -74,6 +75,7 @@ func (app *App) Configure() error {
 		return err
 	}
 
+	app.configureJaeger()
 	app.configureSentry()
 	err = app.configureNewRelic()
 	if err != nil {
@@ -123,6 +125,24 @@ func (app *App) configureNewRelic() error {
 	return nil
 }
 
+func (app *App) configureJaeger() {
+	l := app.Logger.With(
+		zap.String("source", "app"),
+		zap.String("operation", "configureJaeger"),
+	)
+
+	opts := jaeger.Options{
+		Disabled:    app.Config.GetBool("jaeger.disabled"),
+		Probability: app.Config.GetFloat64("jaeger.samplingProbability"),
+		ServiceName: "podium",
+	}
+
+	_, err := jaeger.Configure(opts)
+	if err != nil {
+		l.Error("Failed to initialize Jaeger.")
+	}
+}
+
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
 	app.Config.SetDefault("api.maxReturnedMembers", 2000)
@@ -131,7 +151,9 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("redis.port", 1212)
 	app.Config.SetDefault("redis.password", "")
 	app.Config.SetDefault("redis.db", 0)
-	app.Config.SetDefault("redis.maxPoolSize", 20)
+	app.Config.SetDefault("redis.connectionTimeout", 200)
+	app.Config.SetDefault("jaeger.disabled", true)
+	app.Config.SetDefault("jaeger.samplingProbability", 0.001)
 }
 
 func (app *App) loadConfiguration() error {
@@ -226,16 +248,17 @@ func (app *App) configureApplication() error {
 	redisPort := app.Config.GetInt("redis.port")
 	redisPass := app.Config.GetString("redis.password")
 	redisDB := app.Config.GetInt("redis.db")
-	redisMaxPoolSize := app.Config.GetInt("redis.maxPoolSize")
+	redisConnectionTimeout := app.Config.GetString("redis.connectionTimeout")
+
+	redisURL := fmt.Sprintf("redis://:%s@%s:%d/%d", redisPass, redisHost, redisPort, redisDB)
+	app.Config.Set("redis.url", redisURL)
 
 	rl := l.With(
-		zap.String("host", redisHost),
-		zap.Int("port", redisPort),
-		zap.Int("db", redisDB),
-		zap.Int("maxPoolSize", redisMaxPoolSize),
+		zap.String("url", redisURL),
+		zap.String("connectionTimeout", redisConnectionTimeout),
 	)
 	rl.Debug("Connecting to redis...")
-	cli, err := util.GetRedisClient(redisHost, redisPort, redisPass, redisDB, redisMaxPoolSize, app.Logger)
+	cli, err := redis.NewClient("redis", app.Config)
 	if err != nil {
 		return err
 	}

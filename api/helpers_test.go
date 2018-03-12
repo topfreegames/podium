@@ -19,28 +19,23 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"gopkg.in/redis.v4"
+	"github.com/go-redis/redis"
 
 	"github.com/labstack/echo/engine/standard"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/testing"
-	"github.com/topfreegames/podium/util"
-	"go.uber.org/zap"
 	"github.com/valyala/fasthttp"
 )
 
 //GetFaultyRedis returns an invalid connection to redis
-func GetFaultyRedis(logger zap.Logger) *util.RedisClient {
-	return &util.RedisClient{
-		Client: redis.NewClient(&redis.Options{
-			Addr:     "localhost:38465",
-			Password: "",
-			DB:       0,
-			PoolSize: 20,
-		}),
-		Logger: logger,
-	}
+func GetFaultyRedis() *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     "localhost:38465",
+		Password: "",
+		DB:       0,
+		PoolSize: 20,
+	})
 }
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test

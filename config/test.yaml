@@ -4,10 +4,14 @@ healthcheck:
 redis:
   host: localhost
   port: 1234
-  maxPoolSize: 20
+  connectionTimeout: 200
 
 api:
   maxReturnedMembers: 2000
+
+jaeger:
+  disabled: false
+  samplingProbability: 1.0
 
 newrelic:
   key: ""

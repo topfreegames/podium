@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/redis.v4"
+	"github.com/go-redis/redis"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"

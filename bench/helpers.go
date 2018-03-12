@@ -14,15 +14,18 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/spf13/viper"
+	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/leaderboard"
 	test "github.com/topfreegames/podium/testing"
-	"github.com/topfreegames/podium/util"
 )
 
-func getRedis() *util.RedisClient {
-	var logger *test.MockLogger
-	logger = test.NewMockLogger()
-	redisClient, err := util.GetRedisClient("localhost", 1224, "", 0, 50, logger)
+func getRedis() *redis.Client {
+	config := viper.New()
+	config.Set("redis.url", "redis://localhost:1224/0")
+	config.Set("redis.connectionTimeout", 200)
+
+	redisClient, err := redis.NewClient("redis", config)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -95,11 +98,12 @@ func validateResp(statusCode int, body string, err error) {
 }
 
 func generateNMembers(amount int) *leaderboard.Leaderboard {
+	logger := test.NewMockLogger()
 	redisClient := getRedis()
 
 	lbID := "leaderboard-0"
 
-	l := leaderboard.NewLeaderboard(redisClient, lbID, 10, redisClient.Logger)
+	l := leaderboard.NewLeaderboard(redisClient.Client, lbID, 10, logger)
 
 	for i := 0; i < amount; i++ {
 		l.SetMemberScore(fmt.Sprintf("bench-member-%d", i), 100+i, false, "inf")

@@ -6,7 +6,11 @@ redis:
   port: 1224
   password: ""
   db: 0
-  maxPoolSize: 50
+  connectionTimeout: 200
+
+jaeger:
+  disabled: false
+  samplingProbability: 0.1
 
 newrelic:
   key: ""

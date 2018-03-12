@@ -6,7 +6,11 @@ redis:
   port: 1212
   password: ""
   db: 0
-  maxPoolSize: 20
+  connectionTimeout: 200
+
+jaeger:
+  disabled: true
+  samplingProbability: 0.001
 
 api:
   maxReturnedMembers: 2000

@@ -18,10 +18,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/podium/util"
+	extredis "github.com/topfreegames/extensions/redis"
 	"go.uber.org/zap"
-	redis "gopkg.in/redis.v4"
 )
 
 // ExpirationResult is the struct that represents the result of an expiration job
@@ -33,7 +33,7 @@ type ExpirationResult struct {
 
 // ExpirationWorker is the struct that represents the scores expirer worker
 type ExpirationWorker struct {
-	RedisClient             *util.RedisClient
+	RedisClient             *extredis.Client
 	Logger                  zap.Logger
 	Config                  *viper.Viper
 	ConfigPath              string
@@ -74,16 +74,17 @@ func (w *ExpirationWorker) configure() error {
 	redisPort := w.Config.GetInt("redis.port")
 	redisPass := w.Config.GetString("redis.password")
 	redisDB := w.Config.GetInt("redis.db")
-	redisMaxPoolSize := w.Config.GetInt("redis.maxPoolSize")
+	redisConnectionTimeout := w.Config.GetString("redis.connectionTimeout")
+
+	redisURL := fmt.Sprintf("redis://:%s@%s:%d/%d", redisPass, redisHost, redisPort, redisDB)
+	w.Config.Set("redis.url", redisURL)
 
 	rl := l.With(
-		zap.String("host", redisHost),
-		zap.Int("port", redisPort),
-		zap.Int("db", redisDB),
-		zap.Int("maxPoolSize", redisMaxPoolSize),
+		zap.String("url", redisURL),
+		zap.String("connectionTimeout", redisConnectionTimeout),
 	)
 	rl.Debug("Connecting to redis...")
-	cli, err := util.GetRedisClient(redisHost, redisPort, redisPass, redisDB, redisMaxPoolSize, w.Logger)
+	cli, err := extredis.NewClient("redis", w.Config)
 	if err != nil {
 		return err
 	}

@@ -50,7 +50,7 @@ var _ = Describe("App", func() {
 			app, err := api.GetApp("127.0.0.1", 9999, "../config/invalid-redis.yaml", false, false, logger)
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("connection refused"))
+			Expect(err.Error()).To(ContainSubstring("timed out"))
 		})
 	})
 
