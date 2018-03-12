@@ -11,6 +11,7 @@ package worker
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -76,7 +77,13 @@ func (w *ExpirationWorker) configure() error {
 	redisDB := w.Config.GetInt("redis.db")
 	redisConnectionTimeout := w.Config.GetString("redis.connectionTimeout")
 
-	redisURL := fmt.Sprintf("redis://:%s@%s:%d/%d", redisPass, redisHost, redisPort, redisDB)
+	redisURLObject := url.URL{
+		Scheme: "redis",
+		User:   url.UserPassword("", redisPass),
+		Host:   fmt.Sprintf("%s:%d", redisHost, redisPort),
+		Path:   fmt.Sprint(redisDB),
+	}
+	redisURL := redisURLObject.String()
 	w.Config.Set("redis.url", redisURL)
 
 	rl := l.With(

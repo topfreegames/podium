@@ -11,6 +11,7 @@ package api
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -250,7 +251,13 @@ func (app *App) configureApplication() error {
 	redisDB := app.Config.GetInt("redis.db")
 	redisConnectionTimeout := app.Config.GetString("redis.connectionTimeout")
 
-	redisURL := fmt.Sprintf("redis://:%s@%s:%d/%d", redisPass, redisHost, redisPort, redisDB)
+	redisURLObject := url.URL{
+		Scheme: "redis",
+		User:   url.UserPassword("", redisPass),
+		Host:   fmt.Sprintf("%s:%d", redisHost, redisPort),
+		Path:   fmt.Sprint(redisDB),
+	}
+	redisURL := redisURLObject.String()
 	app.Config.Set("redis.url", redisURL)
 
 	rl := l.With(
