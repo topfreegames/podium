@@ -65,7 +65,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		redisExpirationSetKey := "expiration-sets"
 		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(result).To(Equal(true))
+		Expect(result).To(Equal(int64(1)))
 		result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result2).To(ContainElement(redisLBExpirationKey))
@@ -92,7 +92,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 
 		exists, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(exists).To(BeFalse())
+		Expect(exists).To(Equal(int64(0)))
 	})
 
 	It("should not expire scores that are in the future", func() {
@@ -107,7 +107,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		redisExpirationSetKey := "expiration-sets"
 		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(result).To(Equal(true))
+		Expect(result).To(Equal(int64(1)))
 		result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result2).To(ContainElement(redisLBExpirationKey))
@@ -134,7 +134,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 
 		exists, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(exists).To(BeTrue())
+		Expect(exists).To(Equal(int64(1)))
 	})
 
 	It("should not expire scores that are not inserted with scoreTTL set", func() {
@@ -146,11 +146,11 @@ var _ = Describe("Scores Expirer Worker", func() {
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
 		result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(result).To(Equal(false))
+		Expect(result).To(Equal(int64(0)))
 		redisExpirationSetKey := "expiration-sets"
 		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(result).To(Equal(false))
+		Expect(result).To(Equal(int64(0)))
 		result4, err := redisClient.Client.ZRangeWithScores(lbName, 0, 1).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(result4)).To(Equal(1))
@@ -170,7 +170,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 
 		exists, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(exists).To(BeFalse())
+		Expect(exists).To(Equal(int64(0)))
 	})
 
 	It("a call to expireScores should only remove ExpirationLimitPerRun members from a set", func() {
@@ -189,7 +189,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		redisExpirationSetKey := "expiration-sets"
 		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(result).To(Equal(true))
+		Expect(result).To(Equal(int64(1)))
 		result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result2).To(ContainElement(redisLBExpirationKey))
@@ -221,7 +221,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 
 		exists, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
-		Expect(exists).To(BeTrue())
+		Expect(exists).To(Equal(int64(1)))
 	})
 
 })

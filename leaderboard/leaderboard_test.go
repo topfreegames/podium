@@ -95,7 +95,7 @@ var _ = Describe("Leaderboard Model", func() {
 			redisExpirationSetKey := "expiration-sets"
 			result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal(true))
+			Expect(result).To(Equal(int64(1)))
 			result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(ContainElement(redisLBExpirationKey))
@@ -186,7 +186,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard.RedisClient = faultyRedisClient.Client
 			_, err := testLeaderboard.TotalMembers()
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 
@@ -223,7 +223,7 @@ var _ = Describe("Leaderboard Model", func() {
 			members[0] = "invalid member"
 			err := testLeaderboard.RemoveMembers(members)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 
@@ -242,7 +242,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard.RedisClient = faultyRedisClient.Client
 			_, err := testLeaderboard.TotalPages()
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 
@@ -281,7 +281,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard.RedisClient = faultyRedisClient.Client
 			_, err := testLeaderboard.GetMember("qwe", "desc")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 
@@ -380,7 +380,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(getFaultyRedis(), "test-leaderboard", 10, logger)
 			_, err := testLeaderboard.GetAroundMe("qwe", "desc", false)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("getsockopt: connection refused"))
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 	})
 
@@ -740,7 +740,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 			exists, err := redisClient.Client.Exists(leaderboardID).Result()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(exists).To(BeFalse())
+			Expect(exists).To(Equal(int64(0)))
 		})
 
 		It("should fail if invalid connection to Redis", func() {
