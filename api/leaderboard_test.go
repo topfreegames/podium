@@ -55,13 +55,21 @@ var _ = Describe("Leaderboard Handler", func() {
 
 	Describe("When leaderboard has expired", func() {
 		var (
-			year, week               = time.Now().UTC().AddDate(0, 0, -14).ISOWeek()
+			maybePrefixWithZero = func(i int) string {
+				if i < 10 {
+					return fmt.Sprintf("0%d", i)
+				}
+				return string(i)
+			}
+			year, week               = time.Now().UTC().AddDate(0, 0, -15).ISOWeek()
 			lastQuarter, quarterYear = func() (int, int) {
-				quarter := int(time.Now().UTC().Month())/3 + 1
+				quarter := int(time.Now().UTC().Month()-1)/3 + 1
 				quarterYear := time.Now().UTC().Year()
-				if quarter-2 < 0 {
+				if quarter-2 <= 0 {
 					quarterYear--
 					quarter = 4 + (quarter - 2)
+				} else {
+					quarter -= 2
 				}
 				return quarter, quarterYear
 			}()
@@ -76,11 +84,11 @@ var _ = Describe("Leaderboard Handler", func() {
 					"testkey-year%d",
 					time.Now().UTC().AddDate(-2, 0, 0).Year(),
 				),
-				fmt.Sprintf("testkey-year%dweek%d", year, week),
+				fmt.Sprintf("testkey-year%dweek%s", year, maybePrefixWithZero(week)),
 				fmt.Sprintf(
-					"testkey-year%dmonth%d",
+					"testkey-year%dmonth%s",
 					time.Now().UTC().AddDate(0, -2, 0).Year(),
-					time.Now().UTC().AddDate(0, -2, 0).Month(),
+					maybePrefixWithZero(int(time.Now().UTC().AddDate(0, -2, 0).Month())),
 				),
 				fmt.Sprintf(
 					"testkey-year%dquarter0%d",
