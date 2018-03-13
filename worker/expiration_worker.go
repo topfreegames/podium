@@ -87,12 +87,13 @@ func (w *ExpirationWorker) configure() error {
 	w.Config.Set("redis.url", redisURL)
 
 	rl := l.With(
-		zap.String("url", redisURL),
+		zap.String("url", redisURLObject.Opaque),
 		zap.String("connectionTimeout", redisConnectionTimeout),
 	)
 	rl.Debug("Connecting to redis...")
 	cli, err := extredis.NewClient("redis", w.Config)
 	if err != nil {
+		rl.Error("Failed to connect to redis")
 		return err
 	}
 	w.RedisClient = cli
