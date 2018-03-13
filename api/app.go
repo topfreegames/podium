@@ -261,7 +261,7 @@ func (app *App) configureApplication() error {
 	app.Config.Set("redis.url", redisURL)
 
 	rl := l.With(
-		zap.String("url", redisURL),
+		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", redisHost, redisPort, redisDB)),
 		zap.String("connectionTimeout", redisConnectionTimeout),
 	)
 	rl.Debug("Connecting to redis...")
