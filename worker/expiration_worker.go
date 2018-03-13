@@ -85,9 +85,8 @@ func (w *ExpirationWorker) configure() error {
 	}
 	redisURL := redisURLObject.String()
 	w.Config.Set("redis.url", redisURL)
-
 	rl := l.With(
-		zap.String("url", redisURLObject.Opaque),
+		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", redisHost, redisPort, redisDB)),
 		zap.String("connectionTimeout", redisConnectionTimeout),
 	)
 	rl.Debug("Connecting to redis...")
@@ -123,6 +122,7 @@ func (w *ExpirationWorker) setConfigurationDefaults() {
 	w.Config.SetDefault("redis.password", "")
 	w.Config.SetDefault("redis.db", 0)
 	w.Config.SetDefault("redis.maxPoolSize", 20)
+	w.Config.SetDefault("redis.connectionTimeout", 200)
 	w.Config.SetDefault("worker.expirationCheckInterval", "60s")
 	w.Config.SetDefault("worker.expirationLimitPerRun", "1000")
 }
