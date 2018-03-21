@@ -59,7 +59,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				if i < 10 {
 					return fmt.Sprintf("0%d", i)
 				}
-				return string(i)
+				return fmt.Sprintf("%d", i)
 			}
 			year, week               = time.Now().UTC().AddDate(0, 0, -15).ISOWeek()
 			lastQuarter, quarterYear = func() (int, int) {
