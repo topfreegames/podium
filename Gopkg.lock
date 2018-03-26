@@ -2,10 +2,28 @@
 
 
 [[projects]]
+  name = "cloud.google.com/go"
+  packages = ["compute/metadata"]
+  revision = "4b98a6370e36d7a85192e7bad08a4ebd82eac2a8"
+  version = "v0.20.0"
+
+[[projects]]
+  name = "github.com/DataDog/datadog-go"
+  packages = ["statsd"]
+  revision = "0ddda6bee21174ef6c4873647cb0d6ec9cba996f"
+  version = "1.1.0"
+
+[[projects]]
   name = "github.com/apache/thrift"
   packages = ["lib/go/thrift"]
   revision = "b2a4d4ae21c789b689dd162deb819665567f481c"
   version = "0.10.0"
+
+[[projects]]
+  name = "github.com/asaskevich/govalidator"
+  packages = ["."]
+  revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
+  version = "v9"
 
 [[projects]]
   name = "github.com/bsm/redis-lock"
@@ -48,6 +66,19 @@
   revision = "379f8d0a68ca237cf8893a1cdfd4f574125e2c51"
 
 [[projects]]
+  name = "github.com/go-pg/pg"
+  packages = [
+    ".",
+    "internal",
+    "internal/parser",
+    "internal/pool",
+    "orm",
+    "types"
+  ]
+  revision = "24dfe0572921e42ffe1035f7afbd40f9d97cb8c8"
+  version = "v6.10.0"
+
+[[projects]]
   name = "github.com/go-redis/redis"
   packages = [
     ".",
@@ -61,6 +92,24 @@
   ]
   revision = "68362cfda1eeb3a69316e7bc00169a9a8de4823a"
   version = "v6.9.2"
+
+[[projects]]
+  name = "github.com/golang/protobuf"
+  packages = ["proto"]
+  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/gorilla/context"
+  packages = ["."]
+  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
+  version = "v1.1"
+
+[[projects]]
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
+  version = "v1.6.1"
 
 [[projects]]
   name = "github.com/gosuri/uilive"
@@ -95,6 +144,12 @@
   packages = ["."]
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jinzhu/inflection"
+  packages = ["."]
+  revision = "04140366298a54a039076d798123ffa108fff46c"
 
 [[projects]]
   name = "github.com/klauspost/compress"
@@ -274,6 +329,12 @@
   version = "v1.2.0"
 
 [[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
+
+[[projects]]
   name = "github.com/spf13/afero"
   packages = [
     ".",
@@ -311,15 +372,20 @@
 [[projects]]
   name = "github.com/topfreegames/extensions"
   packages = [
+    "dogstatsd",
     "echo",
+    "echo/middleware",
     "jaeger",
     "jaeger/echo",
     "jaeger/redis",
+    "middleware",
+    "oauth2",
+    "pg/interfaces",
     "redis",
     "redis/interfaces"
   ]
-  revision = "7c342553c88eaee09561b8272d66b59972204d82"
-  version = "v5.4.0"
+  revision = "f6177c99f17f8ef000e4e3df2860e473b25f1f36"
+  version = "v5.9.0"
 
 [[projects]]
   name = "github.com/uber-go/atomic"
@@ -383,14 +449,30 @@
     "curve25519",
     "ed25519",
     "ed25519/internal/edwards25519",
-    "ssh"
+    "ssh",
+    "ssh/terminal"
   ]
   revision = "7682e7e3945130cf3cde089834664f68afdd1523"
 
 [[projects]]
   name = "golang.org/x/net"
-  packages = ["context"]
+  packages = [
+    "context",
+    "context/ctxhttp"
+  ]
   revision = "2a824cf9226006580a06d9fa8f10901c17b49ed5"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt"
+  ]
+  revision = "fdc9e635145ae97e6c2cb777c48305600cf515cb"
 
 [[projects]]
   name = "golang.org/x/sys"
@@ -410,6 +492,23 @@
   revision = "7b68e1fe5400d87fbd01e3ae11df5629d9df8360"
 
 [[projects]]
+  name = "google.golang.org/appengine"
+  packages = [
+    ".",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch"
+  ]
+  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
+  version = "v1.0.0"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "a5b47d31c556af34a302ce5d659e6fea44d90de0"
@@ -417,6 +516,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "64586c398d1e83f2711917a97d53ef690d8156757598aa274e818feb261e3b6f"
+  inputs-digest = "a58e2636cdd9d352c10bbc2292538d56cab5a0cccc0be6fb5fc951809eadd294"
   solver-name = "gps-cdcl"
   solver-version = 1
