@@ -264,7 +264,7 @@ func (app *App) configureApplication() error {
 		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", redisHost, redisPort, redisDB)),
 		zap.String("connectionTimeout", redisConnectionTimeout),
 	)
-	rl.Debug("Connecting to redis...")
+	rl.Info("Connecting to redis...")
 	cli, err := redis.NewClient("redis", app.Config)
 	if err != nil {
 		return err
