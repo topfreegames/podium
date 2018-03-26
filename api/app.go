@@ -25,7 +25,9 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/echo"
+	extechomiddleware "github.com/topfreegames/extensions/echo/middleware"
 	"github.com/topfreegames/extensions/jaeger"
+	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
@@ -48,6 +50,7 @@ type App struct {
 	Logger      zap.Logger
 	RedisClient *redis.Client
 	NewRelic    newrelic.Application
+	DDStatsD    *extnethttpmiddleware.DogStatsD
 }
 
 // GetApp returns a new podium Application
@@ -78,6 +81,12 @@ func (app *App) Configure() error {
 
 	app.configureJaeger()
 	app.configureSentry()
+
+	err = app.configureStatsD()
+	if err != nil {
+		return err
+	}
+
 	err = app.configureNewRelic()
 	if err != nil {
 		return err
@@ -99,6 +108,25 @@ func (app *App) configureSentry() {
 	sentryURL := app.Config.GetString("sentry.url")
 	raven.SetDSN(sentryURL)
 	l.Info("Configured sentry successfully.")
+}
+
+func (app *App) configureStatsD() error {
+	l := app.Logger.With(
+		zap.String("source", "app"),
+		zap.String("operation", "configureStatsD"),
+	)
+
+	ddstatsd, err := extnethttpmiddleware.NewDogStatsD(app.Config)
+	if err != nil {
+		log.E(l, "Failed to initialize DogStatsD.", func(cm log.CM) {
+			cm.Write(zap.Error(err))
+		})
+		return err
+	}
+	app.DDStatsD = ddstatsd
+	l.Info("Configured StatsD successfully.")
+
+	return nil
 }
 
 func (app *App) configureNewRelic() error {
@@ -217,6 +245,7 @@ func (app *App) configureApplication() error {
 	a.Pre(middleware.RemoveTrailingSlash())
 	a.Use(NewLoggerMiddleware(app.Logger).Serve)
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
+	a.Use(extechomiddleware.NewResponseTimeMetricsMiddleware(app.DDStatsD).Serve)
 	a.Use(NewVersionMiddleware().Serve)
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
