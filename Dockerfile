@@ -20,7 +20,7 @@ ADD bin/podium-linux-x86_64 /go/bin/podium
 RUN chmod +x /go/bin/podium
 
 RUN mkdir -p /home/podium/
-ADD ./docker/default.yaml /home/podium/default.yaml
+ADD ./config/default.yaml /home/podium/default.yaml
 
 ENV PODIUM_REDIS_HOST localhost
 ENV PODIUM_REDIS_PORT 6379

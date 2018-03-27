@@ -1,8 +1,0 @@
-healthcheck:
-  workingText: WORKING
-redis:
-  host: localhost
-  port: 1212
-  password: ""
-  db: 0
-  maxPoolSize: 20
