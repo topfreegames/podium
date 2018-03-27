@@ -12,7 +12,7 @@
 
 [[constraint]]
   name = "github.com/topfreegames/extensions"
-  version = "5.4.0"
+  version = "5.9.0"
 
 [[constraint]]
   name = "github.com/mailru/easyjson"

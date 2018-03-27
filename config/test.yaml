@@ -19,3 +19,10 @@ newrelic:
 worker:
   expirationCheckInterval: 1s
   expirationLimitPerRun: 100
+
+extensions:
+    dogstatsd:
+        host: localhost:8125
+        prefix: podium.
+        tags_prefix: ""
+        rate: 1

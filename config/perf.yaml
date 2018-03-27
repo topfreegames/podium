@@ -14,3 +14,10 @@ jaeger:
 
 newrelic:
   key: ""
+
+extensions:
+  dogstatsd:
+    host: localhost:8125
+    prefix: podium.
+    tags_prefix: ""
+    rate: 1
