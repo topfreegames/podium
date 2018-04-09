@@ -511,6 +511,46 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFo
 	return members, nil
 }
 
+// GetAroundRank returns a page of results centered in the member with the given ID
+func (lb *Leaderboard) GetAroundRank(rank int, order string) ([]*Member, error) {
+	l := lb.Logger.With(
+		zap.String("operation", "GetAroundRank"),
+		zap.String("leaguePublicID", lb.PublicID),
+		zap.String("rank", strconv.Itoa(rank)),
+	)
+
+	if order != "desc" && order != "asc" {
+		order = "desc"
+	}
+
+	totalMembers, err := lb.TotalMembers()
+	if err != nil {
+		return nil, err
+	}
+
+	startOffset := rank - (lb.PageSize / 2)
+	if startOffset < 0 {
+		startOffset = 0
+	}
+	endOffset := (startOffset + lb.PageSize) - 1
+	if totalMembers < endOffset {
+		endOffset = totalMembers
+		startOffset = endOffset - lb.PageSize
+		if startOffset < 0 {
+			startOffset = 0
+		}
+	}
+
+	members, err := GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, order, l)
+	if err != nil {
+		l.Error(fmt.Sprintf("Failed to retrieve information around a specific rank (%d).", rank), zap.Error(err))
+		return nil, err
+	}
+
+	l.Debug("Retrieved information around rank successfully.")
+	return members, nil
+}
+
 // GetRank returns the rank of the member with the given ID
 func (lb *Leaderboard) GetRank(memberID string, order string) (int, error) {
 	l := lb.Logger.With(
