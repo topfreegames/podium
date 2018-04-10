@@ -384,6 +384,75 @@ var _ = Describe("Leaderboard Model", func() {
 		})
 	})
 
+	Describe("get members around score in a leaderboard", func() {
+		It("should get members around specific score", func() {
+			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetAroundScore(1234*20, "desc")
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := members[0]
+			lastAroundMe := members[testLeaderboard.PageSize-1]
+			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.PublicID).To(Equal("member_31"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_7"))
+		})
+
+		It("should get members around specific score reverse order", func() {
+			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 20, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetAroundScore(1234*20, "asc")
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := members[0]
+			lastAroundMe := members[testLeaderboard.PageSize-1]
+			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.PublicID).To(Equal("member_11"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_30"))
+		})
+
+		It("should get last members if score <= 0", func() {
+			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetAroundScore(-50, "desc")
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := members[0]
+			lastAroundMe := members[testLeaderboard.PageSize-1]
+			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.PublicID).To(Equal("member_24"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_0"))
+		})
+
+		It("should get top members if score > max score in leaderboard", func() {
+			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 25, logger)
+			for i := 0; i < 101; i++ {
+				_, err := testLeaderboard.SetMemberScore("member_"+strconv.Itoa(i), 1234*i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+			members, err := testLeaderboard.GetAroundScore(1234*200, "desc")
+			Expect(err).NotTo(HaveOccurred())
+			firstAroundMe := members[0]
+			lastAroundMe := members[testLeaderboard.PageSize-1]
+			Expect(len(members)).To(Equal(testLeaderboard.PageSize))
+			Expect(firstAroundMe.PublicID).To(Equal("member_100"))
+			Expect(lastAroundMe.PublicID).To(Equal("member_76"))
+		})
+
+		It("should fail if faulty redis client", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(), "test-leaderboard", 10, logger)
+			_, err := testLeaderboard.GetAroundScore(20, "desc")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
+	})
+
 	Describe("getting member ranking", func() {
 		It("should return specific member ranking", func() {
 			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 25, logger)
