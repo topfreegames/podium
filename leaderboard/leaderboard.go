@@ -162,8 +162,8 @@ func GetMembersByRange(redisClient interfaces.RedisClient, leaderboard string, s
 	return members, nil
 }
 
-// GetMemberIDWithClosestScore returns a member in a given leaderboard with score >= the score provided
-func GetMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard string, score int, l zap.Logger) (string, error) {
+// getMemberIDWithClosestScore returns a member in a given leaderboard with score >= the score provided
+func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard string, score int, l zap.Logger) (string, error) {
 	cli := redisClient
 	l.Debug(
 		"Retrieving member with closest score.",
@@ -551,7 +551,7 @@ func (lb *Leaderboard) GetAroundScore(score int, order string) ([]*Member, error
 	)
 
 	//GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, order, l)
-	memberID, err := GetMemberIDWithClosestScore(lb.RedisClient, lb.PublicID, score, l)
+	memberID, err := getMemberIDWithClosestScore(lb.RedisClient, lb.PublicID, score, l)
 	if err != nil {
 		l.Error(fmt.Sprintf("Failed to retrieve information around a specific score (%d).", score), zap.Error(err))
 		return nil, err
