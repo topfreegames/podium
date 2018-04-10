@@ -406,8 +406,8 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 	}
 }
 
-// GetAroundRankHandler retrieves a list of member score and rank centered in the given member
-func GetAroundRankHandler(app *App) func(c echo.Context) error {
+// GetAroundScoreHandler retrieves a list of member score and rank centered in a given
+func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		lg := app.Logger.With(
 			zap.String("handler", "GetAroundRankHandler"),
@@ -433,7 +433,7 @@ func GetAroundRankHandler(app *App) func(c echo.Context) error {
 		status := 404
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, pageSize, lg)
-			members, err = l.GetAroundRank(score, order)
+			members, err = l.GetAroundScore(score, order)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 				app.AddError()
 				status = 404
