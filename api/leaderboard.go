@@ -410,7 +410,7 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		lg := app.Logger.With(
-			zap.String("handler", "GetAroundRankHandler"),
+			zap.String("handler", "GetAroundScoreHandler"),
 		)
 
 		order := c.QueryParam("order")
