@@ -959,6 +959,225 @@ var _ = Describe("Leaderboard Handler", func() {
 		}, 0.05)
 	})
 
+	Describe("Get Around Score Handler", func() {
+		It("Should get score neighbours from redis if score is sent", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 101-i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			score := 50
+			status, body := Get(a, fmt.Sprintf("/l/testkey/scores/%d/around", score))
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(20))
+			rank := score + 1
+			start := rank - 20/2
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				pos := start + i
+				Expect(int(member["rank"].(float64))).To(Equal(pos + 1))
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos+1)))
+				Expect(int(member["score"].(float64))).To(Equal(100 - pos))
+
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
+				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
+				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should get rank neighbours from redis in reverse order if score is sent", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 101-i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			score := 50
+			status, body := Get(a, fmt.Sprintf("/l/testkey/scores/%d/around?order=asc", score))
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(20))
+			rank := score + 1
+			start := rank + 20/2
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				pos := start - i
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos-1)))
+			}
+		})
+
+		It("Should get one page of top members from redis if leaderboard exists but less than pageSize neighbours exist", func() {
+			for i := 1; i <= 15; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 16-i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			score := 10
+			status, body := Get(a, fmt.Sprintf("/l/testkey/scores/%d/around", score))
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(15))
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
+				Expect(int(member["score"].(float64))).To(Equal(15 - i))
+
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
+				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
+				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should limit neighbours from redis if score is sent and custom limit", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 101-i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			score := 50
+			status, body := Get(a, fmt.Sprintf("/l/testkey/scores/%d/around?pageSize=10", score))
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(10))
+			start := 50 + 1 - 10/2
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				pos := start + i
+				Expect(int(member["rank"].(float64))).To(Equal(pos + 1))
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos+1)))
+				Expect(int(member["score"].(float64))).To(Equal(100 - pos))
+
+				dbMember, err := l.GetMember(member["publicID"].(string), "desc")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
+				Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
+				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should fail with 400 if bad score is provided", func() {
+			status, body := Get(a, "/l/testkey/scores/badScore/around")
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			err := json.Unmarshal([]byte(body), &result)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("Score not sent or wrongly formatted"))
+		})
+
+		It("Should fail with 400 if bad pageSize provided", func() {
+			status, body := Get(a, "/l/testkey/scores/50/around?pageSize=notint")
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			err := json.Unmarshal([]byte(body), &result)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("Failed to process param pageSize: notint"))
+		})
+
+		It("Should fail with 400 if pageSize provided if bigger than maxPageSizeAllowed", func() {
+			pageSize := a.Config.GetInt("api.maxReturnedMembers") + 1
+			status, body := Get(a, fmt.Sprintf("/l/testkey/scores/50/around?pageSize=%d", pageSize))
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal(fmt.Sprintf("Max pageSize allowed: %d. pageSize requested: %d", pageSize-1, pageSize)))
+		})
+
+		It("Should get one page of top members from redis if leaderboard exists and score <= 0", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 100-i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			scores := []int{-2, 0}
+
+			for _, score := range scores {
+				status, body := Get(a, fmt.Sprintf("/l/testkey/scores/%d/around", score))
+				Expect(status).To(Equal(http.StatusOK), body)
+				var result map[string]interface{}
+				json.Unmarshal([]byte(body), &result)
+				Expect(result["success"]).To(BeTrue())
+				members := result["members"].([]interface{})
+				Expect(len(members)).To(Equal(20))
+
+				start := 100 - 20
+				for i, memberObj := range members {
+					member := memberObj.(map[string]interface{})
+					pos := start + i + 1
+					Expect(int(member["rank"].(float64))).To(Equal(pos))
+					Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos)))
+					Expect(int(member["score"].(float64))).To(Equal(20 - i - 1))
+
+					dbMember, err := l.GetMember(member["publicID"].(string), "desc")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
+					Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
+					Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+				}
+			}
+		})
+
+		It("Should get one page of top members from redis if leaderboard exists and score in ranking top", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := l.SetMemberScore("member_"+strconv.Itoa(i), 100-i, false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			scores := []int{99, 100, 500}
+
+			for _, score := range scores {
+				status, body := Get(a, fmt.Sprintf("/l/testkey/scores/%d/around", score))
+				Expect(status).To(Equal(http.StatusOK), body)
+				var result map[string]interface{}
+				json.Unmarshal([]byte(body), &result)
+				Expect(result["success"]).To(BeTrue())
+				members := result["members"].([]interface{})
+				Expect(len(members)).To(Equal(20))
+				for i, memberObj := range members {
+					member := memberObj.(map[string]interface{})
+					pos := i + 1
+					Expect(int(member["rank"].(float64))).To(Equal(pos))
+					Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", pos)))
+					Expect(int(member["score"].(float64))).To(Equal(100 - i - 1))
+
+					dbMember, err := l.GetMember(member["publicID"].(string), "desc")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
+					Expect(dbMember.Score).To(Equal(int(member["score"].(float64))))
+					Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+				}
+			}
+		})
+
+		It("Should fail if error in Redis", func() {
+			app := GetDefaultTestApp()
+			app.RedisClient.Client = GetFaultyRedis()
+
+			status, body := Get(app, "/l/testkey/scores/50/around")
+			Expect(status).To(Equal(500), body)
+			Expect(body).To(ContainSubstring("connection refused"))
+		})
+	})
+
 	Describe("Get Total Members Handler", func() {
 		It("Should get the number of members in a leaderboard it exists", func() {
 			for i := 1; i <= 100; i++ {

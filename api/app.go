@@ -266,6 +266,7 @@ func (app *App) configureApplication() error {
 	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
 	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
 	a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
+	a.Get("/l/:leaderboardID/scores/:score/around", GetAroundScoreHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 

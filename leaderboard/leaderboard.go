@@ -162,6 +162,37 @@ func GetMembersByRange(redisClient interfaces.RedisClient, leaderboard string, s
 	return members, nil
 }
 
+// getMemberIDWithClosestScore returns a member in a given leaderboard with score >= the score provided
+func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard string, score int, l zap.Logger) (string, error) {
+	cli := redisClient
+	l.Debug(
+		"Retrieving member with closest score.",
+		zap.Int("score", score),
+	)
+
+	values, err := cli.ZRevRangeByScore(leaderboard, redis.ZRangeBy{Min: "-inf", Max: strconv.Itoa(score), Offset: 0, Count: 1}).Result()
+
+	if err != nil {
+		l.Error(
+			"Retrieval of member with closes score failed.",
+			zap.Int("score", score),
+			zap.Error(err),
+		)
+		return "", err
+	}
+
+	l.Debug(
+		"Retrieved member with closest score succeeded.",
+		zap.Int("score", score),
+	)
+
+	if len(values) < 1 {
+		return "", nil
+	}
+
+	return values[0], nil
+}
+
 // NewLeaderboard creates a new Leaderboard with given settings, ID and pageSize
 func NewLeaderboard(redisClient interfaces.RedisClient, publicID string, pageSize int, logger zap.Logger) *Leaderboard {
 	return &Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize, Logger: logger}
@@ -509,6 +540,24 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFo
 
 	l.Debug("Retrieved information around member successfully.")
 	return members, nil
+}
+
+// GetAroundScore returns a page of results centered in the score provided
+func (lb *Leaderboard) GetAroundScore(score int, order string) ([]*Member, error) {
+	l := lb.Logger.With(
+		zap.String("operation", "GetAroundScore"),
+		zap.String("leaguePublicID", lb.PublicID),
+		zap.String("score", strconv.Itoa(score)),
+	)
+
+	//GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, order, l)
+	memberID, err := getMemberIDWithClosestScore(lb.RedisClient, lb.PublicID, score, l)
+	if err != nil {
+		l.Error(fmt.Sprintf("Failed to retrieve information around a specific score (%d).", score), zap.Error(err))
+		return nil, err
+	}
+
+	return lb.GetAroundMe(memberID, order, true)
 }
 
 // GetRank returns the rank of the member with the given ID

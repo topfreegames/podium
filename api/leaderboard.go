@@ -406,6 +406,55 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 	}
 }
 
+// GetAroundScoreHandler retrieves a list of member score and rank centered in a given
+func GetAroundScoreHandler(app *App) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		lg := app.Logger.With(
+			zap.String("handler", "GetAroundScoreHandler"),
+		)
+
+		order := c.QueryParam("order")
+		if order == "" || (order != "asc" && order != "desc") {
+			order = "desc"
+		}
+
+		leaderboardID := c.Param("leaderboardID")
+		score, err := strconv.Atoi(c.Param("score"))
+		if err != nil {
+			return FailWith(400, "Score not sent or wrongly formatted", c)
+		}
+
+		pageSize, err := GetPageSize(app, c, defaultPageSize)
+		if err != nil {
+			return FailWith(400, err.Error(), c)
+		}
+
+		var members []*leaderboard.Member
+		status := 404
+		err = WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, pageSize, lg)
+			members, err = l.GetAroundScore(score, order)
+			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+				app.AddError()
+				status = 404
+				return fmt.Errorf("Member not found.")
+			} else if err != nil {
+				app.AddError()
+				status = 500
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(status, err.Error(), c)
+		}
+
+		return SucceedWith(map[string]interface{}{
+			"members": serializeMembers(members, false),
+		}, c)
+	}
+}
+
 // GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
 func GetTotalMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
