@@ -490,6 +490,75 @@ Podium API
         "reason": [string]
       }
       ```
+  ### Get members around a score
+  `GET /l/:leaderboardID/scores/:score/around?pageSize=10`
+
+  ##### optional query string
+  * order=[asc|desc]
+    * if set to asc, will treat the ranking with ascending scores (less is best)
+    * e.g. `GET /l/:leaderboardID/scores/:score/around?pageSize=10?order=asc`
+    * defaults to "desc"
+
+  Gets a list of members with score around that of the specified specified in the request. If the `score` parameter falls outside the leaderboard [minScore, maxScore], it will return the bottom/top rank members in the leaderboard, respectively.
+
+  The `pageSize` querystring parameter specifies the number of members that will be returned from this operation. That means there will be around `pageSize/2` (+-1) members with score above the specified score, and `pageSize/2`(+-1) with score below.
+
+  Podium will compensate if no more members can be found above or below (first or last member in the leaderboard ranking) to ensure that the desired number of members is returned (up to the number of members in the leaderboard).
+
+  Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and `score` should be a valid number.
+
+  * Success Response
+    * Code: `200`
+    * Content:
+      ```
+      {
+        "success": true,
+        "members": [
+          {
+            "publicID": [string]  // member public id
+            "score":    [int],    // member updated score
+            "rank":     [int],    // member current rank in leaderboard
+          },
+          {
+            "publicID": [string]  // member public id
+            "score":    [int],    // member updated score
+            "rank":     [int],    // member current rank in leaderboard
+          },
+          //...
+        ],
+      }
+      ```
+
+  * Error Response
+
+    It will return an error if the leaderboard is not found or the request has invalid parameters.
+
+    * Code: `404`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
+    * Code: `400`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
+    * Code: `500`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
 
   ### Get the number of members in a leaderboard
   `GET /l/:leaderboardID/members-count/`
