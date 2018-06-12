@@ -28,8 +28,6 @@ var _ = Describe("Lib", func() {
 		config.Set("podium.url", "http://podium")
 		config.Set("podium.user", "user")
 		config.Set("podium.pass", "pass")
-		config.Set("leaderboards.globalLeaderboard", "game:leaderboard:global")
-		config.Set("leaderboards.localeLeaderboard", "game:leaderboard:%{locale}")
 		globalLeaderboard = "game:leaderboard:global"
 		localeLeaderboard = "game:leaderboard:us"
 		p = lib.NewPodium(config)
