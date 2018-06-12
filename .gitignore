@@ -28,3 +28,4 @@ vendor/
 /bin
 bench-data/
 .venv
+*.swp

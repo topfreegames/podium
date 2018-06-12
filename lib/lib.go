@@ -14,13 +14,11 @@ import (
 
 // Podium is a struct that represents a podium API application
 type Podium struct {
-	httpClient        *http.Client
-	Config            *viper.Viper
-	URL               string
-	User              string
-	Pass              string
-	baseLeaderboard   string
-	localeLeaderboard string
+	httpClient *http.Client
+	Config     *viper.Viper
+	URL        string
+	User       string
+	Pass       string
 }
 
 var (
@@ -38,11 +36,12 @@ type Member struct {
 
 //MemberList is a list of member
 type MemberList struct {
-	Members []*Member
-	Member  *Member
+	Members  []*Member
+	Member   *Member
+	NotFound []string
 }
 
-//Score will represent a Player Score in a Leaderboard
+//Score will represent a member Score in a Leaderboard
 type Score struct {
 	LeaderboardID string
 	PublicID      string
@@ -69,15 +68,13 @@ func getHTTPClient() *http.Client {
 }
 
 // NewPodium returns a new podium API application
-func NewPodium(config *viper.Viper) *Podium {
+func NewPodium(config *viper.Viper) PodiumInterface {
 	p := &Podium{
-		httpClient:        getHTTPClient(),
-		Config:            config,
-		URL:               config.GetString("podium.url"),
-		User:              config.GetString("podium.user"),
-		Pass:              config.GetString("podium.pass"),
-		baseLeaderboard:   config.GetString("leaderboards.globalLeaderboard"),
-		localeLeaderboard: config.GetString("leaderboards.localeLeaderboard"),
+		httpClient: getHTTPClient(),
+		Config:     config,
+		URL:        config.GetString("podium.url"),
+		User:       config.GetString("podium.user"),
+		Pass:       config.GetString("podium.pass"),
 	}
 	return p
 }
@@ -133,17 +130,17 @@ func (p *Podium) buildGetTopPercentURL(leaderboard string, percentage int) strin
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildUpdateScoreURL(leaderboard string, playerID string) string {
-	var pathname = fmt.Sprintf("/l/%s/members/%s/score", leaderboard, playerID)
+func (p *Podium) buildUpdateScoreURL(leaderboard string, memberID string) string {
+	var pathname = fmt.Sprintf("/l/%s/members/%s/score", leaderboard, memberID)
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildIncrementScoreURL(leaderboard string, playerID string) string {
-	return p.buildUpdateScoreURL(leaderboard, playerID)
+func (p *Podium) buildIncrementScoreURL(leaderboard string, memberID string) string {
+	return p.buildUpdateScoreURL(leaderboard, memberID)
 }
 
-func (p *Podium) buildUpdateScoresURL(playerID string) string {
-	var pathname = fmt.Sprintf("/m/%s/scores", playerID)
+func (p *Podium) buildUpdateScoresURL(memberID string) string {
+	var pathname = fmt.Sprintf("/m/%s/scores", memberID)
 	return p.buildURL(pathname)
 }
 
@@ -158,8 +155,14 @@ func (p *Podium) buildGetTopURL(leaderboard string, page int, pageSize int) stri
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildGetPlayerURL(leaderboard string, playerID string) string {
-	var pathname = fmt.Sprintf("/l/%s/members/%s", leaderboard, playerID)
+func (p *Podium) buildGetMemberURL(leaderboard string, memberID string) string {
+	pathname := fmt.Sprintf("/l/%s/members/%s", leaderboard, memberID)
+	return p.buildURL(pathname)
+}
+
+func (p *Podium) buildGetMembersURL(leaderboard string, memberIDs []string) string {
+	memberIDsCsv := strings.Join(memberIDs, ",")
+	pathname := fmt.Sprintf("/l/%s/members?ids=%s", leaderboard, memberIDsCsv)
 	return p.buildURL(pathname)
 }
 
@@ -168,19 +171,7 @@ func (p *Podium) buildHealthcheckURL() string {
 	return p.buildURL(pathname)
 }
 
-// GetBaseLeaderboards shows the global leaderboard
-func (p *Podium) GetBaseLeaderboards() string {
-	return p.baseLeaderboard
-}
-
-// GetLocalizedLeaderboard receives a locale and returns its leaderboard
-func (p *Podium) GetLocalizedLeaderboard(locale string) string {
-	localeLeaderboard := p.localeLeaderboard
-	result := strings.Replace(localeLeaderboard, "%{locale}", locale, -1)
-	return result
-}
-
-// GetTop returns the top players for this leaderboard. Page is 1-index
+// GetTop returns the top members for this leaderboard. Page is 1-index
 func (p *Podium) GetTop(leaderboard string, page int, pageSize int) (int, *MemberList, error) {
 	route := p.buildGetTopURL(leaderboard, page, pageSize)
 	status, body, err := p.sendTo("GET", route, nil)
@@ -195,7 +186,7 @@ func (p *Podium) GetTop(leaderboard string, page int, pageSize int) (int, *Membe
 	return status, &members, err
 }
 
-// GetTopPercent returns the top x% of players in a leaderboard
+// GetTopPercent returns the top x% of members in a leaderboard
 func (p *Podium) GetTopPercent(leaderboard string, percentage int) (int, *MemberList, error) {
 	route := p.buildGetTopPercentURL(leaderboard, percentage)
 	status, body, err := p.sendTo("GET", route, nil)
@@ -210,9 +201,9 @@ func (p *Podium) GetTopPercent(leaderboard string, percentage int) (int, *Member
 	return status, &members, err
 }
 
-// UpdateScore updates the score of a particular player in a leaderboard
-func (p *Podium) UpdateScore(leaderboard string, playerID string, score int) (int, *MemberList, error) {
-	route := p.buildUpdateScoreURL(leaderboard, playerID)
+// UpdateScore updates the score of a particular member in a leaderboard
+func (p *Podium) UpdateScore(leaderboard string, memberID string, score int) (int, *MemberList, error) {
+	route := p.buildUpdateScoreURL(leaderboard, memberID)
 	payload := map[string]interface{}{
 		"score": score,
 	}
@@ -228,9 +219,9 @@ func (p *Podium) UpdateScore(leaderboard string, playerID string, score int) (in
 	return status, &member, err
 }
 
-// IncrementScore increments the score of a particular player in a leaderboard
-func (p *Podium) IncrementScore(leaderboard string, playerID string, increment int) (int, *MemberList, error) {
-	route := p.buildIncrementScoreURL(leaderboard, playerID)
+// IncrementScore increments the score of a particular member in a leaderboard
+func (p *Podium) IncrementScore(leaderboard string, memberID string, increment int) (int, *MemberList, error) {
+	route := p.buildIncrementScoreURL(leaderboard, memberID)
 	payload := map[string]interface{}{
 		"increment": increment,
 	}
@@ -246,9 +237,9 @@ func (p *Podium) IncrementScore(leaderboard string, playerID string, increment i
 	return status, &member, err
 }
 
-// UpdateScores updates the score of a player in more than one leaderboard
-func (p *Podium) UpdateScores(leaderboards []string, playerID string, score int) (int, *ScoreList, error) {
-	route := p.buildUpdateScoresURL(playerID)
+// UpdateScores updates the score of a member in more than one leaderboard
+func (p *Podium) UpdateScores(leaderboards []string, memberID string, score int) (int, *ScoreList, error) {
+	route := p.buildUpdateScoresURL(memberID)
 	payload := map[string]interface{}{
 		"score":        score,
 		"leaderboards": leaderboards,
@@ -265,7 +256,7 @@ func (p *Podium) UpdateScores(leaderboards []string, playerID string, score int)
 	return status, &scores, err
 }
 
-// RemoveMemberFromLeaderboard removes a player from a leaderboard
+// RemoveMemberFromLeaderboard removes a member from a leaderboard
 func (p *Podium) RemoveMemberFromLeaderboard(leaderboard string, member string) (int, *Response, error) {
 	route := p.buildRemoveMemberFromLeaderboardURL(leaderboard, member)
 	status, body, err := p.sendTo("DELETE", route, nil)
@@ -280,9 +271,9 @@ func (p *Podium) RemoveMemberFromLeaderboard(leaderboard string, member string) 
 	return status, &response, err
 }
 
-// GetPlayer shows score and rank of a particular player in a leaderboard
-func (p *Podium) GetPlayer(leaderboard string, playerID string) (int, *Member, error) {
-	route := p.buildGetPlayerURL(leaderboard, playerID)
+// GetMember shows score and rank of a particular member in a leaderboard
+func (p *Podium) GetMember(leaderboard string, memberID string) (int, *Member, error) {
+	route := p.buildGetMemberURL(leaderboard, memberID)
 	status, body, err := p.sendTo("GET", route, nil)
 
 	if err != nil {
@@ -293,6 +284,21 @@ func (p *Podium) GetPlayer(leaderboard string, playerID string) (int, *Member, e
 	err = json.Unmarshal(body, &member)
 
 	return status, &member, err
+}
+
+// GetMembers returns the members for this leaderboard. Page is 1-index
+func (p *Podium) GetMembers(leaderboard string, memberIDs []string) (int, *MemberList, error) {
+	route := p.buildGetMembersURL(leaderboard, memberIDs)
+	status, body, err := p.sendTo("GET", route, nil)
+
+	if err != nil {
+		return -1, nil, err
+	}
+
+	var members MemberList
+	err = json.Unmarshal(body, &members)
+
+	return status, &members, err
 }
 
 // Healthcheck verifies if podium is still up
