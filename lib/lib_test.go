@@ -13,8 +13,10 @@ import (
 
 var _ = Describe("Lib", func() {
 
-	var p *lib.Podium
+	var p lib.PodiumInterface
 	var config *viper.Viper
+	var globalLeaderboard string
+	var localeLeaderboard string
 
 	BeforeSuite(func() {
 		config = viper.New()
@@ -26,8 +28,8 @@ var _ = Describe("Lib", func() {
 		config.Set("podium.url", "http://podium")
 		config.Set("podium.user", "user")
 		config.Set("podium.pass", "pass")
-		config.Set("leaderboards.globalLeaderboard", "ecg:leaderboard:global")
-		config.Set("leaderboards.localeLeaderboard", "ecg:leaderboard:%{locale}")
+		globalLeaderboard = "game:leaderboard:global"
+		localeLeaderboard = "game:leaderboard:us"
 		p = lib.NewPodium(config)
 		httpmock.Reset()
 	})
@@ -37,37 +39,11 @@ var _ = Describe("Lib", func() {
 			p = lib.NewPodium(config)
 			Expect(p).NotTo(BeNil())
 		})
-		It("Should use podium.url from config files as the podium URL", func() {
-			config.Set("podium.url", "tempURL")
-			p = lib.NewPodium(config)
-			Expect(p.URL).To(Equal("tempURL"))
-		})
-	})
-
-	Describe("GetBaseLeaderboards", func() {
-		It("Should retrieve BaseLeaderboard from config files", func() {
-			config.Set("leaderboards.globalLeaderboard", "MyTestLeaderboard")
-			p = lib.NewPodium(config)
-			Expect(p.GetBaseLeaderboards()).To(Equal("MyTestLeaderboard"))
-		})
-	})
-
-	Describe("GetLocalizedLeaderboard", func() {
-		It("Should retrieve LocalizedLeaderboard from config files", func() {
-			config.Set("leaderboards.localeLeaderboard", "MyTestLeaderboard")
-			p = lib.NewPodium(config)
-			Expect(p.GetLocalizedLeaderboard("")).To(Equal("MyTestLeaderboard"))
-		})
-		It("Should change %{locale} in default localeLeaderboard value", func() {
-			config.Set("leaderboards.localeLeaderboard", "MyTestLeaderboard:%{locale}")
-			p = lib.NewPodium(config)
-			Expect(p.GetLocalizedLeaderboard("Brazil")).To(Equal("MyTestLeaderboard:Brazil"))
-		})
 	})
 
 	Describe("GetTop", func() {
 		It("Should call podium API to get the top players", func() {
-			leaderboard := p.GetBaseLeaderboards()
+			leaderboard := globalLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/top/1?pageSize=1"
@@ -87,7 +63,7 @@ var _ = Describe("Lib", func() {
 
 	Describe("GetTopPercent", func() {
 		It("Should call API to get the top x% players", func() {
-			leaderboard := p.GetBaseLeaderboards()
+			leaderboard := globalLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/top-percent/1"
@@ -107,7 +83,7 @@ var _ = Describe("Lib", func() {
 
 	Describe("UpdateScore", func() {
 		It("Should call API to update score of a member", func() {
-			leaderboard := p.GetBaseLeaderboards()
+			leaderboard := globalLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1/score"
@@ -126,7 +102,7 @@ var _ = Describe("Lib", func() {
 
 	Describe("IncrementScore", func() {
 		It("Should call API to increment score of a member", func() {
-			leaderboard := p.GetBaseLeaderboards()
+			leaderboard := globalLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1/score"
@@ -145,8 +121,8 @@ var _ = Describe("Lib", func() {
 
 	Describe("UpdateScores", func() {
 		It("Should call API to update scores of a member in different leaderboards", func() {
-			leaderboard1 := p.GetBaseLeaderboards()
-			leaderboard2 := p.GetLocalizedLeaderboard("Brazil")
+			leaderboard1 := globalLeaderboard
+			leaderboard2 := localeLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/m/1/scores"
@@ -166,7 +142,7 @@ var _ = Describe("Lib", func() {
 
 	Describe("RemoveMemberFromLeaderboard", func() {
 		It("Should call API to remove player from Leaderboard", func() {
-			leaderboard := p.GetBaseLeaderboards()
+			leaderboard := globalLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1"
@@ -183,16 +159,16 @@ var _ = Describe("Lib", func() {
 		})
 	})
 
-	Describe("GetPlayer", func() {
-		It("Should call API to retrieve player information", func() {
-			leaderboard := p.GetBaseLeaderboards()
+	Describe("GetMember", func() {
+		It("Should call API to retrieve member information", func() {
+			leaderboard := globalLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1"
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true,  "publicID": "1", "score": 2, "rank": 1 }`))
 
-			status, member, err := p.GetPlayer(leaderboard, "1")
+			status, member, err := p.GetMember(leaderboard, "1")
 
 			Expect(status).To(Equal(200))
 			Expect(member).NotTo(BeNil())
@@ -202,9 +178,39 @@ var _ = Describe("Lib", func() {
 		})
 	})
 
+	Describe("GetMembers", func() {
+		It("Should call API to retrieve members information", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/members?ids=1,2,3"
+			httpmock.RegisterResponder("GET", url,
+				httpmock.NewStringResponder(200, `{
+					"success": true,
+					"members": [
+						{ "publicID": "1", "score": 5, "rank": 1 },
+						{ "publicID": "3", "score": 4, "rank": 2 }
+					],
+					"notFound": ["2"]
+				}`))
+
+			status, members, err := p.GetMembers(leaderboard, []string{"1", "2", "3"})
+
+			Expect(err).To(BeNil())
+			Expect(status).To(Equal(200))
+			Expect(members).NotTo(BeNil())
+			Expect(members.Members[0].PublicID).To(Equal("1"))
+			Expect(members.Members[0].Score).To(Equal(5))
+			Expect(members.Members[1].PublicID).To(Equal("3"))
+			Expect(members.Members[1].Score).To(Equal(4))
+			Expect(members.NotFound[0]).To(Equal("2"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
 	Describe("DeleteLeaderboard", func() {
 		It("Should call API to delete a leaderboard from podium", func() {
-			leaderboard := p.GetBaseLeaderboards()
+			leaderboard := globalLeaderboard
 
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard

@@ -166,3 +166,7 @@ rtfd:
 
 schema-update:
 	@go generate ./api/payload.go
+
+mock-lib:
+	@mockgen github.com/topfreegames/podium/lib PodiumInterface | sed 's/mock_lib/mocks/' > lib/mocks/podium.go
+
