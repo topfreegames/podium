@@ -12,6 +12,22 @@ import (
 	"github.com/spf13/viper"
 )
 
+type requestError struct {
+	statusCode int
+	body       string
+}
+
+func newRequestError(statusCode int, body string) *requestError {
+	return &requestError{
+		statusCode: statusCode,
+		body:       body,
+	}
+}
+
+func (r *requestError) Error() string {
+	return fmt.Sprintf("Request error. Status code: %d. Body: %s", r.statusCode, r.body)
+}
+
 // Podium is a struct that represents a podium API application
 type Podium struct {
 	httpClient *http.Client
@@ -79,10 +95,10 @@ func NewPodium(config *viper.Viper) PodiumInterface {
 	return p
 }
 
-func (p *Podium) sendTo(method, url string, payload map[string]interface{}) (int, []byte, error) {
+func (p *Podium) sendTo(method, url string, payload map[string]interface{}) ([]byte, error) {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var req *http.Request
@@ -90,12 +106,12 @@ func (p *Podium) sendTo(method, url string, payload map[string]interface{}) (int
 	if payload != nil {
 		req, err = http.NewRequest(method, url, bytes.NewBuffer(payloadJSON))
 		if err != nil {
-			return -1, nil, err
+			return nil, err
 		}
 	} else {
 		req, err = http.NewRequest(method, url, nil)
 		if err != nil {
-			return -1, nil, err
+			return nil, err
 		}
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -103,17 +119,20 @@ func (p *Podium) sendTo(method, url string, payload map[string]interface{}) (int
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, respErr := ioutil.ReadAll(resp.Body)
-
 	if respErr != nil {
-		return -1, nil, respErr
+		return nil, respErr
 	}
 
-	return resp.StatusCode, body, nil
+	if resp.StatusCode > 399 {
+		return nil, newRequestError(resp.StatusCode, string(body))
+	}
+
+	return body, nil
 }
 
 func (p *Podium) buildURL(pathname string) string {
@@ -172,153 +191,152 @@ func (p *Podium) buildHealthcheckURL() string {
 }
 
 // GetTop returns the top members for this leaderboard. Page is 1-index
-func (p *Podium) GetTop(leaderboard string, page int, pageSize int) (int, *MemberList, error) {
+func (p *Podium) GetTop(leaderboard string, page int, pageSize int) (*MemberList, error) {
 	route := p.buildGetTopURL(leaderboard, page, pageSize)
-	status, body, err := p.sendTo("GET", route, nil)
-
+	body, err := p.sendTo("GET", route, nil)
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var members MemberList
 	err = json.Unmarshal(body, &members)
 
-	return status, &members, err
+	return &members, err
 }
 
 // GetTopPercent returns the top x% of members in a leaderboard
-func (p *Podium) GetTopPercent(leaderboard string, percentage int) (int, *MemberList, error) {
+func (p *Podium) GetTopPercent(leaderboard string, percentage int) (*MemberList, error) {
 	route := p.buildGetTopPercentURL(leaderboard, percentage)
-	status, body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo("GET", route, nil)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var members MemberList
 	err = json.Unmarshal(body, &members)
 
-	return status, &members, err
+	return &members, err
 }
 
 // UpdateScore updates the score of a particular member in a leaderboard
-func (p *Podium) UpdateScore(leaderboard string, memberID string, score int) (int, *MemberList, error) {
+func (p *Podium) UpdateScore(leaderboard string, memberID string, score int) (*MemberList, error) {
 	route := p.buildUpdateScoreURL(leaderboard, memberID)
 	payload := map[string]interface{}{
 		"score": score,
 	}
-	status, body, err := p.sendTo("PUT", route, payload)
+	body, err := p.sendTo("PUT", route, payload)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var member MemberList
 	err = json.Unmarshal(body, &member)
 
-	return status, &member, err
+	return &member, err
 }
 
 // IncrementScore increments the score of a particular member in a leaderboard
-func (p *Podium) IncrementScore(leaderboard string, memberID string, increment int) (int, *MemberList, error) {
+func (p *Podium) IncrementScore(leaderboard string, memberID string, increment int) (*MemberList, error) {
 	route := p.buildIncrementScoreURL(leaderboard, memberID)
 	payload := map[string]interface{}{
 		"increment": increment,
 	}
-	status, body, err := p.sendTo("PATCH", route, payload)
+	body, err := p.sendTo("PATCH", route, payload)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var member MemberList
 	err = json.Unmarshal(body, &member)
 
-	return status, &member, err
+	return &member, err
 }
 
 // UpdateScores updates the score of a member in more than one leaderboard
-func (p *Podium) UpdateScores(leaderboards []string, memberID string, score int) (int, *ScoreList, error) {
+func (p *Podium) UpdateScores(leaderboards []string, memberID string, score int) (*ScoreList, error) {
 	route := p.buildUpdateScoresURL(memberID)
 	payload := map[string]interface{}{
 		"score":        score,
 		"leaderboards": leaderboards,
 	}
-	status, body, err := p.sendTo("PUT", route, payload)
+	body, err := p.sendTo("PUT", route, payload)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var scores ScoreList
 	err = json.Unmarshal(body, &scores)
 
-	return status, &scores, err
+	return &scores, err
 }
 
 // RemoveMemberFromLeaderboard removes a member from a leaderboard
-func (p *Podium) RemoveMemberFromLeaderboard(leaderboard string, member string) (int, *Response, error) {
+func (p *Podium) RemoveMemberFromLeaderboard(leaderboard string, member string) (*Response, error) {
 	route := p.buildRemoveMemberFromLeaderboardURL(leaderboard, member)
-	status, body, err := p.sendTo("DELETE", route, nil)
+	body, err := p.sendTo("DELETE", route, nil)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var response Response
 	err = json.Unmarshal(body, &response)
 
-	return status, &response, err
+	return &response, err
 }
 
 // GetMember shows score and rank of a particular member in a leaderboard
-func (p *Podium) GetMember(leaderboard string, memberID string) (int, *Member, error) {
+func (p *Podium) GetMember(leaderboard string, memberID string) (*Member, error) {
 	route := p.buildGetMemberURL(leaderboard, memberID)
-	status, body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo("GET", route, nil)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var member Member
 	err = json.Unmarshal(body, &member)
 
-	return status, &member, err
+	return &member, err
 }
 
 // GetMembers returns the members for this leaderboard. Page is 1-index
-func (p *Podium) GetMembers(leaderboard string, memberIDs []string) (int, *MemberList, error) {
+func (p *Podium) GetMembers(leaderboard string, memberIDs []string) (*MemberList, error) {
 	route := p.buildGetMembersURL(leaderboard, memberIDs)
-	status, body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo("GET", route, nil)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var members MemberList
 	err = json.Unmarshal(body, &members)
 
-	return status, &members, err
+	return &members, err
 }
 
 // Healthcheck verifies if podium is still up
-func (p *Podium) Healthcheck() (int, string, error) {
+func (p *Podium) Healthcheck() (string, error) {
 	route := p.buildHealthcheckURL()
-	status, body, err := p.sendTo("GET", route, nil)
-	return status, string(body), err
+	body, err := p.sendTo("GET", route, nil)
+	return string(body), err
 }
 
 // DeleteLeaderboard deletes the leaderboard from podium
-func (p *Podium) DeleteLeaderboard(leaderboard string) (int, *Response, error) {
+func (p *Podium) DeleteLeaderboard(leaderboard string) (*Response, error) {
 	route := p.buildDeleteLeaderboardURL(leaderboard)
-	status, body, err := p.sendTo("DELETE", route, nil)
+	body, err := p.sendTo("DELETE", route, nil)
 
 	if err != nil {
-		return -1, nil, err
+		return nil, err
 	}
 
 	var response Response
 	err = json.Unmarshal(body, &response)
 
-	return status, &response, err
+	return &response, err
 }

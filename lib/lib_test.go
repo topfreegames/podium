@@ -1,8 +1,6 @@
 package lib_test
 
 import (
-	"net/http"
-
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/lib"
 	httpmock "gopkg.in/jarcoal/httpmock.v1"
@@ -50,9 +48,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1 } ] }`))
 
-			status, members, err := p.GetTop(leaderboard, 1, 1)
+			members, err := p.GetTop(leaderboard, 1, 1)
 
-			Expect(status).To(Equal(200))
 			Expect(members).NotTo(BeNil())
 			Expect(members.Members[0].PublicID).To(Equal("1"))
 			Expect(members.Members[0].Score).To(Equal(2))
@@ -70,9 +67,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1 } ] }`))
 
-			status, members, err := p.GetTopPercent(leaderboard, 1)
+			members, err := p.GetTopPercent(leaderboard, 1)
 
-			Expect(status).To(Equal(200))
 			Expect(members).NotTo(BeNil())
 			Expect(members.Members[0].PublicID).To(Equal("1"))
 			Expect(members.Members[0].Score).To(Equal(2))
@@ -90,9 +86,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "1", "score": 2, "rank": 1 } }`))
 
-			status, members, err := p.UpdateScore(leaderboard, "1", 10)
+			members, err := p.UpdateScore(leaderboard, "1", 10)
 
-			Expect(status).To(Equal(200))
 			Expect(members).NotTo(BeNil())
 			Expect(members.Member.PublicID).To(Equal("1"))
 			Expect(members.Member.Score).To(Equal(2))
@@ -109,9 +104,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PATCH", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "123", "score": 12, "rank": 1 } }`))
 
-			status, members, err := p.IncrementScore(leaderboard, "1", 10)
+			members, err := p.IncrementScore(leaderboard, "1", 10)
 
-			Expect(status).To(Equal(200))
 			Expect(members).NotTo(BeNil())
 			Expect(members.Member.PublicID).To(Equal("123"))
 			Expect(members.Member.Score).To(Equal(12))
@@ -129,9 +123,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "scores": [ { "leaderboardID": "brazil", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 } ] }`))
 
-			status, scores, err := p.UpdateScores([]string{leaderboard1, leaderboard2}, "1", 10)
+			scores, err := p.UpdateScores([]string{leaderboard1, leaderboard2}, "1", 10)
 
-			Expect(status).To(Equal(200))
 			Expect(scores).NotTo(BeNil())
 			Expect(scores.Scores[0]).NotTo(BeNil())
 			Expect(scores.Scores[0].LeaderboardID).To(Equal("brazil"))
@@ -149,9 +142,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("DELETE", url,
 				httpmock.NewStringResponder(200, `{ "success": true }`))
 
-			status, res, err := p.RemoveMemberFromLeaderboard(leaderboard, "1")
+			res, err := p.RemoveMemberFromLeaderboard(leaderboard, "1")
 
-			Expect(status).To(Equal(200))
 			Expect(res).NotTo(BeNil())
 			Expect(res.Success).To(BeTrue())
 			Expect(res.Reason).To(BeEmpty())
@@ -168,9 +160,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true,  "publicID": "1", "score": 2, "rank": 1 }`))
 
-			status, member, err := p.GetMember(leaderboard, "1")
+			member, err := p.GetMember(leaderboard, "1")
 
-			Expect(status).To(Equal(200))
 			Expect(member).NotTo(BeNil())
 			Expect(member.PublicID).To(Equal("1"))
 			Expect(member.Score).To(Equal(2))
@@ -194,10 +185,9 @@ var _ = Describe("Lib", func() {
 					"notFound": ["2"]
 				}`))
 
-			status, members, err := p.GetMembers(leaderboard, []string{"1", "2", "3"})
+			members, err := p.GetMembers(leaderboard, []string{"1", "2", "3"})
 
 			Expect(err).To(BeNil())
-			Expect(status).To(Equal(200))
 			Expect(members).NotTo(BeNil())
 			Expect(members.Members[0].PublicID).To(Equal("1"))
 			Expect(members.Members[0].Score).To(Equal(5))
@@ -217,9 +207,8 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("DELETE", url,
 				httpmock.NewStringResponder(200, `{ "success": true }`))
 
-			status, res, err := p.DeleteLeaderboard(leaderboard)
+			res, err := p.DeleteLeaderboard(leaderboard)
 
-			Expect(status).To(Equal(200))
 			Expect(res).NotTo(BeNil())
 			Expect(res.Success).To(BeTrue())
 			Expect(err).NotTo(HaveOccurred())
@@ -233,21 +222,20 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `WORKING`))
 
-			status, body, err := p.Healthcheck()
+			body, err := p.Healthcheck()
 
-			Expect(status).To(Equal(http.StatusOK))
 			Expect(body).To(Equal("WORKING"))
 			Expect(err).ToNot(HaveOccurred())
 		})
+
 		It("Should not respond if server is down", func() {
 			//set podium url to be wrong
 			config.Set("podium.url", "http://localhostel")
 			p = lib.NewPodium(config)
 
-			status, body, err := p.Healthcheck()
+			body, err := p.Healthcheck()
 
 			Expect(err).To(HaveOccurred())
-			Expect(status).NotTo(Equal(200))
 			Expect(body).NotTo(Equal("WORKING"))
 		})
 	})
