@@ -75,8 +75,8 @@
     "orm",
     "types"
   ]
-  revision = "24dfe0572921e42ffe1035f7afbd40f9d97cb8c8"
-  version = "v6.10.0"
+  revision = "8c7fa0eed0d9e9d07fca2cc9e08e3171da0521d5"
+  version = "v6.13.5"
 
 [[projects]]
   name = "github.com/go-redis/redis"
@@ -390,8 +390,8 @@
     "redis",
     "redis/interfaces"
   ]
-  revision = "9e3083be648e081c03da86f39dc433da0cabe92c"
-  version = "v5.19.0"
+  revision = "7f9f792ff8bd20093937810a38992fa3eb7c2cbc"
+  version = "v6.2.1"
 
 [[projects]]
   name = "github.com/uber-go/atomic"
@@ -528,6 +528,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8616ac482d7778df33a83a41d5f9d00843d009064d39ae5a76fea7f05b1b7de8"
+  inputs-digest = "b8a8cd9b027392e4e5e4b506c7658663f0e839fc69b4d6f940424992d71e3674"
   solver-name = "gps-cdcl"
   solver-version = 1
