@@ -48,7 +48,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1 } ] }`))
 
-			members, err := p.GetTop(leaderboard, 1, 1)
+			members, err := p.GetTop(nil, leaderboard, 1, 1)
 
 			Expect(members).NotTo(BeNil())
 			Expect(members.Members[0].PublicID).To(Equal("1"))
@@ -67,7 +67,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1 } ] }`))
 
-			members, err := p.GetTopPercent(leaderboard, 1)
+			members, err := p.GetTopPercent(nil, leaderboard, 1)
 
 			Expect(members).NotTo(BeNil())
 			Expect(members.Members[0].PublicID).To(Equal("1"))
@@ -86,7 +86,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "1", "score": 2, "rank": 1 } }`))
 
-			members, err := p.UpdateScore(leaderboard, "1", 10)
+			members, err := p.UpdateScore(nil, leaderboard, "1", 10)
 
 			Expect(members).NotTo(BeNil())
 			Expect(members.Member.PublicID).To(Equal("1"))
@@ -104,7 +104,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PATCH", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "123", "score": 12, "rank": 1 } }`))
 
-			members, err := p.IncrementScore(leaderboard, "1", 10)
+			members, err := p.IncrementScore(nil, leaderboard, "1", 10)
 
 			Expect(members).NotTo(BeNil())
 			Expect(members.Member.PublicID).To(Equal("123"))
@@ -123,7 +123,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "scores": [ { "leaderboardID": "brazil", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 } ] }`))
 
-			scores, err := p.UpdateScores([]string{leaderboard1, leaderboard2}, "1", 10)
+			scores, err := p.UpdateScores(nil, []string{leaderboard1, leaderboard2}, "1", 10)
 
 			Expect(scores).NotTo(BeNil())
 			Expect(scores.Scores[0]).NotTo(BeNil())
@@ -142,7 +142,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("DELETE", url,
 				httpmock.NewStringResponder(200, `{ "success": true }`))
 
-			res, err := p.RemoveMemberFromLeaderboard(leaderboard, "1")
+			res, err := p.RemoveMemberFromLeaderboard(nil, leaderboard, "1")
 
 			Expect(res).NotTo(BeNil())
 			Expect(res.Success).To(BeTrue())
@@ -160,7 +160,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true,  "publicID": "1", "score": 2, "rank": 1 }`))
 
-			member, err := p.GetMember(leaderboard, "1")
+			member, err := p.GetMember(nil, leaderboard, "1")
 
 			Expect(member).NotTo(BeNil())
 			Expect(member.PublicID).To(Equal("1"))
@@ -185,7 +185,7 @@ var _ = Describe("Lib", func() {
 					"notFound": ["2"]
 				}`))
 
-			members, err := p.GetMembers(leaderboard, []string{"1", "2", "3"})
+			members, err := p.GetMembers(nil, leaderboard, []string{"1", "2", "3"})
 
 			Expect(err).To(BeNil())
 			Expect(members).NotTo(BeNil())
@@ -207,7 +207,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("DELETE", url,
 				httpmock.NewStringResponder(200, `{ "success": true }`))
 
-			res, err := p.DeleteLeaderboard(leaderboard)
+			res, err := p.DeleteLeaderboard(nil, leaderboard)
 
 			Expect(res).NotTo(BeNil())
 			Expect(res.Success).To(BeTrue())
@@ -222,7 +222,7 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `WORKING`))
 
-			body, err := p.Healthcheck()
+			body, err := p.Healthcheck(nil)
 
 			Expect(body).To(Equal("WORKING"))
 			Expect(err).ToNot(HaveOccurred())
@@ -233,7 +233,7 @@ var _ = Describe("Lib", func() {
 			config.Set("podium.url", "http://localhostel")
 			p = lib.NewPodium(config)
 
-			body, err := p.Healthcheck()
+			body, err := p.Healthcheck(nil)
 
 			Expect(err).To(HaveOccurred())
 			Expect(body).NotTo(Equal("WORKING"))

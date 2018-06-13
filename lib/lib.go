@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -95,7 +96,7 @@ func NewPodium(config *viper.Viper) PodiumInterface {
 	return p
 }
 
-func (p *Podium) sendTo(method, url string, payload map[string]interface{}) ([]byte, error) {
+func (p *Podium) sendTo(ctx context.Context, method, url string, payload map[string]interface{}) ([]byte, error) {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -116,6 +117,10 @@ func (p *Podium) sendTo(method, url string, payload map[string]interface{}) ([]b
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(p.User, p.Pass)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	req = req.WithContext(ctx)
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
@@ -191,9 +196,9 @@ func (p *Podium) buildHealthcheckURL() string {
 }
 
 // GetTop returns the top members for this leaderboard. Page is 1-index
-func (p *Podium) GetTop(leaderboard string, page int, pageSize int) (*MemberList, error) {
+func (p *Podium) GetTop(ctx context.Context, leaderboard string, page int, pageSize int) (*MemberList, error) {
 	route := p.buildGetTopURL(leaderboard, page, pageSize)
-	body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo(ctx, "GET", route, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,9 +210,9 @@ func (p *Podium) GetTop(leaderboard string, page int, pageSize int) (*MemberList
 }
 
 // GetTopPercent returns the top x% of members in a leaderboard
-func (p *Podium) GetTopPercent(leaderboard string, percentage int) (*MemberList, error) {
+func (p *Podium) GetTopPercent(ctx context.Context, leaderboard string, percentage int) (*MemberList, error) {
 	route := p.buildGetTopPercentURL(leaderboard, percentage)
-	body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo(ctx, "GET", route, nil)
 
 	if err != nil {
 		return nil, err
@@ -220,12 +225,12 @@ func (p *Podium) GetTopPercent(leaderboard string, percentage int) (*MemberList,
 }
 
 // UpdateScore updates the score of a particular member in a leaderboard
-func (p *Podium) UpdateScore(leaderboard string, memberID string, score int) (*MemberList, error) {
+func (p *Podium) UpdateScore(ctx context.Context, leaderboard string, memberID string, score int) (*MemberList, error) {
 	route := p.buildUpdateScoreURL(leaderboard, memberID)
 	payload := map[string]interface{}{
 		"score": score,
 	}
-	body, err := p.sendTo("PUT", route, payload)
+	body, err := p.sendTo(ctx, "PUT", route, payload)
 
 	if err != nil {
 		return nil, err
@@ -238,12 +243,12 @@ func (p *Podium) UpdateScore(leaderboard string, memberID string, score int) (*M
 }
 
 // IncrementScore increments the score of a particular member in a leaderboard
-func (p *Podium) IncrementScore(leaderboard string, memberID string, increment int) (*MemberList, error) {
+func (p *Podium) IncrementScore(ctx context.Context, leaderboard string, memberID string, increment int) (*MemberList, error) {
 	route := p.buildIncrementScoreURL(leaderboard, memberID)
 	payload := map[string]interface{}{
 		"increment": increment,
 	}
-	body, err := p.sendTo("PATCH", route, payload)
+	body, err := p.sendTo(ctx, "PATCH", route, payload)
 
 	if err != nil {
 		return nil, err
@@ -256,13 +261,13 @@ func (p *Podium) IncrementScore(leaderboard string, memberID string, increment i
 }
 
 // UpdateScores updates the score of a member in more than one leaderboard
-func (p *Podium) UpdateScores(leaderboards []string, memberID string, score int) (*ScoreList, error) {
+func (p *Podium) UpdateScores(ctx context.Context, leaderboards []string, memberID string, score int) (*ScoreList, error) {
 	route := p.buildUpdateScoresURL(memberID)
 	payload := map[string]interface{}{
 		"score":        score,
 		"leaderboards": leaderboards,
 	}
-	body, err := p.sendTo("PUT", route, payload)
+	body, err := p.sendTo(ctx, "PUT", route, payload)
 
 	if err != nil {
 		return nil, err
@@ -275,9 +280,9 @@ func (p *Podium) UpdateScores(leaderboards []string, memberID string, score int)
 }
 
 // RemoveMemberFromLeaderboard removes a member from a leaderboard
-func (p *Podium) RemoveMemberFromLeaderboard(leaderboard string, member string) (*Response, error) {
+func (p *Podium) RemoveMemberFromLeaderboard(ctx context.Context, leaderboard string, member string) (*Response, error) {
 	route := p.buildRemoveMemberFromLeaderboardURL(leaderboard, member)
-	body, err := p.sendTo("DELETE", route, nil)
+	body, err := p.sendTo(ctx, "DELETE", route, nil)
 
 	if err != nil {
 		return nil, err
@@ -290,9 +295,9 @@ func (p *Podium) RemoveMemberFromLeaderboard(leaderboard string, member string) 
 }
 
 // GetMember shows score and rank of a particular member in a leaderboard
-func (p *Podium) GetMember(leaderboard string, memberID string) (*Member, error) {
+func (p *Podium) GetMember(ctx context.Context, leaderboard string, memberID string) (*Member, error) {
 	route := p.buildGetMemberURL(leaderboard, memberID)
-	body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo(ctx, "GET", route, nil)
 
 	if err != nil {
 		return nil, err
@@ -305,9 +310,9 @@ func (p *Podium) GetMember(leaderboard string, memberID string) (*Member, error)
 }
 
 // GetMembers returns the members for this leaderboard. Page is 1-index
-func (p *Podium) GetMembers(leaderboard string, memberIDs []string) (*MemberList, error) {
+func (p *Podium) GetMembers(ctx context.Context, leaderboard string, memberIDs []string) (*MemberList, error) {
 	route := p.buildGetMembersURL(leaderboard, memberIDs)
-	body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo(ctx, "GET", route, nil)
 
 	if err != nil {
 		return nil, err
@@ -320,16 +325,16 @@ func (p *Podium) GetMembers(leaderboard string, memberIDs []string) (*MemberList
 }
 
 // Healthcheck verifies if podium is still up
-func (p *Podium) Healthcheck() (string, error) {
+func (p *Podium) Healthcheck(ctx context.Context) (string, error) {
 	route := p.buildHealthcheckURL()
-	body, err := p.sendTo("GET", route, nil)
+	body, err := p.sendTo(ctx, "GET", route, nil)
 	return string(body), err
 }
 
 // DeleteLeaderboard deletes the leaderboard from podium
-func (p *Podium) DeleteLeaderboard(leaderboard string) (*Response, error) {
+func (p *Podium) DeleteLeaderboard(ctx context.Context, leaderboard string) (*Response, error) {
 	route := p.buildDeleteLeaderboardURL(leaderboard)
-	body, err := p.sendTo("DELETE", route, nil)
+	body, err := p.sendTo(ctx, "DELETE", route, nil)
 
 	if err != nil {
 		return nil, err
