@@ -381,8 +381,10 @@
     "dogstatsd",
     "echo",
     "echo/middleware",
+    "http",
     "jaeger",
     "jaeger/echo",
+    "jaeger/http",
     "jaeger/redis",
     "middleware",
     "oauth2",
@@ -528,6 +530,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b8a8cd9b027392e4e5e4b506c7658663f0e839fc69b4d6f940424992d71e3674"
+  inputs-digest = "720e03b4325f5d5eaa033ed8fa54fee2c66726bc38c2d06935620dd8223cd092"
   solver-name = "gps-cdcl"
   solver-version = 1

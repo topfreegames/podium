@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
+	ehttp "github.com/topfreegames/extensions/http"
 )
 
 type requestError struct {
@@ -77,17 +79,21 @@ type Response struct {
 	Reason  string
 }
 
-func getHTTPClient() *http.Client {
+func getHTTPClient(timeoutMs int) *http.Client {
 	once.Do(func() {
-		client = &http.Client{}
+		client = &http.Client{
+			Timeout: time.Duration(timeoutMs) & time.Millisecond,
+		}
+		ehttp.Instrument(client)
 	})
 	return client
 }
 
 // NewPodium returns a new podium API application
 func NewPodium(config *viper.Viper) PodiumInterface {
+	config.SetDefault("podium.timeout", 1000)
 	p := &Podium{
-		httpClient: getHTTPClient(),
+		httpClient: getHTTPClient(config.GetInt("podium.timeout")),
 		Config:     config,
 		URL:        config.GetString("podium.url"),
 		User:       config.GetString("podium.user"),
