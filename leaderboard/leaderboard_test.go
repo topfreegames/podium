@@ -89,7 +89,7 @@ var _ = Describe("Leaderboard Model", func() {
 			testLeaderboard := NewLeaderboard(redisClient.Client, lbName, 10, logger)
 			_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 			Expect(err).NotTo(HaveOccurred())
-			redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
+			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
 			result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			redisExpirationSetKey := "expiration-sets"
@@ -102,7 +102,8 @@ var _ = Describe("Leaderboard Model", func() {
 			result3, err := redisClient.Client.ZRangeWithScores(redisLBExpirationKey, 0, 1).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3[0].Member).To(Equal("denix"))
-			Expect(result3[0].Score).To(BeNumerically("<=", time.Now().Unix()))
+			ttlInt, _ := strconv.ParseInt(ttl, 10, 64)
+			Expect(result3[0].Score).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
 		})
 
 		It("should set scores and return previous ranks", func() {

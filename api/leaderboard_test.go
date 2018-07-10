@@ -153,13 +153,13 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should insert successfully with expiration if scoreTTL argument is sent", func() {
-			ttl := "100"
+			ttl := 100
 			lbName := "testkey"
 
 			payload := map[string]interface{}{
 				"score": 100,
 			}
-			status, body := PutJSON(a, fmt.Sprintf("/l/%s/members/memberpublicid/score?scoreTTL=%s", lbName, ttl), payload)
+			status, body := PutJSON(a, fmt.Sprintf("/l/%s/members/memberpublicid/score?scoreTTL=%d", lbName, ttl), payload)
 			Expect(status).To(Equal(http.StatusOK), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
@@ -174,7 +174,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.Score).To(Equal(100))
 			Expect(member.PublicID).To(Equal("memberpublicid"))
 
-			redisLBExpirationKey := fmt.Sprintf("%s:ttl:%s", lbName, ttl)
+			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
 			result2, err := a.RedisClient.Client.Exists(redisLBExpirationKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(Equal(int64(1)))
@@ -188,7 +188,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			result4, err := a.RedisClient.Client.ZRangeWithScores(redisLBExpirationKey, 0, 1).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result4[0].Member).To(Equal("memberpublicid"))
-			Expect(result4[0].Score).To(BeNumerically("<=", time.Now().Unix()))
+			Expect(result4[0].Score).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 		})
 
 		It("Should set correct member score in redis and respond with previous rank", func() {

@@ -106,8 +106,9 @@ func getSetScoreScript(operation string) *redis.Script {
 		end
 
 		if (score_ttl ~= "inf") then
-		  local expiration_set_key = KEYS[1]..":ttl:"..score_ttl
-			redis.call("ZADD", expiration_set_key, ARGV[5], KEYS[2])
+			local expiration_set_key = KEYS[1]..":ttl"
+			local expire_at = ARGV[5] + score_ttl
+			redis.call("ZADD", expiration_set_key, expire_at, KEYS[2])
 			redis.call("SADD", "expiration-sets", expiration_set_key)
 		end
 

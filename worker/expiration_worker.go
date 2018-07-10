@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -171,20 +170,16 @@ func (w *ExpirationWorker) expireScores() ([]*ExpirationResult, error) {
 	}
 	l.Debug("expiring scores", zap.Object("sets", expirationSets))
 	for _, set := range expirationSets {
-		setSplitted := strings.Split(set, ":")
-		expirationTTLStr := setSplitted[len(setSplitted)-1]
-		// remove :ttl:<expirationTTL> from the key
-		leaderboardName := strings.Join(setSplitted[:len(setSplitted)-2], ":")
-		expirationTTL, err := strconv.Atoi(expirationTTLStr)
-		if err != nil {
-			l.Error("error expiring scores", zap.Error(err))
+		ttlSuffix := ":ttl"
+		if !(strings.HasSuffix(set, ttlSuffix)) {
+			l.Warn("invalid epiration set", zap.String("set", set))
 			continue
 		}
-		l.Debug("expiring scores from set", zap.String("set", set), zap.Int("TTL", expirationTTL))
-		maxTimeLastActivity := strconv.Itoa(int(time.Now().Unix()) - expirationTTL)
+		leaderboardName := strings.TrimSuffix(set, ttlSuffix)
+		l.Debug("expiring scores from set", zap.String("set", set))
 
 		expirationScript := w.getExpireScoresScript()
-		result, err := expirationScript.Run(w.RedisClient.Client, []string{leaderboardName, set}, maxTimeLastActivity).Result()
+		result, err := expirationScript.Run(w.RedisClient.Client, []string{leaderboardName, set}, time.Now().Unix()).Result()
 		if err != nil {
 			return nil, err
 		}
@@ -199,7 +194,6 @@ func (w *ExpirationWorker) expireScores() ([]*ExpirationResult, error) {
 		l.Info("expired members from set",
 			zap.String("leaderboardName", leaderboardName),
 			zap.String("set", set),
-			zap.Int("TTL", expirationTTL),
 			zap.Int64("deletedMembersCount", deletedMembersCount),
 			zap.Bool("deletedSet", deletedSet),
 		)
