@@ -24,7 +24,7 @@ var notFoundError = "Could not find data for member"
 var noPageSizeProvidedError = "strconv.ParseInt: parsing \"\": invalid syntax"
 var defaultPageSize = 20
 
-func serializeMember(member *leaderboard.Member, position int) map[string]interface{} {
+func serializeMember(member *leaderboard.Member, position int, includeTTL bool) map[string]interface{} {
 	memberData := map[string]interface{}{
 		"publicID": member.PublicID,
 		"score":    member.Score,
@@ -36,16 +36,19 @@ func serializeMember(member *leaderboard.Member, position int) map[string]interf
 	if position >= 0 {
 		memberData["position"] = position
 	}
+	if includeTTL {
+		memberData["expireAt"] = member.ExpireAt
+	}
 	return memberData
 }
 
-func serializeMembers(members []*leaderboard.Member, includePosition bool) []map[string]interface{} {
+func serializeMembers(members []*leaderboard.Member, includePosition bool, includeTTL bool) []map[string]interface{} {
 	serializedMembers := make([]map[string]interface{}, len(members))
 	for i, member := range members {
 		if includePosition {
-			serializedMembers[i] = serializeMember(member, i)
+			serializedMembers[i] = serializeMember(member, i, includeTTL)
 		} else {
-			serializedMembers[i] = serializeMember(member, -1)
+			serializedMembers[i] = serializeMember(member, -1, includeTTL)
 		}
 	}
 	return serializedMembers
@@ -105,8 +108,7 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 		if err != nil {
 			return FailWithError(err, c)
 		}
-
-		return SucceedWith(serializeMember(member, -1), c)
+		return SucceedWith(serializeMember(member, -1, scoreTTL != ""), c)
 	}
 }
 
@@ -148,7 +150,7 @@ func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
 			return FailWithError(err, c)
 		}
 
-		return SucceedWith(serializeMember(member, -1), c)
+		return SucceedWith(serializeMember(member, -1, scoreTTL != ""), c)
 	}
 }
 
@@ -233,14 +235,13 @@ func GetMemberHandler(app *App) func(c echo.Context) error {
 
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
-
+		scoreTTL := c.QueryParam("scoreTTL") == "true"
 		var member *leaderboard.Member
 		status := 404
 		err := WithSegment("Model", c, func() error {
 			var err error
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
-			member, err = l.GetMember(memberPublicID, order)
-
+			member, err = l.GetMember(memberPublicID, order, scoreTTL)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 				app.AddError()
 				status = 404
@@ -256,7 +257,7 @@ func GetMemberHandler(app *App) func(c echo.Context) error {
 			return FailWith(status, err.Error(), c)
 		}
 
-		return SucceedWith(serializeMember(member, -1), c)
+		return SucceedWith(serializeMember(member, -1, scoreTTL), c)
 	}
 }
 
@@ -315,6 +316,7 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 		if order == "" || (order != "asc" && order != "desc") {
 			order = "desc"
 		}
+		scoreTTL := c.QueryParam("scoreTTL") == "true"
 
 		if ids == "" {
 			app.AddError()
@@ -328,7 +330,7 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 		err := WithSegment("Model", c, func() error {
 			for i, leaderboardID := range leaderboardIDs {
 				l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
-				member, err := l.GetMember(memberPublicID, order)
+				member, err := l.GetMember(memberPublicID, order, scoreTTL)
 				if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 					app.AddError()
 					status = 404
@@ -342,6 +344,9 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 					"leaderboardID": leaderboardID,
 					"rank":          member.Rank,
 					"score":         member.Score,
+				}
+				if scoreTTL {
+					serializedScores[i]["expireAt"] = member.ExpireAt
 				}
 			}
 			return nil
@@ -401,7 +406,7 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 		}
 
 		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false),
+			"members": serializeMembers(members, false, false),
 		}, c)
 	}
 }
@@ -450,7 +455,7 @@ func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 		}
 
 		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false),
+			"members": serializeMembers(members, false, false),
 		}, c)
 	}
 }
@@ -526,7 +531,7 @@ func GetTopMembersHandler(app *App) func(c echo.Context) error {
 		}
 
 		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false),
+			"members": serializeMembers(members, false, false),
 		}, c)
 	}
 }
@@ -579,7 +584,7 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 		}
 
 		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false),
+			"members": serializeMembers(members, false, false),
 		}, c)
 	}
 }
@@ -595,6 +600,7 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 		if order == "" || (order != "asc" && order != "desc") {
 			order = "desc"
 		}
+		scoreTTL := c.QueryParam("scoreTTL") == "true"
 
 		leaderboardID := c.Param("leaderboardID")
 		ids := c.QueryParam("ids")
@@ -609,7 +615,7 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 		err := WithSegment("Model", c, func() error {
 			var err error
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, defaultPageSize, lg)
-			members, err = l.GetMembers(memberIDs, order)
+			members, err = l.GetMembers(memberIDs, order, scoreTTL)
 
 			if err != nil {
 				app.AddError()
@@ -637,7 +643,7 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 		}
 
 		return SucceedWith(map[string]interface{}{
-			"members":  serializeMembers(members, true),
+			"members":  serializeMembers(members, true, scoreTTL),
 			"notFound": notFound,
 		}, c)
 	}
@@ -690,7 +696,7 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 					app.AddError()
 					return err
 				}
-				serializedScore := serializeMember(member, -1)
+				serializedScore := serializeMember(member, -1, scoreTTL != "")
 				serializedScore["leaderboardID"] = leaderboardID
 				serializedScores[i] = serializedScore
 			}

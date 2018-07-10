@@ -47,6 +47,7 @@ type Member struct {
 	Score        int
 	Rank         int
 	PreviousRank int
+	ExpireAt     int
 }
 
 //Members are a list of member
@@ -105,9 +106,10 @@ func getSetScoreScript(operation string) *redis.Script {
 			end
 		end
 
+		local expire_at = "nil"
 		if (score_ttl ~= "inf") then
 			local expiration_set_key = KEYS[1]..":ttl"
-			local expire_at = ARGV[5] + score_ttl
+			expire_at = ARGV[5] + score_ttl
 			redis.call("ZADD", expiration_set_key, expire_at, KEYS[2])
 			redis.call("SADD", "expiration-sets", expiration_set_key)
 		end
@@ -115,7 +117,7 @@ func getSetScoreScript(operation string) *redis.Script {
 		-- return updated rank of member
 		local rank = tonumber(redis.call("ZREVRANK", KEYS[1], KEYS[2]))
 		local score = tonumber(redis.call("ZSCORE", KEYS[1], KEYS[2]))
-		return {rank,score,prev_rank}
+		return {rank,score,prev_rank,expire_at}
 	`, operation, operation))
 }
 
@@ -232,6 +234,9 @@ func (lb *Leaderboard) AddToLeaderboardSet(memberID string, score int, prevRank 
 	r := int(newRank.([]interface{})[0].(int64)) + 1
 	pr := int(newRank.([]interface{})[2].(int64)) + 1
 	member := &Member{PublicID: memberID, Score: score, Rank: r, PreviousRank: pr}
+	if scoreTTL != "" {
+		member.ExpireAt = int(newRank.([]interface{})[3].(int64))
+	}
 	l.Debug("Rank for member retrieved successfully.", zap.Int("newRank", r))
 	return member, err
 }
@@ -271,6 +276,9 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 
 	l.Debug("Member score increment set successfully.")
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank}
+	if scoreTTL != "" {
+		nMember.ExpireAt = int(result.([]interface{})[3].(int64))
+	}
 	return &nMember, err
 }
 
@@ -375,7 +383,7 @@ func (lb *Leaderboard) TotalPages() (int, error) {
 }
 
 // GetMember returns the score and the rank of the member with the given ID
-func (lb *Leaderboard) GetMember(memberID string, order string) (*Member, error) {
+func (lb *Leaderboard) GetMember(memberID string, order string, includeTTL bool) (*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetMember"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -397,15 +405,20 @@ func (lb *Leaderboard) GetMember(memberID string, order string) (*Member, error)
 		-- Script params:
 		-- KEYS[1] is the name of the leaderboard
 		-- KEYS[2] is member's public ID
+		-- ARGV[1] is a bool indicating whether the score ttl should be retrieved
 
+        local score_ttl = ARGV[1] == "true"
 		-- gets rank of the member
 		local rank = redis.call("` + operations["rank_"+order] + `", KEYS[1], KEYS[2])
 		local score = redis.call("ZSCORE", KEYS[1], KEYS[2])
-
+        if score_ttl then
+			local expire_at = redis.call("ZSCORE", KEYS[1]..":ttl", KEYS[2])
+			return {rank,score,expire_at}
+        end
 		return {rank,score}
 	`)
 
-	result, err := script.Run(cli, []string{lb.PublicID, memberID}).Result()
+	result, err := script.Run(cli, []string{lb.PublicID, memberID}, strconv.FormatBool(includeTTL)).Result()
 	if err != nil {
 		l.Error("Getting member information failed.", zap.Error(err))
 		return nil, err
@@ -424,11 +437,17 @@ func (lb *Leaderboard) GetMember(memberID string, order string) (*Member, error)
 
 	l.Debug("Member information found.", zap.Int("rank", rank), zap.Int("score", score))
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank + 1}
+	if includeTTL {
+		if expireAtStr, ok := res[2].(string); ok {
+			expireAtParsed, _ := strconv.ParseInt(expireAtStr, 10, 32)
+			nMember.ExpireAt = int(expireAtParsed)
+		}
+	}
 	return &nMember, nil
 }
 
 // GetMembers returns the score and the rank of the members with the given IDs
-func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, error) {
+func (lb *Leaderboard) GetMembers(memberIDs []string, order string, includeTTL bool) ([]*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetMembers"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -446,7 +465,9 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, 
 		-- Script params:
 		-- KEYS[1] is the name of the leaderboard
 		-- ARGV[1] is member's public IDs
+		-- ARGV[2] is a bool indicating whether the score ttl should be retrieved
 
+        local score_ttl = ARGV[2] == "true"
 		local members = {}
 
 		for publicID in string.gmatch(ARGV[1], '([^,]+)') do
@@ -457,12 +478,19 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, 
 			table.insert(members, publicID)
 			table.insert(members, rank)
 			table.insert(members, score)
+
+			if score_ttl then
+				local expire_at = redis.call("ZSCORE", KEYS[1]..":ttl", publicID)
+				table.insert(members, expire_at)
+			else
+				table.insert(members, "nil")
+			end
 		end
 
 		return members
 	`)
 
-	result, err := script.Run(cli, []string{lb.PublicID}, strings.Join(memberIDs, ",")).Result()
+	result, err := script.Run(cli, []string{lb.PublicID}, strings.Join(memberIDs, ","), strconv.FormatBool(includeTTL)).Result()
 	if err != nil {
 		l.Error("Getting members information failed.", zap.Error(err))
 		return nil, err
@@ -470,7 +498,7 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, 
 
 	res := result.([]interface{})
 	members := Members{}
-	for i := 0; i < len(res); i += 3 {
+	for i := 0; i < len(res); i += 4 {
 		memberPublicID := res[i].(string)
 		if res[i+1] == nil || res[i+2] == nil {
 			continue
@@ -479,12 +507,19 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string) ([]*Member, 
 		rank := int(res[i+1].(int64)) + 1
 		s, _ := strconv.ParseInt(res[i+2].(string), 10, 32)
 		score := int(s)
-
-		members = append(members, &Member{
+		member := &Member{
 			PublicID: memberPublicID,
 			Score:    score,
 			Rank:     rank,
-		})
+		}
+		if includeTTL {
+			if expireAtStr, ok := res[i+3].(string); ok {
+				expireAtParsed, _ := strconv.ParseInt(expireAtStr, 10, 32)
+				member.ExpireAt = int(expireAtParsed)
+			}
+		}
+
+		members = append(members, member)
 	}
 
 	l.Debug("Members information found.")
@@ -505,7 +540,7 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFo
 	}
 
 	l.Debug("Getting information about members around a specific member...")
-	currentMember, err := lb.GetMember(memberID, order)
+	currentMember, err := lb.GetMember(memberID, order, false)
 	_, memberNotFound := err.(*MemberNotFoundError)
 	if (err != nil && !memberNotFound) || (memberNotFound && !getLastIfNotFound) {
 		return nil, err

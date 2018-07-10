@@ -257,19 +257,50 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(dayvson.Rank).To(Equal(1))
 			Expect(felipe.Rank).To(Equal(2))
 			friendScore.SetMemberScore("felipe", 12346, false, "")
-			felipe, err = friendScore.GetMember("felipe", "desc")
+			felipe, err = friendScore.GetMember("felipe", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
-			dayvson, err = friendScore.GetMember("dayvson", "desc")
+			dayvson, err = friendScore.GetMember("dayvson", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(felipe.Rank).To(Equal(1))
 			Expect(dayvson.Rank).To(Equal(2))
+		})
+
+		It("should return member details including score expiration", func() {
+			friendScore := NewLeaderboard(redisClient.Client, uuid.NewV4().String(), 10, logger)
+			dayvson, err := friendScore.SetMemberScore("dayvson", 12345, false, "10")
+			Expect(err).NotTo(HaveOccurred())
+			felipe, err := friendScore.SetMemberScore("felipe", 12344, false, "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(dayvson.Rank).To(Equal(1))
+			Expect(felipe.Rank).To(Equal(2))
+			friendScore.SetMemberScore("felipe", 12346, false, "")
+			felipe, err = friendScore.GetMember("felipe", "desc", true)
+			Expect(err).NotTo(HaveOccurred())
+			dayvson, err = friendScore.GetMember("dayvson", "desc", true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(felipe.Rank).To(Equal(1))
+			Expect(dayvson.Rank).To(Equal(2))
+			Expect(felipe.ExpireAt).To(Equal(0))
+			Expect(dayvson.ExpireAt).To(BeNumerically("~", time.Now().Unix()+10, 1))
 		})
 
 		It("should fail if member does not exist", func() {
 			leaderboardID := uuid.NewV4().String()
 			friendScore := NewLeaderboard(redisClient.Client, leaderboardID, 10, logger)
 			memberID := uuid.NewV4().String()
-			member, err := friendScore.GetMember(memberID, "desc")
+			member, err := friendScore.GetMember(memberID, "desc", false)
+			Expect(member).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(
+				fmt.Sprintf("Could not find data for member %s in leaderboard %s.", memberID, leaderboardID)),
+			)
+		})
+
+		It("should fail if member does not exist and should include expiration timestamp", func() {
+			leaderboardID := uuid.NewV4().String()
+			friendScore := NewLeaderboard(redisClient.Client, leaderboardID, 10, logger)
+			memberID := uuid.NewV4().String()
+			member, err := friendScore.GetMember(memberID, "desc", true)
 			Expect(member).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(
@@ -280,7 +311,7 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should fail if faulty redis client", func() {
 			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 10, logger)
 			testLeaderboard.RedisClient = faultyRedisClient.Client
-			_, err := testLeaderboard.GetMember("qwe", "desc")
+			_, err := testLeaderboard.GetMember("qwe", "desc", false)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
@@ -829,7 +860,7 @@ var _ = Describe("Leaderboard Model", func() {
 				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i, false, "")
 			}
 
-			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "desc")
+			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members).To(HaveLen(3))
 
@@ -852,7 +883,7 @@ var _ = Describe("Leaderboard Model", func() {
 				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i, false, "")
 			}
 
-			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "asc")
+			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "asc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members).To(HaveLen(3))
 
@@ -869,9 +900,39 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(members[2].Score).To(Equal(90))
 		})
 
+		It("should return all member details including score expiration timestamp", func() {
+			lb := NewLeaderboard(redisClient.Client, uuid.NewV4().String(), 10, logger)
+			for i := 1; i <= 100; i++ {
+				ttl := ""
+				if i%30 == 0 {
+					ttl = "15"
+				}
+				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i, false, ttl)
+			}
+
+			members, err := lb.GetMembers([]string{"member-10", "member-30", "member-20"}, "desc", true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(3))
+
+			Expect(members[0].PublicID).To(Equal("member-10"))
+			Expect(members[0].Rank).To(Equal(10))
+			Expect(members[0].Score).To(Equal(90))
+			Expect(members[0].ExpireAt).To(Equal(0))
+
+			Expect(members[1].PublicID).To(Equal("member-20"))
+			Expect(members[1].Rank).To(Equal(20))
+			Expect(members[1].Score).To(Equal(80))
+			Expect(members[1].ExpireAt).To(Equal(0))
+
+			Expect(members[2].PublicID).To(Equal("member-30"))
+			Expect(members[2].Rank).To(Equal(30))
+			Expect(members[2].ExpireAt).To(BeNumerically("~", time.Now().Unix()+15, 1))
+			Expect(members[2].Score).To(Equal(70))
+		})
+
 		It("should return empty list if invalid leaderboard id", func() {
 			lb := NewLeaderboard(redisClient.Client, uuid.NewV4().String(), 10, logger)
-			members, err := lb.GetMembers([]string{"test"}, "desc")
+			members, err := lb.GetMembers([]string{"test"}, "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(members).To(HaveLen(0))
@@ -884,7 +945,7 @@ var _ = Describe("Leaderboard Model", func() {
 				lb.SetMemberScore(fmt.Sprintf("member-%d", i), 100-i, false, "")
 			}
 
-			members, err := lb.GetMembers([]string{"member-0", "invalid-member"}, "desc")
+			members, err := lb.GetMembers([]string{"member-0", "invalid-member"}, "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(members).To(HaveLen(1))
@@ -895,7 +956,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail with faulty redis", func() {
 			lb := NewLeaderboard(faultyRedisClient.Client, uuid.NewV4().String(), 10, logger)
-			_, err := lb.GetMembers([]string{}, "desc")
+			_, err := lb.GetMembers([]string{}, "desc", false)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})

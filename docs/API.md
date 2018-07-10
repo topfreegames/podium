@@ -85,7 +85,8 @@ Podium API
           "publicID": [string]  // member public id
           "score":    [int],    // member updated score
           "rank":     [int],    // member current rank in leaderboard
-          "previousRank": [int]     // the previous rank of the player in the leaderboard, if requests
+          "previousRank": [int] // the previous rank of the player in the leaderboard, if requests
+	  "expireAt": [int]     // unix timestamp of when the score will be expired, if scoreTTL is sent
         }
       }
       ```
@@ -145,6 +146,7 @@ Podium API
           "publicID": [string]  // member public id
           "score":    [int],    // member updated score
           "rank":     [int],    // member current rank in leaderboard
+	  "expireAt": [int]     // unix timestamp of when the score will be expired, if scoreTTL is sent
         }
       }
       ```
@@ -209,6 +211,10 @@ Podium API
     * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/members/:memberPublicID?order=asc`
     * defaults to "desc"
+  * scoreTTL=[true|false]
+    * if set to true, will return the member's score expiration unix timestamp
+    * e.g. `GET /l/:leaderboardID/members/:memberPublicID?scoreTTL=true`
+    * defaults to "false"
 
   Gets a member score and rank within a leaderboard.
 
@@ -223,6 +229,7 @@ Podium API
         "publicID": [string]  // member public id
         "score":    [int],    // member updated score
         "rank":     [int],    // member current rank in leaderboard
+	"expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
       }
       ```
 
@@ -256,6 +263,11 @@ Podium API
     * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /l/:leaderboardID/members?ids=publicIDcsv?order=asc`
     * defaults to "desc"
+  * scoreTTL=[true|false]
+    * if set to true, will return the member's score expiration unix timestamp
+    * e.g. `GET /l/:leaderboardID/members?ids=publicIDcsv?scoreTTL=true`
+    * defaults to "false"
+
 
   Gets multiple members' score and ranks within a leaderboard.
 
@@ -274,6 +286,7 @@ Podium API
             "rank": [int],          // member rank in the specific leaderboard
             "position": [int],      // member rank for all members returned in this request
             "score": [int],         // member score in the leaderboard
+	    "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
           }
         ],
         "notFound": [
@@ -341,6 +354,10 @@ Podium API
     * if set to asc, will treat the ranking with ascending scores (less is best)
     * e.g. `GET /m/:memberPublicID/scores?leaderboardIds=leaderboard1,leaderboard2,...?order=asc`
     * defaults to "desc"
+  * scoreTTL=[true|false]
+    * if set to true, will return the member's score expiration unix timestamp
+    * e.g. `GET /m/:memberPublicID/scores?leaderboardIds=leaderboard1,leaderboard2,...?scoreTTL=true`
+    * defaults to "false"
 
   Get a member score and rank within many leaderboards.
 
@@ -357,11 +374,13 @@ Podium API
             "leaderboardID": "teste",
             "rank": 1,
             "score": 100
+	    "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
           },
           {
             "leaderboardID": "teste2",
             "rank": 1,
             "score": 100
+	    "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
           }
         ],
         "success": true
