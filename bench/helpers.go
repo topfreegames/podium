@@ -77,10 +77,10 @@ func sendTo(method, url string, payload map[string]interface{}) (int, string, er
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		return -1, "", err
 	}
+	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 

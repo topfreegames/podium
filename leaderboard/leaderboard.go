@@ -234,7 +234,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(memberID string, score int, prevRank 
 	r := int(newRank.([]interface{})[0].(int64)) + 1
 	pr := int(newRank.([]interface{})[2].(int64)) + 1
 	member := &Member{PublicID: memberID, Score: score, Rank: r, PreviousRank: pr}
-	if scoreTTL != "" {
+	if scoreTTL != "" && scoreTTL != "inf" {
 		member.ExpireAt = int(newRank.([]interface{})[3].(int64))
 	}
 	l.Debug("Rank for member retrieved successfully.", zap.Int("newRank", r))
@@ -276,7 +276,7 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 
 	l.Debug("Member score increment set successfully.")
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank}
-	if scoreTTL != "" {
+	if scoreTTL != "" && scoreTTL != "inf" {
 		nMember.ExpireAt = int(result.([]interface{})[3].(int64))
 	}
 	return &nMember, err
