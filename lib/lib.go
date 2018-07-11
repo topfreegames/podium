@@ -21,7 +21,8 @@ type RequestError struct {
 	body       string
 }
 
-func newRequestError(statusCode int, body string) *RequestError {
+// NewRequestError returns a request error
+func NewRequestError(statusCode int, body string) *RequestError {
 	return &RequestError{
 		statusCode: statusCode,
 		body:       body,
@@ -146,7 +147,7 @@ func (p *Podium) sendTo(ctx context.Context, method, url string, payload map[str
 	}
 
 	if resp.StatusCode > 399 {
-		return nil, newRequestError(resp.StatusCode, string(body))
+		return nil, NewRequestError(resp.StatusCode, string(body))
 	}
 
 	return body, nil
