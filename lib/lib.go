@@ -15,20 +15,26 @@ import (
 	ehttp "github.com/topfreegames/extensions/http"
 )
 
-type requestError struct {
+// RequestError contains code and body of a request that failed
+type RequestError struct {
 	statusCode int
 	body       string
 }
 
-func newRequestError(statusCode int, body string) *requestError {
-	return &requestError{
+func newRequestError(statusCode int, body string) *RequestError {
+	return &RequestError{
 		statusCode: statusCode,
 		body:       body,
 	}
 }
 
-func (r *requestError) Error() string {
+func (r *RequestError) Error() string {
 	return fmt.Sprintf("Request error. Status code: %d. Body: %s", r.statusCode, r.body)
+}
+
+// Status returns the status code of the error
+func (r *RequestError) Status() int {
+	return r.statusCode
 }
 
 // Podium is a struct that represents a podium API application
