@@ -113,16 +113,16 @@ func (mr *MockPodiumInterfaceMockRecorder) Healthcheck(arg0 interface{}) *gomock
 }
 
 // IncrementScore mocks base method
-func (m *MockPodiumInterface) IncrementScore(arg0 context.Context, arg1, arg2 string, arg3 int) (*lib.MemberList, error) {
-	ret := m.ctrl.Call(m, "IncrementScore", arg0, arg1, arg2, arg3)
+func (m *MockPodiumInterface) IncrementScore(arg0 context.Context, arg1, arg2 string, arg3, arg4 int) (*lib.MemberList, error) {
+	ret := m.ctrl.Call(m, "IncrementScore", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*lib.MemberList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IncrementScore indicates an expected call of IncrementScore
-func (mr *MockPodiumInterfaceMockRecorder) IncrementScore(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementScore", reflect.TypeOf((*MockPodiumInterface)(nil).IncrementScore), arg0, arg1, arg2, arg3)
+func (mr *MockPodiumInterfaceMockRecorder) IncrementScore(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementScore", reflect.TypeOf((*MockPodiumInterface)(nil).IncrementScore), arg0, arg1, arg2, arg3, arg4)
 }
 
 // RemoveMemberFromLeaderboard mocks base method
@@ -139,27 +139,27 @@ func (mr *MockPodiumInterfaceMockRecorder) RemoveMemberFromLeaderboard(arg0, arg
 }
 
 // UpdateScore mocks base method
-func (m *MockPodiumInterface) UpdateScore(arg0 context.Context, arg1, arg2 string, arg3 int) (*lib.MemberList, error) {
-	ret := m.ctrl.Call(m, "UpdateScore", arg0, arg1, arg2, arg3)
+func (m *MockPodiumInterface) UpdateScore(arg0 context.Context, arg1, arg2 string, arg3, arg4 int) (*lib.MemberList, error) {
+	ret := m.ctrl.Call(m, "UpdateScore", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*lib.MemberList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateScore indicates an expected call of UpdateScore
-func (mr *MockPodiumInterfaceMockRecorder) UpdateScore(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScore", reflect.TypeOf((*MockPodiumInterface)(nil).UpdateScore), arg0, arg1, arg2, arg3)
+func (mr *MockPodiumInterfaceMockRecorder) UpdateScore(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScore", reflect.TypeOf((*MockPodiumInterface)(nil).UpdateScore), arg0, arg1, arg2, arg3, arg4)
 }
 
 // UpdateScores mocks base method
-func (m *MockPodiumInterface) UpdateScores(arg0 context.Context, arg1 []string, arg2 string, arg3 int) (*lib.ScoreList, error) {
-	ret := m.ctrl.Call(m, "UpdateScores", arg0, arg1, arg2, arg3)
+func (m *MockPodiumInterface) UpdateScores(arg0 context.Context, arg1 []string, arg2 string, arg3, arg4 int) (*lib.ScoreList, error) {
+	ret := m.ctrl.Call(m, "UpdateScores", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*lib.ScoreList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateScores indicates an expected call of UpdateScores
-func (mr *MockPodiumInterfaceMockRecorder) UpdateScores(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScores", reflect.TypeOf((*MockPodiumInterface)(nil).UpdateScores), arg0, arg1, arg2, arg3)
+func (mr *MockPodiumInterfaceMockRecorder) UpdateScores(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScores", reflect.TypeOf((*MockPodiumInterface)(nil).UpdateScores), arg0, arg1, arg2, arg3, arg4)
 }
