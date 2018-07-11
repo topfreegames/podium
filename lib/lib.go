@@ -160,32 +160,34 @@ func (p *Podium) buildGetTopPercentURL(leaderboard string, percentage int) strin
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildUpdateScoreURL(leaderboard string, memberID string) string {
+func (p *Podium) buildUpdateScoreURL(leaderboard, memberID string, scoreTTL int) string {
 	var pathname = fmt.Sprintf("/l/%s/members/%s/score", leaderboard, memberID)
+	pathname = p.appendScoreTTL(pathname, scoreTTL)
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildIncrementScoreURL(leaderboard string, memberID string) string {
-	return p.buildUpdateScoreURL(leaderboard, memberID)
+func (p *Podium) buildIncrementScoreURL(leaderboard, memberID string, scoreTTL int) string {
+	return p.buildUpdateScoreURL(leaderboard, memberID, scoreTTL)
 }
 
-func (p *Podium) buildUpdateScoresURL(memberID string) string {
+func (p *Podium) buildUpdateScoresURL(memberID string, scoreTTL int) string {
 	var pathname = fmt.Sprintf("/m/%s/scores", memberID)
+	pathname = p.appendScoreTTL(pathname, scoreTTL)
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildRemoveMemberFromLeaderboardURL(leaderboard string, member string) string {
+func (p *Podium) buildRemoveMemberFromLeaderboardURL(leaderboard, member string) string {
 	var pathname = fmt.Sprintf("/l/%s/members/%s", leaderboard, member)
 	return p.buildURL(pathname)
 }
 
 // page is 1-based
-func (p *Podium) buildGetTopURL(leaderboard string, page int, pageSize int) string {
+func (p *Podium) buildGetTopURL(leaderboard string, page, pageSize int) string {
 	var pathname = fmt.Sprintf("/l/%s/top/%d?pageSize=%d", leaderboard, page, pageSize)
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildGetMemberURL(leaderboard string, memberID string) string {
+func (p *Podium) buildGetMemberURL(leaderboard, memberID string) string {
 	pathname := fmt.Sprintf("/l/%s/members/%s", leaderboard, memberID)
 	return p.buildURL(pathname)
 }
@@ -201,8 +203,16 @@ func (p *Podium) buildHealthcheckURL() string {
 	return p.buildURL(pathname)
 }
 
+func (p *Podium) appendScoreTTL(pathname string, scoreTTL int) string {
+	if scoreTTL <= 0 {
+		return pathname
+	}
+
+	return fmt.Sprintf("%s?scoreTTL=%d", pathname, scoreTTL)
+}
+
 // GetTop returns the top members for this leaderboard. Page is 1-index
-func (p *Podium) GetTop(ctx context.Context, leaderboard string, page int, pageSize int) (*MemberList, error) {
+func (p *Podium) GetTop(ctx context.Context, leaderboard string, page, pageSize int) (*MemberList, error) {
 	route := p.buildGetTopURL(leaderboard, page, pageSize)
 	body, err := p.sendTo(ctx, "GET", route, nil)
 	if err != nil {
@@ -231,8 +241,8 @@ func (p *Podium) GetTopPercent(ctx context.Context, leaderboard string, percenta
 }
 
 // UpdateScore updates the score of a particular member in a leaderboard
-func (p *Podium) UpdateScore(ctx context.Context, leaderboard string, memberID string, score int) (*MemberList, error) {
-	route := p.buildUpdateScoreURL(leaderboard, memberID)
+func (p *Podium) UpdateScore(ctx context.Context, leaderboard, memberID string, score, scoreTTL int) (*MemberList, error) {
+	route := p.buildUpdateScoreURL(leaderboard, memberID, scoreTTL)
 	payload := map[string]interface{}{
 		"score": score,
 	}
@@ -249,8 +259,8 @@ func (p *Podium) UpdateScore(ctx context.Context, leaderboard string, memberID s
 }
 
 // IncrementScore increments the score of a particular member in a leaderboard
-func (p *Podium) IncrementScore(ctx context.Context, leaderboard string, memberID string, increment int) (*MemberList, error) {
-	route := p.buildIncrementScoreURL(leaderboard, memberID)
+func (p *Podium) IncrementScore(ctx context.Context, leaderboard, memberID string, increment, scoreTTL int) (*MemberList, error) {
+	route := p.buildIncrementScoreURL(leaderboard, memberID, scoreTTL)
 	payload := map[string]interface{}{
 		"increment": increment,
 	}
@@ -267,8 +277,8 @@ func (p *Podium) IncrementScore(ctx context.Context, leaderboard string, memberI
 }
 
 // UpdateScores updates the score of a member in more than one leaderboard
-func (p *Podium) UpdateScores(ctx context.Context, leaderboards []string, memberID string, score int) (*ScoreList, error) {
-	route := p.buildUpdateScoresURL(memberID)
+func (p *Podium) UpdateScores(ctx context.Context, leaderboards []string, memberID string, score, scoreTTL int) (*ScoreList, error) {
+	route := p.buildUpdateScoresURL(memberID, scoreTTL)
 	payload := map[string]interface{}{
 		"score":        score,
 		"leaderboards": leaderboards,
@@ -286,7 +296,7 @@ func (p *Podium) UpdateScores(ctx context.Context, leaderboards []string, member
 }
 
 // RemoveMemberFromLeaderboard removes a member from a leaderboard
-func (p *Podium) RemoveMemberFromLeaderboard(ctx context.Context, leaderboard string, member string) (*Response, error) {
+func (p *Podium) RemoveMemberFromLeaderboard(ctx context.Context, leaderboard, member string) (*Response, error) {
 	route := p.buildRemoveMemberFromLeaderboardURL(leaderboard, member)
 	body, err := p.sendTo(ctx, "DELETE", route, nil)
 
@@ -301,7 +311,7 @@ func (p *Podium) RemoveMemberFromLeaderboard(ctx context.Context, leaderboard st
 }
 
 // GetMember shows score and rank of a particular member in a leaderboard
-func (p *Podium) GetMember(ctx context.Context, leaderboard string, memberID string) (*Member, error) {
+func (p *Podium) GetMember(ctx context.Context, leaderboard, memberID string) (*Member, error) {
 	route := p.buildGetMemberURL(leaderboard, memberID)
 	body, err := p.sendTo(ctx, "GET", route, nil)
 

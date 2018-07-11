@@ -86,7 +86,23 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "1", "score": 2, "rank": 1 } }`))
 
-			members, err := p.UpdateScore(nil, leaderboard, "1", 10)
+			members, err := p.UpdateScore(nil, leaderboard, "1", 10, 0)
+
+			Expect(members).NotTo(BeNil())
+			Expect(members.Member.PublicID).To(Equal("1"))
+			Expect(members.Member.Score).To(Equal(2))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should call API to update score of a member with TTL", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/members/1/score?scoreTTL=10"
+			httpmock.RegisterResponder("PUT", url,
+				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "1", "score": 2, "rank": 1 } }`))
+
+			members, err := p.UpdateScore(nil, leaderboard, "1", 10, 10)
 
 			Expect(members).NotTo(BeNil())
 			Expect(members.Member.PublicID).To(Equal("1"))
@@ -104,7 +120,23 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PATCH", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "123", "score": 12, "rank": 1 } }`))
 
-			members, err := p.IncrementScore(nil, leaderboard, "1", 10)
+			members, err := p.IncrementScore(nil, leaderboard, "1", 10, 0)
+
+			Expect(members).NotTo(BeNil())
+			Expect(members.Member.PublicID).To(Equal("123"))
+			Expect(members.Member.Score).To(Equal(12))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should call API to increment score of a member with TTL", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/members/1/score?scoreTTL=10"
+			httpmock.RegisterResponder("PATCH", url,
+				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "123", "score": 12, "rank": 1 } }`))
+
+			members, err := p.IncrementScore(nil, leaderboard, "1", 10, 10)
 
 			Expect(members).NotTo(BeNil())
 			Expect(members.Member.PublicID).To(Equal("123"))
@@ -123,7 +155,25 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "scores": [ { "leaderboardID": "brazil", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 } ] }`))
 
-			scores, err := p.UpdateScores(nil, []string{leaderboard1, leaderboard2}, "1", 10)
+			scores, err := p.UpdateScores(nil, []string{leaderboard1, leaderboard2}, "1", 10, 0)
+
+			Expect(scores).NotTo(BeNil())
+			Expect(scores.Scores[0]).NotTo(BeNil())
+			Expect(scores.Scores[0].LeaderboardID).To(Equal("brazil"))
+			Expect(scores.Scores[0].PublicID).To(Equal("1"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should call API to update scores of a member in different leaderboards with TTL", func() {
+			leaderboard1 := globalLeaderboard
+			leaderboard2 := localeLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/m/1/scores?scoreTTL=10"
+			httpmock.RegisterResponder("PUT", url,
+				httpmock.NewStringResponder(200, `{ "success": true, "scores": [ { "leaderboardID": "brazil", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 } ] }`))
+
+			scores, err := p.UpdateScores(nil, []string{leaderboard1, leaderboard2}, "1", 10, 10)
 
 			Expect(scores).NotTo(BeNil())
 			Expect(scores.Scores[0]).NotTo(BeNil())
