@@ -139,9 +139,9 @@ func (mr *MockPodiumInterfaceMockRecorder) RemoveMemberFromLeaderboard(arg0, arg
 }
 
 // UpdateScore mocks base method
-func (m *MockPodiumInterface) UpdateScore(arg0 context.Context, arg1, arg2 string, arg3, arg4 int) (*lib.MemberList, error) {
+func (m *MockPodiumInterface) UpdateScore(arg0 context.Context, arg1, arg2 string, arg3, arg4 int) (*lib.Member, error) {
 	ret := m.ctrl.Call(m, "UpdateScore", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(*lib.MemberList)
+	ret0, _ := ret[0].(*lib.Member)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

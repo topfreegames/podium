@@ -248,7 +248,7 @@ func (p *Podium) GetTopPercent(ctx context.Context, leaderboard string, percenta
 }
 
 // UpdateScore updates the score of a particular member in a leaderboard
-func (p *Podium) UpdateScore(ctx context.Context, leaderboard, memberID string, score, scoreTTL int) (*MemberList, error) {
+func (p *Podium) UpdateScore(ctx context.Context, leaderboard, memberID string, score, scoreTTL int) (*Member, error) {
 	route := p.buildUpdateScoreURL(leaderboard, memberID, scoreTTL)
 	payload := map[string]interface{}{
 		"score": score,
@@ -259,10 +259,10 @@ func (p *Podium) UpdateScore(ctx context.Context, leaderboard, memberID string, 
 		return nil, err
 	}
 
-	var member MemberList
-	err = json.Unmarshal(body, &member)
+	member := new(Member)
+	err = json.Unmarshal(body, member)
 
-	return &member, err
+	return member, err
 }
 
 // IncrementScore increments the score of a particular member in a leaderboard
