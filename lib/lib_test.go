@@ -50,11 +50,11 @@ var _ = Describe("Lib", func() {
 
 			members, err := p.GetTop(nil, leaderboard, 1, 1)
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(members).NotTo(BeNil())
 			Expect(members.Members[0].PublicID).To(Equal("1"))
 			Expect(members.Members[0].Score).To(Equal(2))
 			Expect(len(members.Members)).To(Equal(1))
-			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -84,13 +84,13 @@ var _ = Describe("Lib", func() {
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1/score"
 			httpmock.RegisterResponder("PUT", url,
-				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "1", "score": 2, "rank": 1 } }`))
+				httpmock.NewStringResponder(200, `{ "success": true, "publicID": "1", "score": 2, "rank": 1 }`))
 
-			members, err := p.UpdateScore(nil, leaderboard, "1", 10, 0)
+			member, err := p.UpdateScore(nil, leaderboard, "1", 10, 0)
 
-			Expect(members).NotTo(BeNil())
-			Expect(members.Member.PublicID).To(Equal("1"))
-			Expect(members.Member.Score).To(Equal(2))
+			Expect(member).NotTo(BeNil())
+			Expect(member.PublicID).To(Equal("1"))
+			Expect(member.Score).To(Equal(2))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -100,13 +100,13 @@ var _ = Describe("Lib", func() {
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1/score?scoreTTL=10"
 			httpmock.RegisterResponder("PUT", url,
-				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "1", "score": 2, "rank": 1 } }`))
+				httpmock.NewStringResponder(200, `{ "success": true, "publicID": "1", "score": 2, "rank": 1 }`))
 
-			members, err := p.UpdateScore(nil, leaderboard, "1", 10, 10)
+			member, err := p.UpdateScore(nil, leaderboard, "1", 10, 10)
 
-			Expect(members).NotTo(BeNil())
-			Expect(members.Member.PublicID).To(Equal("1"))
-			Expect(members.Member.Score).To(Equal(2))
+			Expect(member).NotTo(BeNil())
+			Expect(member.PublicID).To(Equal("1"))
+			Expect(member.Score).To(Equal(2))
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -215,6 +215,58 @@ var _ = Describe("Lib", func() {
 			Expect(member).NotTo(BeNil())
 			Expect(member.PublicID).To(Equal("1"))
 			Expect(member.Score).To(Equal(2))
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Describe("GetMembersAroundMember", func() {
+		It("Should call API to retrieve members around a specific member", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/members/pid1/around?pageSize=10"
+			httpmock.RegisterResponder("GET", url,
+				httpmock.NewStringResponder(200, `
+				{
+					"members": [
+							{
+									"publicID": "pid2",
+									"rank": 1,
+									"score": 200
+							},
+							{
+									"publicID": "pid1",
+									"rank": 2,
+									"score": 100
+							},
+							{
+									"publicID": "pid6",
+									"rank": 3,
+									"score": 99
+							},
+							{
+									"publicID": "pid3",
+									"rank": 4,
+									"score": 80
+							},
+							{
+									"publicID": "pid4",
+									"rank": 5,
+									"score": 20
+							},
+							{
+									"publicID": "pid5",
+									"rank": 6,
+									"score": 1
+							}
+					],
+					"success": true
+				}		
+				`))
+
+			members, err := p.GetMembersAroundMember(nil, leaderboard, "pid1", 10)
+
+			Expect(members).NotTo(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
