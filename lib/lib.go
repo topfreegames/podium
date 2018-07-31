@@ -86,10 +86,10 @@ type Response struct {
 	Reason  string
 }
 
-func getHTTPClient(timeoutMs int) *http.Client {
+func getHTTPClient(timeout time.Duration) *http.Client {
 	once.Do(func() {
 		client = &http.Client{
-			Timeout: time.Duration(timeoutMs) & time.Millisecond,
+			Timeout: timeout,
 		}
 		ehttp.Instrument(client)
 	})
@@ -98,9 +98,9 @@ func getHTTPClient(timeoutMs int) *http.Client {
 
 // NewPodium returns a new podium API application
 func NewPodium(config *viper.Viper) PodiumInterface {
-	config.SetDefault("podium.timeout", 1000)
+	config.SetDefault("podium.timeout", 1*time.Second)
 	p := &Podium{
-		httpClient: getHTTPClient(config.GetInt("podium.timeout")),
+		httpClient: getHTTPClient(config.GetDuration("podium.timeout")),
 		Config:     config,
 		URL:        config.GetString("podium.url"),
 		User:       config.GetString("podium.user"),
@@ -196,6 +196,11 @@ func (p *Podium) buildGetTopURL(leaderboard string, page, pageSize int) string {
 
 func (p *Podium) buildGetMemberURL(leaderboard, memberID string) string {
 	pathname := fmt.Sprintf("/l/%s/members/%s", leaderboard, memberID)
+	return p.buildURL(pathname)
+}
+
+func (p *Podium) buildGetMembersAroundMemberURL(leaderboard, memberID string, pageSize int) string {
+	pathname := fmt.Sprintf("/l/%s/members/%s/around?pageSize=%d", leaderboard, memberID, pageSize)
 	return p.buildURL(pathname)
 }
 
@@ -330,6 +335,22 @@ func (p *Podium) GetMember(ctx context.Context, leaderboard, memberID string) (*
 	err = json.Unmarshal(body, &member)
 
 	return &member, err
+}
+
+// GetMembersAroundMember returns the members around the given memberID
+func (p *Podium) GetMembersAroundMember(ctx context.Context, leaderboard, memberID string, pageSize int) (*MemberList, error) {
+	route := p.buildGetMembersAroundMemberURL(leaderboard, memberID, pageSize)
+
+	body, err := p.sendTo(ctx, "GET", route, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var members MemberList
+	err = json.Unmarshal(body, &members)
+
+	return &members, err
 }
 
 // GetMembers returns the members for this leaderboard. Page is 1-index

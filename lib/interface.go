@@ -11,6 +11,7 @@ type PodiumInterface interface {
 	UpdateScores(ctx context.Context, leaderboards []string, memberID string, score, scoreTTL int) (*ScoreList, error)
 	RemoveMemberFromLeaderboard(ctx context.Context, leaderboard, member string) (*Response, error)
 	GetMember(ctx context.Context, leaderboard, memberID string) (*Member, error)
+	GetMembersAroundMember(ctx context.Context, leaderboard, memberID string, pageSize int) (*MemberList, error)
 	GetMembers(ctx context.Context, leaderboard string, memberIDs []string) (*MemberList, error)
 	Healthcheck(ctx context.Context) (string, error)
 	DeleteLeaderboard(ctx context.Context, leaderboard string) (*Response, error)
