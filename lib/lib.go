@@ -54,10 +54,11 @@ var (
 
 // Member maps an member identified by their publicID to their score and rank
 type Member struct {
-	PublicID     string
-	Score        int
-	Rank         int
-	PreviousRank int
+	LeaderboardID string
+	PublicID      string
+	Score         int
+	Rank          int
+	PreviousRank  int
 }
 
 //MemberList is a list of member
