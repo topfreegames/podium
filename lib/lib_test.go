@@ -98,7 +98,7 @@ var _ = Describe("Lib", func() {
 			leaderboard := globalLeaderboard
 
 			//mock url that should be called
-			url := "http://podium/l/" + leaderboard + "/members/1/score?scoreTTL=10"
+			url := "http://podium/l/" + leaderboard + "/members/1/score?prevRank=true&scoreTTL=10"
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "publicID": "1", "score": 2, "rank": 1 }`))
 
@@ -132,7 +132,7 @@ var _ = Describe("Lib", func() {
 			leaderboard := globalLeaderboard
 
 			//mock url that should be called
-			url := "http://podium/l/" + leaderboard + "/members/1/score?scoreTTL=10"
+			url := "http://podium/l/" + leaderboard + "/members/1/score?prevRank=true&scoreTTL=10"
 			httpmock.RegisterResponder("PATCH", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "123", "score": 12, "rank": 1 } }`))
 
@@ -169,7 +169,7 @@ var _ = Describe("Lib", func() {
 			leaderboard2 := localeLeaderboard
 
 			//mock url that should be called
-			url := "http://podium/m/1/scores?scoreTTL=10"
+			url := "http://podium/m/1/scores?prevRank=true&scoreTTL=10"
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "scores": [ { "leaderboardID": "brazil", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 } ] }`))
 

@@ -54,10 +54,11 @@ var (
 
 // Member maps an member identified by their publicID to their score and rank
 type Member struct {
-	PublicID     string
-	Score        int
-	Rank         int
-	previousRank int
+	LeaderboardID string
+	PublicID      string
+	Score         int
+	Rank          int
+	PreviousRank  int
 }
 
 //MemberList is a list of member
@@ -73,6 +74,7 @@ type Score struct {
 	PublicID      string
 	Score         int
 	Rank          int
+	PreviousRank  int
 }
 
 //ScoreList is a list of Scores
@@ -169,7 +171,7 @@ func (p *Podium) buildGetTopPercentURL(leaderboard string, percentage int) strin
 
 func (p *Podium) buildUpdateScoreURL(leaderboard, memberID string, scoreTTL int) string {
 	var pathname = fmt.Sprintf("/l/%s/members/%s/score", leaderboard, memberID)
-	pathname = p.appendScoreTTL(pathname, scoreTTL)
+	pathname = p.appendScoreTTLAndPrevRank(pathname, scoreTTL)
 	return p.buildURL(pathname)
 }
 
@@ -179,7 +181,7 @@ func (p *Podium) buildIncrementScoreURL(leaderboard, memberID string, scoreTTL i
 
 func (p *Podium) buildUpdateScoresURL(memberID string, scoreTTL int) string {
 	var pathname = fmt.Sprintf("/m/%s/scores", memberID)
-	pathname = p.appendScoreTTL(pathname, scoreTTL)
+	pathname = p.appendScoreTTLAndPrevRank(pathname, scoreTTL)
 	return p.buildURL(pathname)
 }
 
@@ -215,12 +217,14 @@ func (p *Podium) buildHealthcheckURL() string {
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) appendScoreTTL(pathname string, scoreTTL int) string {
+func (p *Podium) appendScoreTTLAndPrevRank(pathname string, scoreTTL int) string {
+	pathname = fmt.Sprintf("%s?prevRank=true", pathname)
+
 	if scoreTTL <= 0 {
 		return pathname
 	}
 
-	return fmt.Sprintf("%s?scoreTTL=%d", pathname, scoreTTL)
+	return fmt.Sprintf("%s&scoreTTL=%d", pathname, scoreTTL)
 }
 
 // GetTop returns the top members for this leaderboard. Page is 1-index
