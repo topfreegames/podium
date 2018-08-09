@@ -47,6 +47,19 @@ func (mr *MockPodiumInterfaceMockRecorder) DeleteLeaderboard(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLeaderboard", reflect.TypeOf((*MockPodiumInterface)(nil).DeleteLeaderboard), arg0, arg1)
 }
 
+// GetCount mocks base method
+func (m *MockPodiumInterface) GetCount(arg0 context.Context, arg1 string) (int, error) {
+	ret := m.ctrl.Call(m, "GetCount", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCount indicates an expected call of GetCount
+func (mr *MockPodiumInterfaceMockRecorder) GetCount(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCount", reflect.TypeOf((*MockPodiumInterface)(nil).GetCount), arg0, arg1)
+}
+
 // GetMember mocks base method
 func (m *MockPodiumInterface) GetMember(arg0 context.Context, arg1, arg2 string) (*lib.Member, error) {
 	ret := m.ctrl.Call(m, "GetMember", arg0, arg1, arg2)
