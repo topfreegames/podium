@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Lib", func() {
-
 	var p lib.PodiumInterface
 	var config *viper.Viper
 	var globalLeaderboard string
@@ -216,6 +215,21 @@ var _ = Describe("Lib", func() {
 			Expect(member.PublicID).To(Equal("1"))
 			Expect(member.Score).To(Equal(2))
 			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Describe("GetCount", func() {
+		It("Should call API to retrieve count information", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/members-count"
+			httpmock.RegisterResponder("GET", url,
+				httpmock.NewStringResponder(200, `{ "success": true, "count": 123456 }`))
+
+			count, err := p.GetCount(nil, leaderboard)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(123456))
 		})
 	})
 

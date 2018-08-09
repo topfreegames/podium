@@ -201,6 +201,11 @@ func (p *Podium) buildGetMemberURL(leaderboard, memberID string) string {
 	return p.buildURL(pathname)
 }
 
+func (p *Podium) buildGetCountURL(leaderboard string) string {
+	pathname := fmt.Sprintf("/l/%s/members-count", leaderboard)
+	return p.buildURL(pathname)
+}
+
 func (p *Podium) buildGetMembersAroundMemberURL(leaderboard, memberID string, pageSize int) string {
 	pathname := fmt.Sprintf("/l/%s/members/%s/around?pageSize=%d", leaderboard, memberID, pageSize)
 	return p.buildURL(pathname)
@@ -392,4 +397,21 @@ func (p *Podium) DeleteLeaderboard(ctx context.Context, leaderboard string) (*Re
 	err = json.Unmarshal(body, &response)
 
 	return &response, err
+}
+
+// GetCount gets the number of members in a leaderboard
+func (p *Podium) GetCount(ctx context.Context, leaderboard string) (int, error) {
+	route := p.buildGetCountURL(leaderboard)
+	body, err := p.sendTo(ctx, "GET", route, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	type countResp struct {
+		Count int `json:"count"`
+	}
+	var count countResp
+	err = json.Unmarshal(body, &count)
+
+	return count.Count, err
 }
