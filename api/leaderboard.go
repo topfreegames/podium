@@ -424,7 +424,7 @@ func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 		}
 
 		leaderboardID := c.Param("leaderboardID")
-		score, err := strconv.Atoi(c.Param("score"))
+		score, err := strconv.ParseInt(c.Param("score"), 10, 64)
 		if err != nil {
 			return FailWith(400, "Score not sent or wrongly formatted", c)
 		}

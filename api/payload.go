@@ -70,7 +70,7 @@ func (s *incrementScorePayload) Validate() []string {
 }
 
 type setScorePayload struct {
-	Score int `json:"score"`
+	Score int64 `json:"score"`
 }
 
 func (s *setScorePayload) Validate() []string {
@@ -80,7 +80,7 @@ func (s *setScorePayload) Validate() []string {
 }
 
 type setScoresPayload struct {
-	Score        int      `json:"score"`
+	Score        int64    `json:"score"`
 	Leaderboards []string `json:"leaderboards"`
 }
 

@@ -37,7 +37,7 @@ func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi(in *jlexer.Lexer, out 
 		}
 		switch key {
 		case "score":
-			out.Score = int(in.Int())
+			out.Score = int64(in.Int64())
 		case "leaderboards":
 			if in.IsNull() {
 				in.Skip()
@@ -83,7 +83,7 @@ func easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi(out *jwriter.Writer, i
 		} else {
 			out.RawString(prefix)
 		}
-		out.Int(int(in.Score))
+		out.Int64(int64(in.Score))
 	}
 	{
 		const prefix string = ",\"leaderboards\":"
@@ -138,7 +138,7 @@ func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi1(in *jlexer.Lexer, out
 		}
 		switch key {
 		case "score":
-			out.Score = int(in.Int())
+			out.Score = int64(in.Int64())
 		default:
 			in.SkipRecursive()
 		}
@@ -161,7 +161,7 @@ func easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi1(out *jwriter.Writer, 
 		} else {
 			out.RawString(prefix)
 		}
-		out.Int(int(in.Score))
+		out.Int64(int64(in.Score))
 	}
 	out.RawByte('}')
 }

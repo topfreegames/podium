@@ -44,7 +44,7 @@ func NewMemberNotFound(leaderboardID, memberID string) *MemberNotFoundError {
 // Member maps an member identified by their publicID to their score and rank
 type Member struct {
 	PublicID     string
-	Score        int
+	Score        int64
 	Rank         int
 	PreviousRank int
 	ExpireAt     int
@@ -156,8 +156,8 @@ func GetMembersByRange(redisClient interfaces.RedisClient, leaderboard string, s
 	members := make([]*Member, len(values))
 	for i := 0; i < len(members); i++ {
 		publicID := values[i].Member.(string)
-		score := int(values[i].Score)
-		nMember := Member{PublicID: publicID, Score: score, Rank: int(startOffset + i + 1)}
+		score := values[i].Score
+		nMember := Member{PublicID: publicID, Score: int64(score), Rank: int(startOffset + i + 1)}
 		members[i] = &nMember
 	}
 	l.Debug("Retrieval of leaderboard members' details succeeded.")
@@ -166,19 +166,19 @@ func GetMembersByRange(redisClient interfaces.RedisClient, leaderboard string, s
 }
 
 // getMemberIDWithClosestScore returns a member in a given leaderboard with score >= the score provided
-func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard string, score int, l zap.Logger) (string, error) {
+func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard string, score int64, l zap.Logger) (string, error) {
 	cli := redisClient
 	l.Debug(
 		"Retrieving member with closest score.",
-		zap.Int("score", score),
+		zap.Int64("score", score),
 	)
 
-	values, err := cli.ZRevRangeByScore(leaderboard, redis.ZRangeBy{Min: "-inf", Max: strconv.Itoa(score), Offset: 0, Count: 1}).Result()
+	values, err := cli.ZRevRangeByScore(leaderboard, redis.ZRangeBy{Min: "-inf", Max: strconv.FormatInt(score, 10), Offset: 0, Count: 1}).Result()
 
 	if err != nil {
 		l.Error(
 			"Retrieval of member with closes score failed.",
-			zap.Int("score", score),
+			zap.Int64("score", score),
 			zap.Error(err),
 		)
 		return "", err
@@ -186,7 +186,7 @@ func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard
 
 	l.Debug(
 		"Retrieved member with closest score succeeded.",
-		zap.Int("score", score),
+		zap.Int64("score", score),
 	)
 
 	if len(values) < 1 {
@@ -202,7 +202,7 @@ func NewLeaderboard(redisClient interfaces.RedisClient, publicID string, pageSiz
 }
 
 //AddToLeaderboardSet adds a score to a leaderboard set respecting expiration
-func (lb *Leaderboard) AddToLeaderboardSet(memberID string, score int, prevRank bool, scoreTTL string) (*Member, error) {
+func (lb *Leaderboard) AddToLeaderboardSet(memberID string, score int64, prevRank bool, scoreTTL string) (*Member, error) {
 	cli := lb.RedisClient
 
 	l := lb.Logger.With(
@@ -210,7 +210,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(memberID string, score int, prevRank 
 		zap.String("leaguePublicID", lb.PublicID),
 		zap.String("memberID", memberID),
 		zap.String("scoreTTL", scoreTTL),
-		zap.Int("score", score),
+		zap.Int64("score", score),
 	)
 
 	l.Debug("Calculating expiration for leaderboard...")
@@ -272,7 +272,7 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 	}
 	l.Debug("Increment result from redis", zap.Object("result", result))
 	rank := int(result.([]interface{})[0].(int64)) + 1
-	score := int(result.([]interface{})[1].(int64))
+	score := result.([]interface{})[1].(int64)
 
 	l.Debug("Member score increment set successfully.")
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank}
@@ -283,13 +283,13 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 }
 
 // SetMemberScore sets the score to the member with the given ID
-func (lb *Leaderboard) SetMemberScore(memberID string, score int, prevRank bool, scoreTTL string) (*Member, error) {
+func (lb *Leaderboard) SetMemberScore(memberID string, score int64, prevRank bool, scoreTTL string) (*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "SetMemberScore"),
 		zap.String("leaguePublicID", lb.PublicID),
 		zap.String("memberID", memberID),
 		zap.String("scoreTTL", scoreTTL),
-		zap.Int("score", score),
+		zap.Int64("score", score),
 	)
 	l.Debug("Setting member score...")
 
@@ -432,10 +432,9 @@ func (lb *Leaderboard) GetMember(memberID string, order string, includeTTL bool)
 	}
 
 	rank := int(res[0].(int64))
-	scoreParsed, _ := strconv.ParseInt(res[1].(string), 10, 32)
-	score := int(scoreParsed)
+	score, _ := strconv.ParseInt(res[1].(string), 10, 64)
 
-	l.Debug("Member information found.", zap.Int("rank", rank), zap.Int("score", score))
+	l.Debug("Member information found.", zap.Int("rank", rank), zap.Int64("score", score))
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank + 1}
 	if includeTTL {
 		if expireAtStr, ok := res[2].(string); ok {
@@ -505,8 +504,7 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string, includeTTL b
 		}
 
 		rank := int(res[i+1].(int64)) + 1
-		s, _ := strconv.ParseInt(res[i+2].(string), 10, 32)
-		score := int(s)
+		score, _ := strconv.ParseInt(res[i+2].(string), 10, 64)
 		member := &Member{
 			PublicID: memberPublicID,
 			Score:    score,
@@ -579,11 +577,11 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFo
 }
 
 // GetAroundScore returns a page of results centered in the score provided
-func (lb *Leaderboard) GetAroundScore(score int, order string) ([]*Member, error) {
+func (lb *Leaderboard) GetAroundScore(score int64, order string) ([]*Member, error) {
 	l := lb.Logger.With(
 		zap.String("operation", "GetAroundScore"),
 		zap.String("leaguePublicID", lb.PublicID),
-		zap.String("score", strconv.Itoa(score)),
+		zap.Int64("score", score),
 	)
 
 	//GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, order, l)
@@ -727,8 +725,7 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int, order string) ([
 		memberPublicID := res[i].(string)
 
 		rank := int(res[i+1].(int64)) + 1
-		s, _ := strconv.ParseInt(res[i+2].(string), 10, 32)
-		score := int(s)
+		score, _ := strconv.ParseInt(res[i+2].(string), 10, 64)
 
 		members = append(members, &Member{
 			PublicID: memberPublicID,
