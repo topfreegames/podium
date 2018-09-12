@@ -63,13 +63,13 @@ A smoke test will perform all the available operations in a leaderboard and then
 		for i := 0; i < 100; i++ {
 			addMemberScore(leaderboardID, fmt.Sprintf("member-%d", i), 100-i)
 		}
-		fmt.Println("Member scores added to leaderboard successfully.\n")
+		fmt.Println("Member scores added to leaderboard successfully.")
 
 		fmt.Println("Getting member details from leaderboard...")
 		for i := 0; i < 100; i++ {
 			getMember(leaderboardID, fmt.Sprintf("member-%d", i))
 		}
-		fmt.Println("Member details retrieved successfully.\n")
+		fmt.Println("Member details retrieved successfully.")
 
 		fmt.Println("Getting many members from leaderboard...")
 		memberIDs := []string{}
@@ -77,37 +77,37 @@ A smoke test will perform all the available operations in a leaderboard and then
 			memberIDs = append(memberIDs, fmt.Sprintf("member-%d", i))
 		}
 		getMembers(leaderboardID, strings.Join(memberIDs, ","))
-		fmt.Println("Members retrieved successfully.\n")
+		fmt.Println("Members retrieved successfully.")
 
 		fmt.Println("Getting members ranks from leaderboard...")
 		for i := 0; i < 100; i++ {
 			getRank(leaderboardID, fmt.Sprintf("member-%d", i))
 		}
-		fmt.Println("Members ranks retrieved successfully.\n")
+		fmt.Println("Members ranks retrieved successfully.")
 
 		fmt.Println("Getting members around a member from leaderboard...")
 		for i := 0; i < 100; i++ {
 			getAround(leaderboardID, fmt.Sprintf("member-%d", i))
 		}
-		fmt.Println("Members around a member retrieved successfully.\n")
+		fmt.Println("Members around a member retrieved successfully.")
 
 		fmt.Println("Getting number of members in a leaderboard...")
 		getNumberOfMembers(leaderboardID)
-		fmt.Println("Number of members retrieved successfully.\n")
+		fmt.Println("Number of members retrieved successfully.")
 
 		fmt.Println("Getting top members in a leaderboard...")
 		getTopMembers(leaderboardID)
-		fmt.Println("Top members retrieved successfully.\n")
+		fmt.Println("Top members retrieved successfully.")
 
 		fmt.Println("Getting top 5% members in a leaderboard...")
 		getTopPercentage(leaderboardID)
-		fmt.Println("Top 5% retrieved successfully.\n")
+		fmt.Println("Top 5% retrieved successfully.")
 
 		fmt.Println("Removing members from leaderboard...")
 		for i := 0; i < 100; i++ {
 			removeMember(leaderboardID, fmt.Sprintf("member-%d", i))
 		}
-		fmt.Println("Members removed successfully.\n")
+		fmt.Println("Members removed successfully.")
 
 		fmt.Println("Removing leaderboard...")
 		removeLeaderboard(leaderboardID)
@@ -240,10 +240,10 @@ func getTopPercentage(leaderboardID string) {
 		"",
 	)
 	if err != nil {
-		log.Fatalf("Could not get top 5% at %s. Error: %s", baseURL, err.Error())
+		log.Fatalf("Could not get top 5%% at %s . Error: %s", baseURL, err.Error())
 	}
 	if status != 200 {
-		log.Fatalf("Could not get top 5% at %s (Status: %d). Error: %s", baseURL, status, body)
+		log.Fatalf("Could not get top 5%% at %s (Status: %d ). Error: %s", baseURL, status, body)
 	}
 }
 

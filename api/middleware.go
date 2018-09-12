@@ -156,14 +156,12 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		)
 
 		//all except latency to string
-		var ip, method, path string
+		var ip, method string
 		var status int
 		var latency time.Duration
 		var startTime, endTime time.Time
 
-		path = c.Path()
 		method = c.Request().Method()
-
 		startTime = time.Now()
 
 		err := next(c)
@@ -183,7 +181,6 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			zap.Duration("latency", latency),
 			zap.String("ip", ip),
 			zap.String("method", method),
-			zap.String("path", path),
 		)
 
 		//request failed
