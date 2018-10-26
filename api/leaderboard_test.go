@@ -119,6 +119,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 		})
 
+		It("PUT upsert members scores", func() {
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid", "score": 0},
+			}}
+			for _, k := range keys {
+				httpPath := fmt.Sprintf("/l/%s/scores", k)
+				status, body := PutJSON(a, httpPath, payload)
+				Expect(status).To(Equal(http.StatusBadRequest))
+				checkBody(k, body)
+			}
+		})
+
 		It("PATCH increment score", func() {
 			payload := map[string]interface{}{"increment": 100}
 			for _, k := range keys {
@@ -128,6 +140,237 @@ var _ = Describe("Leaderboard Handler", func() {
 				checkBody(k, body)
 			}
 		})
+	})
+
+	Describe("Bulk Upsert Members Score", func() {
+		It("Should set correct members score in redis and respond with the correct values", func() {
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": int64(150)},
+				{"publicID": "memberpublicid2", "score": int64(100)},
+			}}
+			status, body := PutJSON(a, "/l/testkey/scores", payload)
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			for i, memberObj := range result["members"].([]interface{}) {
+				member := memberObj.(map[string]interface{})
+				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
+				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
+				Expect(member).NotTo(HaveKey("previousRank"))
+			}
+
+			member1, err := l.GetMember("memberpublicid1", "desc", false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member1.Rank).To(Equal(1))
+			Expect(member1.Score).To(Equal(int64(150)))
+			Expect(member1.PublicID).To(Equal("memberpublicid1"))
+
+			member2, err := l.GetMember("memberpublicid2", "desc", false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member2.Rank).To(Equal(2))
+			Expect(member2.Score).To(Equal(int64(100)))
+			Expect(member2.PublicID).To(Equal("memberpublicid2"))
+		})
+
+		It("Should set correct members scores in redis and respond with the correct values if bigger than int", func() {
+			bigScore1 := int64(15584657100002)
+			bigScore2 := int64(15584657100001)
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": bigScore1},
+				{"publicID": "memberpublicid2", "score": bigScore2},
+			}}
+			status, body := PutJSON(a, "/l/testkey/scores", payload)
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			for i, memberObj := range result["members"].([]interface{}) {
+				member := memberObj.(map[string]interface{})
+				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
+				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
+				Expect(member).NotTo(HaveKey("previousRank"))
+			}
+
+			member1, err := l.GetMember("memberpublicid1", "desc", false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member1.Rank).To(Equal(1))
+			Expect(member1.Score).To(Equal(bigScore1))
+			Expect(member1.PublicID).To(Equal("memberpublicid1"))
+
+			member2, err := l.GetMember("memberpublicid2", "desc", false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(member2.Rank).To(Equal(2))
+			Expect(member2.Score).To(Equal(bigScore2))
+			Expect(member2.PublicID).To(Equal("memberpublicid2"))
+		})
+
+		It("Should insert successfully with expiration if scoreTTL argument is sent", func() {
+			ttl := 100
+			lbName := "testkey"
+
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": int64(150)},
+				{"publicID": "memberpublicid2", "score": int64(100)},
+			}}
+
+			status, body := PutJSON(a, fmt.Sprintf("/l/%s/scores?scoreTTL=%d", lbName, ttl), payload)
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			for i, memberObj := range result["members"].([]interface{}) {
+				member := memberObj.(map[string]interface{})
+				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
+				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
+				Expect(int(member["expireAt"].(float64))).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+
+				memb, err := l.GetMember(member["publicID"].(string), "desc", true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(memb.Rank).To(Equal(i+1))
+				Expect(memb.Score).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
+				Expect(memb.PublicID).To(Equal(member["publicID"]))
+				Expect(memb.ExpireAt).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+			}
+
+			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
+			result2, err := a.RedisClient.Client.Exists(redisLBExpirationKey).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result2).To(Equal(int64(1)))
+			redisExpirationSetKey := "expiration-sets"
+			result2, err = a.RedisClient.Client.Exists(redisExpirationSetKey).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result2).To(Equal(int64(1)))
+			result3, err := a.RedisClient.Client.SMembers(redisExpirationSetKey).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result3).To(ContainElement(redisLBExpirationKey))
+			result4, err := a.RedisClient.Client.ZRangeWithScores(redisLBExpirationKey, 1, 2).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result4[0].Member).To(Equal("memberpublicid1"))
+			Expect(result4[0].Score).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+			Expect(result4[1].Member).To(Equal("memberpublicid2"))
+			Expect(result4[1].Score).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+		})
+
+		It("Should set correct members scores in redis and respond with previous rank", func() {
+			payload1 := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": int64(200)},
+				{"publicID": "memberpublicid2", "score": int64(150)},
+				{"publicID": "memberpublicid3", "score": int64(100)},
+			}}
+			payload2 := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid2", "score": int64(300)},
+				{"publicID": "memberpublicid3", "score": int64(250)},
+			}}
+
+			status, body := PutJSON(a, "/l/testkey/scores", payload1)
+			Expect(status).To(Equal(http.StatusOK), body)
+			status, body = PutJSON(a, "/l/testkey/scores?prevRank=true", payload2)
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			for i, memberObj := range result["members"].([]interface{}) {
+				member := memberObj.(map[string]interface{})
+				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int64(member["score"].(float64))).To(Equal(payload2["members"].([]map[string]interface{})[i]["score"].(int64)))
+				Expect(member["publicID"]).To(Equal(payload2["members"].([]map[string]interface{})[i]["publicID"].(string)))
+				Expect(int(member["previousRank"].(float64))).To(Equal(i+2))
+
+				memb, err := l.GetMember(member["publicID"].(string), "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(memb.Rank).To(Equal(i+1))
+				Expect(memb.Score).To(Equal(int64(member["score"].(float64))))
+				Expect(memb.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should work when setting scores to 0", func() {
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": int64(0)},
+				{"publicID": "memberpublicid2", "score": int64(0)},
+			}}
+			status, body := PutJSON(a, "/l/testkey/scores", payload)
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			for i, memberObj := range result["members"].([]interface{}) {
+				member := memberObj.(map[string]interface{})
+				Expect(int64(member["score"].(float64))).To(Equal(int64(0)))
+				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
+
+				memb, err := l.GetMember(member["publicID"].(string), "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(memb.Score).To(Equal(int64(0)))
+				Expect(memb.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should fail if wrong type for score", func() {
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": "100"},
+				{"publicID": "memberpublicid2", "score": "50"},
+			}}
+			status, body := PutJSON(a, "/l/testkey/scores", payload)
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(ContainSubstring("parse error: expected number"))
+		})
+
+		It("Should fail if missing parameters", func() {
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"score": 100},
+			}}
+			status, body := PutJSON(a, "/l/testkey/scores", payload)
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(Equal("publicID is required"))
+		})
+
+		It("Should fail if invalid payload", func() {
+			status, body := Put(a, "/l/testkey/scores", "invalid")
+			Expect(status).To(Equal(http.StatusBadRequest), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["reason"]).To(ContainSubstring("parse error: syntax error"))
+		})
+
+		It("Should fail if error updating score", func() {
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": int64(0)},
+				{"publicID": "memberpublicid2", "score": int64(0)},
+			}}
+			app := GetDefaultTestApp()
+			app.RedisClient.Client = GetFaultyRedis()
+
+			status, body := PutJSON(app, "/l/testkey/scores", payload)
+			Expect(status).To(Equal(500), body)
+			Expect(body).To(ContainSubstring("connection refused"))
+		})
+
+		HTTPMeasure("it should update member score", func(ctx map[string]interface{}) {
+			payload := map[string]interface{}{"members": []map[string]interface{}{
+				{"publicID": "memberpublicid1", "score": int64(150)},
+				{"publicID": "memberpublicid2", "score": int64(100)},
+			}}
+			payloadJSON, err := json.Marshal(payload)
+			Expect(err).NotTo(HaveOccurred())
+			ctx["payload"] = payloadJSON
+		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+			url := getRoute(ts, "/l/testkey/scores")
+			status, body, err := fastPutTo(url, ctx["payload"].([]byte))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(status).To(Equal(http.StatusOK), string(body))
+		}, 0.05)
 	})
 
 	Describe("Upsert Member Score", func() {
