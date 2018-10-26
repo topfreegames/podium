@@ -247,12 +247,13 @@ var _ = Describe("Leaderboard Handler", func() {
 			result3, err := a.RedisClient.Client.SMembers(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3).To(ContainElement(redisLBExpirationKey))
-			result4, err := a.RedisClient.Client.ZRangeWithScores(redisLBExpirationKey, 1, 2).Result()
+			result4, err := a.RedisClient.Client.ZScore(redisLBExpirationKey, "memberpublicid1").Result()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result4[0].Member).To(Equal("memberpublicid1"))
-			Expect(result4[0].Score).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
-			Expect(result4[1].Member).To(Equal("memberpublicid2"))
-			Expect(result4[1].Score).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+			Expect(result4).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+			result5, err := a.RedisClient.Client.ZScore(redisLBExpirationKey, "memberpublicid2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result5).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+
 		})
 
 		It("Should set correct members scores in redis and respond with previous rank", func() {
@@ -452,10 +453,9 @@ var _ = Describe("Leaderboard Handler", func() {
 			result3, err := a.RedisClient.Client.SMembers(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3).To(ContainElement(redisLBExpirationKey))
-			result4, err := a.RedisClient.Client.ZRangeWithScores(redisLBExpirationKey, 0, 1).Result()
+			result4, err := a.RedisClient.Client.ZScore(redisLBExpirationKey, "memberpublicid").Result()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result4[0].Member).To(Equal("memberpublicid"))
-			Expect(result4[0].Score).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
+			Expect(result4).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 		})
 
 		It("Should set correct member score in redis and respond with previous rank", func() {

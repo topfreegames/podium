@@ -42,7 +42,7 @@ func serializeMember(member *leaderboard.Member, position int, includeTTL bool) 
 	return memberData
 }
 
-func serializeMembers(members []*leaderboard.Member, includePosition bool, includeTTL bool) []map[string]interface{} {
+func serializeMembers(members leaderboard.Members, includePosition bool, includeTTL bool) []map[string]interface{} {
 	serializedMembers := make([]map[string]interface{}, len(members))
 	for i, member := range members {
 		if includePosition {
@@ -431,7 +431,7 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
-		var members []*leaderboard.Member
+		var members leaderboard.Members
 		status := 404
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, pageSize, lg)
@@ -480,7 +480,7 @@ func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
-		var members []*leaderboard.Member
+		var members leaderboard.Members
 		status := 404
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, pageSize, lg)
@@ -561,7 +561,7 @@ func GetTopMembersHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
-		var members []*leaderboard.Member
+		var members leaderboard.Members
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, pageSize, lg)
 			members, err = l.GetLeaders(pageNumber, order)
@@ -606,7 +606,7 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, "Percentage must be a valid integer between 1 and 100.", c)
 		}
 
-		var members []*leaderboard.Member
+		var members leaderboard.Members
 		status := 400
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, defaultPageSize, lg)
@@ -657,7 +657,7 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 
 		memberIDs := strings.Split(ids, ",")
 
-		var members []*leaderboard.Member
+		var members leaderboard.Members
 		err := WithSegment("Model", c, func() error {
 			var err error
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, defaultPageSize, lg)
