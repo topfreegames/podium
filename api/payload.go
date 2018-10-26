@@ -69,6 +69,33 @@ func (s *incrementScorePayload) Validate() []string {
 	return v.Errors()
 }
 
+type setMembersScorePayload struct {
+	MembersScore []*memberScorePayload `json:"members"`
+}
+
+type memberScorePayload struct {
+	Score int64 `json:"score"`
+	PublicID string `json:"publicID"`
+}
+
+func (s *setMembersScorePayload) Validate() []string {
+	v := NewValidation()
+
+	v.validateCustom("members", func() []string {
+		if len(s.MembersScore) == 0 {
+			return []string{"members is required"}
+		}
+		for _, memberScore := range s.MembersScore {
+			if memberScore.PublicID == "" {
+				return []string{"publicID is required"}
+			}
+		}
+		return []string{}
+	})
+
+	return v.Errors()
+}
+
 type setScorePayload struct {
 	Score int64 `json:"score"`
 }

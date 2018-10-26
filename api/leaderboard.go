@@ -54,6 +54,52 @@ func serializeMembers(members []*leaderboard.Member, includePosition bool, inclu
 	return serializedMembers
 }
 
+// UpsertMemberScoresHandler is the handler responsible for creating or updating member scores
+func UpsertMemberScoresHandler(app *App) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		lg := app.Logger.With(
+			zap.String("handler", "UpsertMemberScoresHandler"),
+		)
+		leaderboardID := c.Param("leaderboardID")
+
+		var payload setMembersScorePayload
+		prevRank := c.QueryParam("prevRank") == "true"
+		scoreTTL := c.QueryParam("scoreTTL")
+
+		err := WithSegment("Payload", c, func() error {
+			if err := LoadJSONPayload(&payload, c, lg); err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWith(400, err.Error(), c)
+		}
+
+		var members leaderboard.Members
+		err = WithSegment("Model", c, func() error {
+			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
+			for _, ms := range payload.MembersScore {
+				members = append(members, &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID})
+			}
+			members, err = l.SetMembersScore(members, prevRank, scoreTTL)
+
+			if err != nil {
+				app.AddError()
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return FailWithError(err, c)
+		}
+		return SucceedWith(map[string]interface{}{
+			"members": serializeMembers(members, false, scoreTTL != ""),
+		}, c)
+	}
+}
+
 // UpsertMemberScoreHandler is the handler responsible for creating or updating the member score
 func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
