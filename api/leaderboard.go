@@ -54,11 +54,11 @@ func serializeMembers(members []*leaderboard.Member, includePosition bool, inclu
 	return serializedMembers
 }
 
-// UpsertMemberScoresHandler is the handler responsible for creating or updating member scores
-func UpsertMemberScoresHandler(app *App) func(c echo.Context) error {
+// UpsertMembersScoreHandler is the handler responsible for creating or updating members score
+func UpsertMembersScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		lg := app.Logger.With(
-			zap.String("handler", "UpsertMemberScoresHandler"),
+			zap.String("handler", "UpsertMembersScoreHandler"),
 		)
 		leaderboardID := c.Param("leaderboardID")
 

@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"encoding/json"
 
 	"github.com/go-redis/redis"
 	"github.com/topfreegames/extensions/redis/interfaces"
@@ -43,11 +44,11 @@ func NewMemberNotFound(leaderboardID, memberID string) *MemberNotFoundError {
 
 // Member maps an member identified by their publicID to their score and rank
 type Member struct {
-	PublicID     string
-	Score        int64
-	Rank         int
-	PreviousRank int
-	ExpireAt     int
+	PublicID     string `json:"publicID"`
+	Score        int64 `json:"score"`
+	Rank         int `json:"rank"`
+	PreviousRank int `json:"previousRank"`
+	ExpireAt     int `json:"expireAt"`
 }
 
 //Members are a list of member
@@ -77,23 +78,27 @@ func getSetScoreScript(operation string) *redis.Script {
 	return redis.NewScript(fmt.Sprintf(`
 		-- Script params:
 		-- KEYS[1] is the name of the leaderboard
-		-- KEYS[2] is member's public ID
-		-- ARGV[1] is the member's score increment
+		-- ARGV[1] are the Members JSON
 		-- ARGV[2] is the leaderboard's expiration
 		-- ARGV[3] defines if the previous rank should be returned
 		-- ARGV[4] defines the ttl of the player score
 		-- ARGV[5] defines the current unix timestamp
 
 		-- creates leaderboard or just sets score of member
-		local prev_rank = -1
+		local key_pairs = {}
+		local members = cjson.decode(ARGV[1])
 		local score_ttl = ARGV[4]
 		if score_ttl == nil or score_ttl == "" then
 			score_ttl = "inf"
 		end
-		if (ARGV[3] == "1") then
-			prev_rank = tonumber(redis.call("ZREVRANK", KEYS[1], KEYS[2])) or -2
+		for i,mem in ipairs(members) do
+			table.insert(key_pairs, tonumber(mem["score"]))
+			table.insert(key_pairs, mem["publicID"])
+			if (ARGV[3] == "1") then
+				mem["previousRank"] = tonumber(redis.call("ZREVRANK", KEYS[1], mem["publicID"])) or -2
+			end
 		end
-		local res = redis.call("%s", KEYS[1], tonumber(ARGV[1]), KEYS[2])
+		redis.call("%s", KEYS[1], unpack(key_pairs))
 
 		-- If expiration is required set expiration
 		if (ARGV[2] ~= "-1") then
@@ -110,14 +115,29 @@ func getSetScoreScript(operation string) *redis.Script {
 		if (score_ttl ~= "inf") then
 			local expiration_set_key = KEYS[1]..":ttl"
 			expire_at = ARGV[5] + score_ttl
-			redis.call("ZADD", expiration_set_key, expire_at, KEYS[2])
+			key_pairs = {}
+			for i,mem in ipairs(members) do
+				table.insert(key_pairs, expire_at)
+				table.insert(key_pairs, mem["publicID"])
+			end
+			redis.call("ZADD", expiration_set_key, unpack(key_pairs))
 			redis.call("SADD", "expiration-sets", expiration_set_key)
 		end
 
 		-- return updated rank of member
-		local rank = tonumber(redis.call("ZREVRANK", KEYS[1], KEYS[2]))
-		local score = tonumber(redis.call("ZSCORE", KEYS[1], KEYS[2]))
-		return {rank,score,prev_rank,expire_at}
+		local result = {}
+		for i,mem in ipairs(members) do
+			table.insert(result, mem["publicID"])
+			table.insert(result, tonumber(redis.call("ZREVRANK", KEYS[1], mem["publicID"])))
+			table.insert(result, tonumber(redis.call("ZSCORE", KEYS[1], mem["publicID"])))
+			if ARGV[3] == "1" then
+				table.insert(result, mem["previousRank"])
+			else
+				table.insert(result, -1)
+			end
+			table.insert(result, expire_at)
+		end
+		return result
 	`, operation, operation))
 }
 
@@ -202,15 +222,14 @@ func NewLeaderboard(redisClient interfaces.RedisClient, publicID string, pageSiz
 }
 
 //AddToLeaderboardSet adds a score to a leaderboard set respecting expiration
-func (lb *Leaderboard) AddToLeaderboardSet(memberID string, score int64, prevRank bool, scoreTTL string) (*Member, error) {
+func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, scoreTTL string) (Members, error) {
 	cli := lb.RedisClient
 
 	l := lb.Logger.With(
 		zap.String("operation", "AddToLeaderboardSet"),
 		zap.String("leaguePublicID", lb.PublicID),
-		zap.String("memberID", memberID),
+		zap.Object("members", members),
 		zap.String("scoreTTL", scoreTTL),
-		zap.Int64("score", score),
 	)
 
 	l.Debug("Calculating expiration for leaderboard...")
@@ -223,22 +242,36 @@ func (lb *Leaderboard) AddToLeaderboardSet(memberID string, score int64, prevRan
 
 	script := getSetScoreScript("ZADD")
 
-	l.Debug("Updating rank for member.")
-	newRank, err := script.Run(cli, []string{lb.PublicID, memberID}, score, expireAt, prevRank, scoreTTL, time.Now().Unix()).Result()
-
+	l.Debug("Updating rank for members.")
+	jsonMembers, _ := json.Marshal(members)
+	newRanks, err := script.Run(cli, []string{lb.PublicID}, jsonMembers, expireAt, prevRank, scoreTTL, time.Now().Unix()).Result()
 	if err != nil {
-		l.Error("Failed to update rank for member.", zap.Error(err))
+		l.Error("Failed to update rank for members.", zap.Error(err))
 		return nil, err
 	}
 
-	r := int(newRank.([]interface{})[0].(int64)) + 1
-	pr := int(newRank.([]interface{})[2].(int64)) + 1
-	member := &Member{PublicID: memberID, Score: score, Rank: r, PreviousRank: pr}
-	if scoreTTL != "" && scoreTTL != "inf" {
-		member.ExpireAt = int(newRank.([]interface{})[3].(int64))
+	res := newRanks.([]interface{})
+	resMembers := Members{}
+	for i := 0; i < len(res); i += 5 {
+		memberPublicID := res[i].(string)
+		score := res[i+2].(int64)
+		rank := int(res[i+1].(int64)) + 1
+		previousRank := int(res[i+3].(int64)) + 1
+		member := &Member{
+			PublicID: 		memberPublicID,
+			Score:    		score,
+			Rank:     		rank,
+			PreviousRank: 	previousRank,
+		}
+		if scoreTTL != "" && scoreTTL != "inf" {
+			member.ExpireAt = int(res[i+4].(int64))
+		}
+
+		resMembers = append(resMembers, member)
 	}
-	l.Debug("Rank for member retrieved successfully.", zap.Int("newRank", r))
-	return member, err
+
+	l.Debug("Rank for members retrieved successfully.")
+	return resMembers, err
 }
 
 // IncrementMemberScore sets the score to the member with the given ID
@@ -264,20 +297,22 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 	l.Debug("Expiration calculated successfully.", zap.Int64("expiration", expireAt))
 
 	l.Debug("Incrementing score for member...")
+
+	jsonMembers, _ := json.Marshal(Members{&Member{PublicID: memberID, Score: int64(increment)}})
 	// TODO use prevRank instead of hard coded false
-	result, err := script.Run(cli, []string{lb.PublicID, memberID}, increment, expireAt, false, scoreTTL, time.Now().Unix()).Result()
+	result, err := script.Run(cli, []string{lb.PublicID}, jsonMembers, expireAt, false, scoreTTL, time.Now().Unix()).Result()
 	if err != nil {
 		l.Error("Could not increment score for member.", zap.Error(err))
 		return nil, err
 	}
 	l.Debug("Increment result from redis", zap.Object("result", result))
-	rank := int(result.([]interface{})[0].(int64)) + 1
-	score := result.([]interface{})[1].(int64)
+	rank := int(result.([]interface{})[1].(int64)) + 1
+	score := result.([]interface{})[2].(int64)
 
 	l.Debug("Member score increment set successfully.")
 	nMember := Member{PublicID: memberID, Score: score, Rank: rank}
 	if scoreTTL != "" && scoreTTL != "inf" {
-		nMember.ExpireAt = int(result.([]interface{})[3].(int64))
+		nMember.ExpireAt = int(result.([]interface{})[4].(int64))
 	}
 	return &nMember, err
 }
@@ -293,13 +328,33 @@ func (lb *Leaderboard) SetMemberScore(memberID string, score int64, prevRank boo
 	)
 	l.Debug("Setting member score...")
 
-	nMember, err := lb.AddToLeaderboardSet(memberID, score, prevRank, scoreTTL)
+	members := Members{&Member{PublicID: memberID, Score: score}}
+	nMembers, err := lb.AddToLeaderboardSet(members, prevRank, scoreTTL)
 	if err != nil {
 		return nil, err
 	}
 
 	l.Debug("Member score set successfully.")
-	return nMember, err
+	return nMembers[0], err
+}
+
+// SetMembersScore sets the scores of the members with the given IDs
+func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL string) (Members, error) {
+	l := lb.Logger.With(
+		zap.String("operation", "SetMembersScore"),
+		zap.String("leaguePublicID", lb.PublicID),
+		zap.String("scoreTTL", scoreTTL),
+		zap.Object("members", members),
+	)
+	l.Debug("Setting member(s) score...")
+
+	nMembers, err := lb.AddToLeaderboardSet(members, prevRank, scoreTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Debug("Member(s) score set successfully.")
+	return nMembers, err
 }
 
 // TotalMembers returns the total number of members in a given leaderboard
