@@ -77,11 +77,11 @@ func BulkUpsertMembersScoreHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
-		var members leaderboard.Members
+		members := make(leaderboard.Members, len(payload.MembersScore))
 		err = WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
-			for _, ms := range payload.MembersScore {
-				members = append(members, &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID})
+			for i, ms := range payload.MembersScore {
+				members[i] = &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID}
 			}
 			members, err = l.SetMembersScore(members, prevRank, scoreTTL)
 

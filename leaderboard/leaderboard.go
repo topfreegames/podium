@@ -251,27 +251,19 @@ func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, score
 	}
 
 	res := newRanks.([]interface{})
-	resMembers := Members{}
 	for i := 0; i < len(res); i += 5 {
-		memberPublicID := res[i].(string)
-		score := res[i+2].(int64)
-		rank := int(res[i+1].(int64)) + 1
-		previousRank := int(res[i+3].(int64)) + 1
-		member := &Member{
-			PublicID:     memberPublicID,
-			Score:        score,
-			Rank:         rank,
-			PreviousRank: previousRank,
-		}
+		memberIndex := i/5
+		members[memberIndex].PublicID = res[i].(string)
+		members[memberIndex].Score = res[i+2].(int64)
+		members[memberIndex].Rank = int(res[i+1].(int64)) + 1
+		members[memberIndex].PreviousRank = int(res[i+3].(int64)) + 1
 		if scoreTTL != "" && scoreTTL != "inf" {
-			member.ExpireAt = int(res[i+4].(int64))
+			members[memberIndex].ExpireAt = int(res[i+4].(int64))
 		}
-
-		resMembers = append(resMembers, member)
 	}
 
 	l.Debug("Rank for members retrieved successfully.")
-	return resMembers, err
+	return members, err
 }
 
 // IncrementMemberScore sets the score to the member with the given ID
