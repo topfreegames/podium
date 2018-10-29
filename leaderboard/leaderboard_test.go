@@ -99,11 +99,11 @@ var _ = Describe("Leaderboard Model", func() {
 			result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(ContainElement(redisLBExpirationKey))
-			result3, err := redisClient.Client.ZRangeWithScores(redisLBExpirationKey, 0, 1).Result()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result3[0].Member).To(Equal("denix"))
+			result3, err := redisClient.Client.ZScore(redisLBExpirationKey, "denix").Result()
+			Expect(err).NotTo(HaveOccurred())
 			ttlInt, _ := strconv.ParseInt(ttl, 10, 64)
-			Expect(result3[0].Score).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
+			Expect(result3).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
 		})
 
 		It("should set scores and return previous ranks", func() {
@@ -125,6 +125,84 @@ var _ = Describe("Leaderboard Model", func() {
 		It("should fail if invalid connection to Redis", func() {
 			testLeaderboard := NewLeaderboard(getFaultyRedis(), "test-leaderboard", 10, logger)
 			_, err := testLeaderboard.SetMemberScore("dayvson", 481516, false, "")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+		})
+	})
+
+	Describe("setting members scores via bulk", func() {
+		It("should set many members score in one action and return ranks", func() {
+			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 10, logger)
+			members := Members{
+				&Member{Score: 481516, PublicID: "dayvson"},
+				&Member{Score: 1000, PublicID: "arthur"},
+			}
+			members, err := testLeaderboard.SetMembersScore(members, false, "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members[0].PublicID).To(Equal("dayvson"))
+			Expect(members[0].Rank).To(Equal(1))
+			Expect(members[0].PreviousRank).To(Equal(0))
+			Expect(members[1].PublicID).To(Equal("arthur"))
+			Expect(members[1].Rank).To(Equal(2))
+			Expect(members[1].PreviousRank).To(Equal(0))
+		})
+
+		It("should set many score expirations if expiry field is passed", func() {
+			ttl := "100"
+			lbName := "test-leaderboard"
+			testLeaderboard := NewLeaderboard(redisClient.Client, lbName, 10, logger)
+			members := Members{
+				&Member{Score: 481516, PublicID: "denix1"},
+				&Member{Score: 481516, PublicID: "denix2"},
+			}
+			_, err := testLeaderboard.SetMembersScore(members, false, ttl)
+			Expect(err).NotTo(HaveOccurred())
+			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
+			result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
+			Expect(err).NotTo(HaveOccurred())
+			redisExpirationSetKey := "expiration-sets"
+			result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(int64(1)))
+			result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result2).To(ContainElement(redisLBExpirationKey))
+			result3, err := redisClient.Client.ZScore(redisLBExpirationKey, "denix1").Result()
+			Expect(err).NotTo(HaveOccurred())
+			ttlInt, _ := strconv.ParseInt(ttl, 10, 64)
+			Expect(result3).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
+			result4, err := redisClient.Client.ZScore(redisLBExpirationKey, "denix2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result4).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
+		})
+
+		It("should set many scores and return previous ranks", func() {
+			testLeaderboard := NewLeaderboard(redisClient.Client, "test-leaderboard", 10, logger)
+			members := Members{
+				&Member{Score: 481516, PublicID: "member1"},
+				&Member{Score: 1000, PublicID: "member2"},
+			}
+			members, err := testLeaderboard.SetMembersScore(members, true, "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members[0].Rank).To(Equal(1))
+			Expect(members[0].PreviousRank).To(Equal(-1))
+			Expect(members[1].Rank).To(Equal(2))
+			Expect(members[1].PreviousRank).To(Equal(-1))
+			members = Members{
+				&Member{Score: 1, PublicID: "member1"},
+				&Member{Score: 500, PublicID: "member2"},
+			}
+			members, err = testLeaderboard.SetMembersScore(members, true, "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members[0].Rank).To(Equal(2))
+			Expect(members[0].PreviousRank).To(Equal(1))
+			Expect(members[1].Rank).To(Equal(1))
+			Expect(members[1].PreviousRank).To(Equal(2))
+		})
+
+		It("should fail if invalid connection to Redis", func() {
+			testLeaderboard := NewLeaderboard(getFaultyRedis(), "test-leaderboard", 10, logger)
+			_, err := testLeaderboard.SetMembersScore(Members{}, false, "")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})

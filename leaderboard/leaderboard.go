@@ -319,22 +319,11 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 
 // SetMemberScore sets the score to the member with the given ID
 func (lb *Leaderboard) SetMemberScore(memberID string, score int64, prevRank bool, scoreTTL string) (*Member, error) {
-	l := lb.Logger.With(
-		zap.String("operation", "SetMemberScore"),
-		zap.String("leaguePublicID", lb.PublicID),
-		zap.String("memberID", memberID),
-		zap.String("scoreTTL", scoreTTL),
-		zap.Int64("score", score),
-	)
-	l.Debug("Setting member score...")
-
 	members := Members{&Member{PublicID: memberID, Score: score}}
-	nMembers, err := lb.AddToLeaderboardSet(members, prevRank, scoreTTL)
+	nMembers, err := lb.SetMembersScore(members, prevRank, scoreTTL)
 	if err != nil {
 		return nil, err
 	}
-
-	l.Debug("Member score set successfully.")
 	return nMembers[0], err
 }
 
