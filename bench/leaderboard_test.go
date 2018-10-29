@@ -37,6 +37,28 @@ func BenchmarkSetMemberScore(b *testing.B) {
 	}
 }
 
+func BenchmarkSetMembersScore(b *testing.B) {
+	members := make([]map[string]interface{}, 50)
+	l := generateNMembers(b.N)
+	for j := 0; j < 50; j++ {
+		memberID := uuid.NewV4().String()
+		members[j] = map[string]interface{}{"publicID": memberID, "score": int64(100)}
+	}
+	payload := map[string]interface{}{"members": members}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		route := getRoute(fmt.Sprintf("/l/%s/scores", l.PublicID))
+
+		status, body, err := putTo(route, payload)
+		validateResp(status, body, err)
+		b.SetBytes(int64(len([]byte(body))))
+
+		keeper = body
+	}
+}
+
 func BenchmarkIncrementMemberScore(b *testing.B) {
 	l := generateNMembers(b.N)
 

@@ -189,3 +189,16 @@ func (m *MockPodiumInterface) UpdateScores(arg0 context.Context, arg1 []string, 
 func (mr *MockPodiumInterfaceMockRecorder) UpdateScores(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScores", reflect.TypeOf((*MockPodiumInterface)(nil).UpdateScores), arg0, arg1, arg2, arg3, arg4)
 }
+
+// UpdateMembersScore mocks base method
+func (m *MockPodiumInterface) UpdateMembersScore(arg0 context.Context, arg1 string, arg2 []*lib.Member, arg3 int) (*lib.MemberList, error) {
+	ret := m.ctrl.Call(m, "UpdateMembersScore", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*lib.MemberList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateMembersScore indicates an expected call of UpdateMembersScore
+func (mr *MockPodiumInterfaceMockRecorder) UpdateMembersScore(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMembersScore", reflect.TypeOf((*MockPodiumInterface)(nil).UpdateMembersScore), arg0, arg1, arg2, arg3)
+}

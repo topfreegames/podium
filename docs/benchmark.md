@@ -25,13 +25,16 @@ $ make bench-redis bench-seed bench-podium-app bench-run
 The results should be similar to these:
 
 ```
-BenchmarkSetMemberScore-4                      	   20000	    285962 ns/op	   0.32 MB/s	    5219 B/op	      71 allocs/op
-BenchmarkRemoveMember-4                        	   50000	    220081 ns/op	   0.07 MB/s	    3823 B/op	      53 allocs/op
-BenchmarkGetMember-4                           	   30000	    266313 ns/op	   0.27 MB/s	    4143 B/op	      56 allocs/op
-BenchmarkGetMemberRank-4                       	   30000	    231241 ns/op	   0.25 MB/s	    4319 B/op	      57 allocs/op
-BenchmarkGetAroundMember-4                     	   10000	    519063 ns/op	   2.38 MB/s	    8314 B/op	      58 allocs/op
-BenchmarkGetTotalMembers-4                     	   30000	    196277 ns/op	   0.15 MB/s	    3936 B/op	      52 allocs/op
-BenchmarkGetTopMembers-4                       	   20000	    455470 ns/op	   2.59 MB/s	    7973 B/op	      54 allocs/op
-BenchmarkGetTopPercentage-4                    	     500	  14354336 ns/op	   8.28 MB/s	  509746 B/op	      65 allocs/op
-BenchmarkSetMemberScoreForSeveralLeaderboards-4	    1000	  70326444 ns/op	   1.55 MB/s	  534548 B/op	      96 allocs/op
+BenchmarkSetMemberScore-8                           30000        284307 ns/op       0.32 MB/s        5635 B/op         81 allocs/op
+BenchmarkSetMembersScore-8                           5000       1288746 ns/op       3.01 MB/s       51452 B/op        583 allocs/op
+BenchmarkIncrementMemberScore-8                     30000        288306 ns/op       0.32 MB/s        5651 B/op         81 allocs/op
+BenchmarkRemoveMember-8                             50000        202398 ns/op       0.08 MB/s        4648 B/op         68 allocs/op
+BenchmarkGetMember-8                                30000        215802 ns/op       0.33 MB/s        4728 B/op         68 allocs/op
+BenchmarkGetMemberRank-8                            50000        201367 ns/op       0.28 MB/s        4712 B/op         68 allocs/op
+BenchmarkGetAroundMember-8                          20000        397849 ns/op       3.14 MB/s        8703 B/op         69 allocs/op
+BenchmarkGetTotalMembers-8                          50000        192860 ns/op       0.16 MB/s        4536 B/op         64 allocs/op
+BenchmarkGetTopMembers-8                            20000        306186 ns/op       3.85 MB/s        8585 B/op         66 allocs/op
+BenchmarkGetTopPercentage-8                          1000      10011287 ns/op      11.88 MB/s      510300 B/op         77 allocs/op
+BenchmarkSetMemberScoreForSeveralLeaderboards-8      1000     106129629 ns/op       1.03 MB/s      516103 B/op         98 allocs/op
+BenchmarkGetMembers-8                                2000       3931289 ns/op       9.13 MB/s      243755 B/op         76 allocs/op
 ```

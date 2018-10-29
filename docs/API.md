@@ -82,12 +82,78 @@ Podium API
       {
         "success": true,
         "member": {
+          "publicID":     [string]  // member public id
+          "score":        [int]     // member updated score
+          "rank":         [int]     // member current rank in leaderboard
+          "previousRank": [int]     // the previous rank of the player in the leaderboard, if requests
+          "expireAt":     [int]     // unix timestamp of when the score will be expired, if scoreTTL is sent
+        }
+      }
+      ```
+
+  * Error Response
+
+    It will return an error if an invalid payload is sent or if there are missing parameters.
+
+    * Code: `400`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
+    * Code: `500`
+    * Content:
+      ```
+      {
+        "success": false,
+        "reason": [string]
+      }
+      ```
+
+  ### Create or Update many Members Score
+  `PUT /l/:leaderboardID/scores`
+
+  ##### optional query string
+  * prevRank=[true|false]
+    * if set to true, it will also return the previous rank of the player in the leaderboard, -1 if the player didn't exist in the leaderboard
+    * e.g. `PUT /l/:leaderboardID/scores?prevRank=true`
+    * defaults to "false"
+  * scoreTTL=[integer]
+    * if set, the score of the player will be expired from the leaderboard past [integer] seconds if it does not update it within this interval
+    * e.g. `PUT /l/:leaderboardID/scores?scoreTTL=100`
+    * defaults to none (the score will never expire)
+
+  Atomically creates many new members within a leaderboard or if some members already exists in leaderboard, update their scores.
+
+  Leaderboard ID should be a valid [leaderboard name](leaderboard-names.html) and publicID should be a unique identifier for the member associated with the score.
+
+  * Payload
+
+    ```
+    {
+      "members": [{
           "publicID": [string]  // member public id
           "score":    [int],    // member updated score
-          "rank":     [int],    // member current rank in leaderboard
-          "previousRank": [int] // the previous rank of the player in the leaderboard, if requests
-	  "expireAt": [int]     // unix timestamp of when the score will be expired, if scoreTTL is sent
-        }
+        }, ...]
+    }
+    ```
+
+  * Success Response
+    * Code: `200`
+    * Content:
+      ```
+      {
+        "success": true,
+        "members": [{
+          "publicID":     [string]  // member public id
+          "score":        [int]     // member updated score
+          "rank":         [int]     // member current rank in leaderboard
+          "previousRank": [int]     // the previous rank of the player in the leaderboard, if requests
+          "expireAt":     [int]     // unix timestamp of when the score will be expired, if scoreTTL is sent
+        }, ...]
       }
       ```
 
@@ -144,9 +210,9 @@ Podium API
         "success": true,
         "member": {
           "publicID": [string]  // member public id
-          "score":    [int],    // member updated score
-          "rank":     [int],    // member current rank in leaderboard
-	  "expireAt": [int]     // unix timestamp of when the score will be expired, if scoreTTL is sent
+          "score":    [int]     // member updated score
+          "rank":     [int]     // member current rank in leaderboard
+          "expireAt": [int]     // unix timestamp of when the score will be expired, if scoreTTL is sent
         }
       }
       ```
@@ -227,9 +293,9 @@ Podium API
       {
         "success": true,
         "publicID": [string]  // member public id
-        "score":    [int],    // member updated score
-        "rank":     [int],    // member current rank in leaderboard
-	"expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
+        "score":    [int]     // member updated score
+        "rank":     [int]     // member current rank in leaderboard
+        "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
       }
       ```
 
@@ -282,11 +348,11 @@ Podium API
       {
         "members": [
           {
-            "publicID": [string],   // member public id
-            "rank": [int],          // member rank in the specific leaderboard
-            "position": [int],      // member rank for all members returned in this request
-            "score": [int],         // member score in the leaderboard
-	    "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
+            "publicID": [string]    // member public id
+            "rank":     [int]       // member rank in the specific leaderboard
+            "position": [int]       // member rank for all members returned in this request
+            "score":    [int]       // member score in the leaderboard
+            "expireAt": [int]       // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
           }
         ],
         "notFound": [
@@ -373,14 +439,14 @@ Podium API
           {
             "leaderboardID": "teste",
             "rank": 1,
-            "score": 100
-	    "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
+            "score": 100,
+            "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
           },
           {
             "leaderboardID": "teste2",
             "rank": 1,
-            "score": 100
-	    "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
+            "score": 100,
+            "expireAt": [int]     // unix timestamp of when the member's score will be erased (only if scoreTTL is true)
           }
         ],
         "success": true

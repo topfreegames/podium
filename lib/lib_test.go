@@ -182,6 +182,46 @@ var _ = Describe("Lib", func() {
 		})
 	})
 
+	Describe("UpdateMembersScore", func() {
+		It("Should call API to update score of a member", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/scores"
+			httpmock.RegisterResponder("PUT", url,
+				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1, "previousRank": 1 } ] }`))
+			reqMembers := []*lib.Member{&lib.Member{Score: 1, PublicID: "1"}}
+			members, err := p.UpdateMembersScore(nil, leaderboard, reqMembers, 0)
+
+			Expect(members).NotTo(BeNil())
+			Expect(members.Members[0].PublicID).To(Equal("1"))
+			Expect(members.Members[0].Score).To(Equal(2))
+			Expect(members.Members[0].Rank).To(Equal(1))
+			Expect(members.Members[0].PreviousRank).To(Equal(1))
+			Expect(len(members.Members)).To(Equal(1))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should call API to update score of a member with TTL", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/scores?prevRank=true&scoreTTL=10"
+			httpmock.RegisterResponder("PUT", url,
+				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1, "previousRank": 1 } ] }`))
+			reqMembers := []*lib.Member{&lib.Member{Score: 1, PublicID: "1"}}
+			members, err := p.UpdateMembersScore(nil, leaderboard, reqMembers, 10)
+
+			Expect(members).NotTo(BeNil())
+			Expect(members.Members[0].PublicID).To(Equal("1"))
+			Expect(members.Members[0].Score).To(Equal(2))
+			Expect(members.Members[0].Rank).To(Equal(1))
+			Expect(members.Members[0].PreviousRank).To(Equal(1))
+			Expect(len(members.Members)).To(Equal(1))
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
 	Describe("RemoveMemberFromLeaderboard", func() {
 		It("Should call API to remove player from Leaderboard", func() {
 			leaderboard := globalLeaderboard
