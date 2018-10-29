@@ -185,6 +185,12 @@ func (p *Podium) buildUpdateScoresURL(memberID string, scoreTTL int) string {
 	return p.buildURL(pathname)
 }
 
+func (p *Podium) buildUpdateMembersScoreURL(leaderboard string, scoreTTL int) string {
+	var pathname = fmt.Sprintf("/l/%s/scores", leaderboard)
+	pathname = p.appendScoreTTLAndPrevRank(pathname, scoreTTL)
+	return p.buildURL(pathname)
+}
+
 func (p *Podium) buildRemoveMemberFromLeaderboardURL(leaderboard, member string) string {
 	var pathname = fmt.Sprintf("/l/%s/members/%s", leaderboard, member)
 	return p.buildURL(pathname)
@@ -314,6 +320,29 @@ func (p *Podium) UpdateScores(ctx context.Context, leaderboards []string, member
 	err = json.Unmarshal(body, &scores)
 
 	return &scores, err
+}
+
+// UpdateMembersScore updates the score of a member in more than one leaderboard
+func (p *Podium) UpdateMembersScore(ctx context.Context, leaderboard string, members []*Member, scoreTTL int) (*MemberList, error) {
+	route := p.buildUpdateMembersScoreURL(leaderboard, scoreTTL)
+	membersPayload := make([]map[string]interface{}, len(members))
+	for i, member := range members {
+		membersPayload[i] = map[string]interface{}{
+			"score":    member.Score,
+			"publicID": member.PublicID,
+		}
+	}
+	payload := map[string]interface{}{"members": membersPayload}
+	body, err := p.sendTo(ctx, "PUT", route, payload)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var resMember MemberList
+	err = json.Unmarshal(body, &resMember)
+
+	return &resMember, err
 }
 
 // RemoveMemberFromLeaderboard removes a member from a leaderboard
