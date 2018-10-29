@@ -10,13 +10,13 @@
 package leaderboard
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"encoding/json"
 
 	"github.com/go-redis/redis"
 	"github.com/topfreegames/extensions/redis/interfaces"
@@ -45,10 +45,10 @@ func NewMemberNotFound(leaderboardID, memberID string) *MemberNotFoundError {
 // Member maps an member identified by their publicID to their score and rank
 type Member struct {
 	PublicID     string `json:"publicID"`
-	Score        int64 `json:"score"`
-	Rank         int `json:"rank"`
-	PreviousRank int `json:"previousRank"`
-	ExpireAt     int `json:"expireAt"`
+	Score        int64  `json:"score"`
+	Rank         int    `json:"rank"`
+	PreviousRank int    `json:"previousRank"`
+	ExpireAt     int    `json:"expireAt"`
 }
 
 //Members are a list of member
@@ -258,10 +258,10 @@ func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, score
 		rank := int(res[i+1].(int64)) + 1
 		previousRank := int(res[i+3].(int64)) + 1
 		member := &Member{
-			PublicID: 		memberPublicID,
-			Score:    		score,
-			Rank:     		rank,
-			PreviousRank: 	previousRank,
+			PublicID:     memberPublicID,
+			Score:        score,
+			Rank:         rank,
+			PreviousRank: previousRank,
 		}
 		if scoreTTL != "" && scoreTTL != "inf" {
 			member.ExpireAt = int(res[i+4].(int64))
