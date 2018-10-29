@@ -137,7 +137,7 @@ var _ = Describe("Leaderboard Model", func() {
 				&Member{Score: 481516, PublicID: "dayvson"},
 				&Member{Score: 1000, PublicID: "arthur"},
 			}
-			members, err := testLeaderboard.SetMembersScore(members, false, "")
+			err := testLeaderboard.SetMembersScore(members, false, "")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members[0].PublicID).To(Equal("dayvson"))
 			Expect(members[0].Rank).To(Equal(1))
@@ -155,7 +155,7 @@ var _ = Describe("Leaderboard Model", func() {
 				&Member{Score: 481516, PublicID: "denix1"},
 				&Member{Score: 481516, PublicID: "denix2"},
 			}
-			_, err := testLeaderboard.SetMembersScore(members, false, ttl)
+			err := testLeaderboard.SetMembersScore(members, false, ttl)
 			Expect(err).NotTo(HaveOccurred())
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
 			result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
@@ -182,7 +182,7 @@ var _ = Describe("Leaderboard Model", func() {
 				&Member{Score: 481516, PublicID: "member1"},
 				&Member{Score: 1000, PublicID: "member2"},
 			}
-			members, err := testLeaderboard.SetMembersScore(members, true, "")
+			err := testLeaderboard.SetMembersScore(members, true, "")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members[0].Rank).To(Equal(1))
 			Expect(members[0].PreviousRank).To(Equal(-1))
@@ -192,7 +192,7 @@ var _ = Describe("Leaderboard Model", func() {
 				&Member{Score: 1, PublicID: "member1"},
 				&Member{Score: 500, PublicID: "member2"},
 			}
-			members, err = testLeaderboard.SetMembersScore(members, true, "")
+			err = testLeaderboard.SetMembersScore(members, true, "")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members[0].Rank).To(Equal(2))
 			Expect(members[0].PreviousRank).To(Equal(1))
@@ -202,7 +202,7 @@ var _ = Describe("Leaderboard Model", func() {
 
 		It("should fail if invalid connection to Redis", func() {
 			testLeaderboard := NewLeaderboard(getFaultyRedis(), "test-leaderboard", 10, logger)
-			_, err := testLeaderboard.SetMembersScore(Members{}, false, "")
+			err := testLeaderboard.SetMembersScore(Members{}, false, "")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})

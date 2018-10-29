@@ -222,7 +222,7 @@ func NewLeaderboard(redisClient interfaces.RedisClient, publicID string, pageSiz
 }
 
 //AddToLeaderboardSet adds a score to a leaderboard set respecting expiration
-func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, scoreTTL string) (Members, error) {
+func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, scoreTTL string) (error) {
 	cli := lb.RedisClient
 
 	l := lb.Logger.With(
@@ -236,7 +236,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, score
 	expireAt, err := util.GetExpireAt(lb.PublicID)
 	if err != nil {
 		l.Error("Could not get expiration.", zap.Error(err))
-		return nil, err
+		return err
 	}
 	l.Debug("Expiration calculated successfully.", zap.Int64("expiration", expireAt))
 
@@ -247,7 +247,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, score
 	newRanks, err := script.Run(cli, []string{lb.PublicID}, jsonMembers, expireAt, prevRank, scoreTTL, time.Now().Unix()).Result()
 	if err != nil {
 		l.Error("Failed to update rank for members.", zap.Error(err))
-		return nil, err
+		return err
 	}
 
 	res := newRanks.([]interface{})
@@ -263,7 +263,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, score
 	}
 
 	l.Debug("Rank for members retrieved successfully.")
-	return members, err
+	return err
 }
 
 // IncrementMemberScore sets the score to the member with the given ID
@@ -312,15 +312,12 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 // SetMemberScore sets the score to the member with the given ID
 func (lb *Leaderboard) SetMemberScore(memberID string, score int64, prevRank bool, scoreTTL string) (*Member, error) {
 	members := Members{&Member{PublicID: memberID, Score: score}}
-	nMembers, err := lb.SetMembersScore(members, prevRank, scoreTTL)
-	if err != nil {
-		return nil, err
-	}
-	return nMembers[0], err
+	err := lb.SetMembersScore(members, prevRank, scoreTTL)
+	return members[0], err
 }
 
 // SetMembersScore sets the scores of the members with the given IDs
-func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL string) (Members, error) {
+func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL string) (error) {
 	l := lb.Logger.With(
 		zap.String("operation", "SetMembersScore"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -329,13 +326,12 @@ func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL 
 	)
 	l.Debug("Setting member(s) score...")
 
-	nMembers, err := lb.AddToLeaderboardSet(members, prevRank, scoreTTL)
-	if err != nil {
-		return nil, err
+	err := lb.AddToLeaderboardSet(members, prevRank, scoreTTL)
+	if err == nil {
+		l.Debug("Member(s) score set successfully.")
 	}
 
-	l.Debug("Member(s) score set successfully.")
-	return nMembers, err
+	return err
 }
 
 // TotalMembers returns the total number of members in a given leaderboard

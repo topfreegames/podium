@@ -83,7 +83,7 @@ func BulkUpsertMembersScoreHandler(app *App) func(c echo.Context) error {
 			for i, ms := range payload.MembersScore {
 				members[i] = &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID}
 			}
-			members, err = l.SetMembersScore(members, prevRank, scoreTTL)
+			err = l.SetMembersScore(members, prevRank, scoreTTL)
 
 			if err != nil {
 				app.AddError()
