@@ -185,18 +185,18 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 
 		//request failed
 		if status > 399 && status < 500 {
-			log.W(reqLog, "Request failed.")
+			log.D(reqLog, "Request failed.")
 			return err
 		}
 
 		//request is ok, but server failed
 		if status > 499 {
-			log.E(reqLog, "Response failed.")
+			log.D(reqLog, "Response failed.")
 			return err
 		}
 
 		//Everything went ok
-		if cm := reqLog.Check(zap.InfoLevel, "Request successful."); cm.OK() {
+		if cm := reqLog.Check(zap.DebugLevel, "Request successful."); cm.OK() {
 			cm.Write()
 		}
 		return err
