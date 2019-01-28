@@ -222,7 +222,7 @@ func NewLeaderboard(redisClient interfaces.RedisClient, publicID string, pageSiz
 }
 
 //AddToLeaderboardSet adds a score to a leaderboard set respecting expiration
-func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, scoreTTL string) (error) {
+func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, scoreTTL string) error {
 	cli := lb.RedisClient
 
 	l := lb.Logger.With(
@@ -252,7 +252,7 @@ func (lb *Leaderboard) AddToLeaderboardSet(members Members, prevRank bool, score
 
 	res := newRanks.([]interface{})
 	for i := 0; i < len(res); i += 5 {
-		memberIndex := i/5
+		memberIndex := i / 5
 		members[memberIndex].PublicID = res[i].(string)
 		members[memberIndex].Score = res[i+2].(int64)
 		members[memberIndex].Rank = int(res[i+1].(int64)) + 1
@@ -317,7 +317,7 @@ func (lb *Leaderboard) SetMemberScore(memberID string, score int64, prevRank boo
 }
 
 // SetMembersScore sets the scores of the members with the given IDs
-func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL string) (error) {
+func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL string) error {
 	l := lb.Logger.With(
 		zap.String("operation", "SetMembersScore"),
 		zap.String("leaguePublicID", lb.PublicID),
@@ -459,7 +459,7 @@ func (lb *Leaderboard) GetMember(memberID string, order string, includeTTL bool)
 	res := result.([]interface{})
 
 	if res[0] == nil || res[1] == nil {
-		l.Error("Could not find member.", zap.Error(err))
+		l.Debug("Could not find member.", zap.Error(err))
 		return nil, NewMemberNotFound(lb.PublicID, memberID)
 	}
 
