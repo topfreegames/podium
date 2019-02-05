@@ -41,7 +41,7 @@ func checkExpireAtErrors(
 func WeeklyExpiration(year, week int64) time.Time {
 	dummyDate, _ := time.Parse("2006", strconv.Itoa(int(year)))
 	dummyDateYear, dummyDateWeek := dummyDate.ISOWeek()
-	startTime := dummyDate.AddDate(int(year)-dummyDateYear, 0, 1+(int(week)-dummyDateWeek)*7)
+	startTime := dummyDate.AddDate(int(year)-dummyDateYear, 0, (int(week)-dummyDateWeek)*7)
 	return startTime.AddDate(0, 0, 14)
 }
 
