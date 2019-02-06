@@ -21,7 +21,7 @@ clear-hooks:
 	@cd .git/hooks && rm pre-commit
 
 setup: setup-hooks
-	@go get -u github.com/golang/dep/cmd/dep
+	@GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
 	@go get github.com/mailru/easyjson/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
