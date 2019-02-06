@@ -208,7 +208,7 @@ func (p *Podium) buildGetMemberURL(leaderboard, memberID string) string {
 }
 
 func (p *Podium) buildGetMemberInLeaderboardsURL(leaderboards []string, memberID string, order string) string {
-	pathname := fmt.Sprintf("/m/%s/scores?leaderboardIds=%s?order=%s", memberID, strings.Join(leaderboards, ","), order)
+	pathname := fmt.Sprintf("/m/%s/scores?leaderboardIds=%s&order=%s", memberID, strings.Join(leaderboards, ","), order)
 	return p.buildURL(pathname)
 }
 
