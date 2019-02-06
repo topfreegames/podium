@@ -88,7 +88,7 @@
   revision = "379f8d0a68ca237cf8893a1cdfd4f574125e2c51"
 
 [[projects]]
-  digest = "1:e1bb493d8504f7721e8a5da3e272d71dcf1db9a81666a10879f9e611484b74a4"
+  digest = "1:d9aa1bc7a4e5bc78236d0574e56c834e02eb3da360e2b7bb06131c2a04266ae5"
   name = "github.com/go-pg/pg"
   packages = [
     ".",
@@ -99,11 +99,11 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "8c7fa0eed0d9e9d07fca2cc9e08e3171da0521d5"
-  version = "v6.13.5"
+  revision = "2cb96043eb15699002a72c64f2b38d62cf6e4bc0"
+  version = "v6.12.0"
 
 [[projects]]
-  digest = "1:6dac219e1a644be2c54d4c0c9a3f0525c5a7740202ad4c7cb12fa7754303f2fa"
+  digest = "1:d8180cdf086f729ae7c0c995194788c5578aed12cc49dd4673702b2b4073ca1f"
   name = "github.com/go-redis/redis"
   packages = [
     ".",
@@ -116,8 +116,8 @@
     "internal/util",
   ]
   pruneopts = "UT"
-  revision = "68362cfda1eeb3a69316e7bc00169a9a8de4823a"
-  version = "v6.9.2"
+  revision = "83fb42932f6145ce52df09860384a4653d2d332a"
+  version = "v6.12.0"
 
 [[projects]]
   digest = "1:bc38c7c481812e178d85160472e231c5e1c9a7f5845d67e23ee4e706933c10d8"
@@ -169,12 +169,13 @@
   revision = "a9f819bfc744fe70043abcc5a6cd0137a678e3d8"
 
 [[projects]]
-  digest = "1:1ce98ff599fda34a2aba6450e16e3c33898336f6d17ad2bbb6872a1ff0e7f43a"
+  digest = "1:3ae590f0db186d10ed2fcf76388dff58c0b9049e4857c3b7539b269b7e844c30"
   name = "github.com/hashicorp/hcl"
   packages = [
     ".",
     "hcl/ast",
     "hcl/parser",
+    "hcl/printer",
     "hcl/scanner",
     "hcl/strconv",
     "hcl/token",
@@ -273,9 +274,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:cdf13ca0f5df719f31c0b466578feba0837bd6bb0aea95b3981a307844803704"
+  digest = "1:222017f7a5c546c9f07f669275584681f92924c4b073ed01922abb368875513a"
   name = "github.com/mailru/easyjson"
   packages = [
+    ".",
     "buffer",
     "jlexer",
     "jwriter",
@@ -376,19 +378,12 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:c416b52f6afb8f40cd1ca987ca53c38e65bd169d3de6d89d729880ddf91670f0"
-  name = "github.com/pelletier/go-buffruneio"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d"
-  version = "v0.1.0"
-
-[[projects]]
-  digest = "1:c47944e75eb63776d3d4a57a3a35cd8d932d5122301e69e4a16113cc57da58d7"
+  digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   pruneopts = "UT"
-  revision = "45932ad32dfdd20826f5671da37a5f3ce9f26a8d"
+  revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
@@ -439,11 +434,12 @@
   revision = "52e4a6cfac46163658bd4f123c49b6ee7dc75f78"
 
 [[projects]]
-  digest = "1:964ec0e39dbdedeb872407141c0d196f1c66a88796993c2695db293bc3ff99c5"
+  digest = "1:08d65904057412fc0270fc4812a1c90c594186819243160dc779a402d4b6d0bc"
   name = "github.com/spf13/cast"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2580bc98dc0e62908119e4737030cc2fdfc45e4c"
+  revision = "8c9545af88b134710ab1cd196795e7f2388358d7"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:94445f862f685d801dbafbb8e90327ffc73e0b461ded60c9587bc60f7a1b6776"
@@ -467,15 +463,15 @@
   revision = "b83537d79690b75cac5e021b036ae16792bf0f20"
 
 [[projects]]
-  digest = "1:f8e1a678a2571e265f4bf91a3e5e32aa6b1474a55cb0ea849750cc177b664d96"
+  digest = "1:de37e343c64582d7026bf8ab6ac5b22a72eac54f3a57020db31524affed9f423"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "25b30aa063fc18e48662b86996252eabdcf2f0c7"
-  version = "v1.0.0"
+  revision = "6d33b5a963d922d182c91e8a1c88d81fd150cfd4"
+  version = "v1.3.1"
 
 [[projects]]
-  digest = "1:fde2221c14f0e51bb687c097880afd2cc92e0dfc77c83a30d85e9d8751e8c45a"
+  digest = "1:d1a108dd49227e7d4d48fdf20dca8d6b322129fafbfe66a76a930d73f5e6025a"
   name = "github.com/topfreegames/extensions"
   packages = [
     "dogstatsd",
@@ -483,18 +479,19 @@
     "echo/middleware",
     "http",
     "jaeger",
-    "jaeger/echo",
-    "jaeger/http",
-    "jaeger/redis",
     "middleware",
     "oauth2",
     "pg/interfaces",
     "redis",
     "redis/interfaces",
+    "tracing",
+    "tracing/echo",
+    "tracing/http",
+    "tracing/redis",
   ]
   pruneopts = "UT"
-  revision = "7f9f792ff8bd20093937810a38992fa3eb7c2cbc"
-  version = "v6.2.1"
+  revision = "e527f1205e4304b85721505a430e17a94ec3316b"
+  version = "v8.0.2"
 
 [[projects]]
   digest = "1:3dc31afac5daebc3d6f7e9d8749ee5c3fba79483ce9d0945de01716d033c6ff4"
@@ -673,6 +670,7 @@
     "github.com/labstack/echo/engine/fasthttp",
     "github.com/labstack/echo/engine/standard",
     "github.com/labstack/echo/middleware",
+    "github.com/mailru/easyjson",
     "github.com/mailru/easyjson/jlexer",
     "github.com/mailru/easyjson/jwriter",
     "github.com/newrelic/go-agent",
