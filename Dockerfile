@@ -2,19 +2,13 @@
 # https://github.com/topfreegames/podium
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license
-# Copyright © 2016 Top Free Games <backend@tfgco.com>
+# Copyright © 2019 Top Free Games <backend@tfgco.com>
 
-FROM golang:1.10-alpine
+FROM alpine:3.9
 
 MAINTAINER TFG Co <backend@tfgco.com>
 
 EXPOSE 80
-
-RUN apk update
-RUN apk add bash git make g++ apache2-utils
-
-# http://stackoverflow.com/questions/34729748/installed-go-binary-not-found-in-path-on-alpine-linux-docker
-RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
 
 ADD bin/podium-linux-x86_64 /go/bin/podium
 RUN chmod +x /go/bin/podium

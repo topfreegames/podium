@@ -21,7 +21,7 @@ clear-hooks:
 	@cd .git/hooks && rm pre-commit
 
 setup: setup-hooks
-	@go get -u github.com/golang/dep/cmd/dep
+	@GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
 	@go get github.com/mailru/easyjson/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
@@ -85,10 +85,8 @@ cross: cross-linux cross-darwin
 
 cross-linux:
 	@mkdir -p ./bin
-	@echo "Building for linux-i386..."
-	@env GOOS=linux GOARCH=386 go build -o ./bin/podium-linux-i386 ./main.go
 	@echo "Building for linux-x86_64..."
-	@env GOOS=linux GOARCH=amd64 go build -o ./bin/podium-linux-x86_64 ./main.go
+	@env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/podium-linux-x86_64 ./main.go
 	@$(MAKE) cross-exec
 
 cross-darwin:
