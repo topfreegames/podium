@@ -85,10 +85,8 @@ cross: cross-linux cross-darwin
 
 cross-linux:
 	@mkdir -p ./bin
-	@echo "Building for linux-i386..."
-	@env GOOS=linux GOARCH=386 go build -o ./bin/podium-linux-i386 ./main.go
 	@echo "Building for linux-x86_64..."
-	@env GOOS=linux GOARCH=amd64 go build -o ./bin/podium-linux-x86_64 ./main.go
+	@env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/podium-linux-x86_64 ./main.go
 	@$(MAKE) cross-exec
 
 cross-darwin:

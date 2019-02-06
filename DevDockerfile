@@ -1,20 +1,16 @@
-# podium - webhook dispatching service
+# podium
 # https://github.com/topfreegames/podium
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license
-# Copyright © 2016 Top Free Games <backend@tfgco.com>
+# Copyright © 2019 Top Free Games <backend@tfgco.com>
 
-FROM golang:1.10-alpine
+FROM golang:1.11-alpine
 
 MAINTAINER TFG Co <backend@tfgco.com>
 
 EXPOSE 8080
 
-RUN apk update
-RUN apk add git bash curl redis
-
-# http://stackoverflow.com/questions/34729748/installed-go-binary-not-found-in-path-on-alpine-linux-docker
-RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+RUN apk update && apk add git bash curl redis
 
 ADD bin/podium-linux-x86_64 /go/bin/podium
 RUN chmod +x /go/bin/podium
