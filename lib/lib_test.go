@@ -40,7 +40,7 @@ var _ = Describe("Lib", func() {
 
 	Describe("GetMemberInLeaderboards", func() {
 		It("Should call podium API to get a member score and rank in many leaderboards", func() {
-			url := "http://podium/m/1/scores?leaderboardIds=l1,l2,l3?order=desc"
+			url := "http://podium/m/1/scores?leaderboardIds=l1,l2,l3&order=desc"
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "scores": [ { "leaderboardID": "l1", "publicID": "1", "score": 3, "rank": 3, "previousRank": 1 }, { "leaderboardID": "l2", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 }, { "leaderboardID": "l3", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 } ] }`))
 			scores, err := p.GetMemberInLeaderboards(nil, []string{"l1,l2,l3"}, "1")
