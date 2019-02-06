@@ -38,6 +38,24 @@ var _ = Describe("Lib", func() {
 		})
 	})
 
+	Describe("GetMemberInLeaderboards", func() {
+		It("Should call podium API to get a member score and rank in many leaderboards", func() {
+			url := "http://podium/m/1/scores?leaderboardIds=l1,l2,l3?order=desc"
+			httpmock.RegisterResponder("GET", url,
+				httpmock.NewStringResponder(200, `{ "success": true, "scores": [ { "leaderboardID": "l1", "publicID": "1", "score": 3, "rank": 3, "previousRank": 1 }, { "leaderboardID": "l2", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 }, { "leaderboardID": "l3", "publicID": "1", "score": 1, "rank": 3, "previousRank": 1 } ] }`))
+			scores, err := p.GetMemberInLeaderboards(nil, []string{"l1,l2,l3"}, "1")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(scores).NotTo(BeNil())
+			Expect(len(scores.Scores)).To(Equal(3))
+			Expect(scores.Scores[0].LeaderboardID).To(Equal("l1"))
+			Expect(scores.Scores[0].Score).To(Equal(3))
+			Expect(scores.Scores[0].Rank).To(Equal(3))
+			Expect(scores.Scores[1].LeaderboardID).To(Equal("l2"))
+			Expect(scores.Scores[1].Score).To(Equal(1))
+			Expect(scores.Scores[1].Rank).To(Equal(3))
+		})
+	})
+
 	Describe("GetTop", func() {
 		It("Should call podium API to get the top players", func() {
 			leaderboard := globalLeaderboard

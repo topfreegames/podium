@@ -155,7 +155,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeTrue())
 			for i, memberObj := range result["members"].([]interface{}) {
 				member := memberObj.(map[string]interface{})
-				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
 				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
 				Expect(member).NotTo(HaveKey("previousRank"))
@@ -188,7 +188,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeTrue())
 			for i, memberObj := range result["members"].([]interface{}) {
 				member := memberObj.(map[string]interface{})
-				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
 				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
 				Expect(member).NotTo(HaveKey("previousRank"))
@@ -223,14 +223,14 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeTrue())
 			for i, memberObj := range result["members"].([]interface{}) {
 				member := memberObj.(map[string]interface{})
-				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
 				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
 				Expect(int(member["expireAt"].(float64))).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 
 				memb, err := l.GetMember(member["publicID"].(string), "desc", true)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(memb.Rank).To(Equal(i+1))
+				Expect(memb.Rank).To(Equal(i + 1))
 				Expect(memb.Score).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
 				Expect(memb.PublicID).To(Equal(member["publicID"]))
 				Expect(memb.ExpireAt).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
@@ -276,14 +276,14 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeTrue())
 			for i, memberObj := range result["members"].([]interface{}) {
 				member := memberObj.(map[string]interface{})
-				Expect(int(member["rank"].(float64))).To(Equal(i+1))
+				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int64(member["score"].(float64))).To(Equal(payload2["members"].([]map[string]interface{})[i]["score"].(int64)))
 				Expect(member["publicID"]).To(Equal(payload2["members"].([]map[string]interface{})[i]["publicID"].(string)))
-				Expect(int(member["previousRank"].(float64))).To(Equal(i+2))
+				Expect(int(member["previousRank"].(float64))).To(Equal(i + 2))
 
 				memb, err := l.GetMember(member["publicID"].(string), "desc", false)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(memb.Rank).To(Equal(i+1))
+				Expect(memb.Rank).To(Equal(i + 1))
 				Expect(memb.Score).To(Equal(int64(member["score"].(float64))))
 				Expect(memb.PublicID).To(Equal(member["publicID"]))
 			}

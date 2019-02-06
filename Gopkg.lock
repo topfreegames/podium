@@ -273,10 +273,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:222017f7a5c546c9f07f669275584681f92924c4b073ed01922abb368875513a"
+  digest = "1:cdf13ca0f5df719f31c0b466578feba0837bd6bb0aea95b3981a307844803704"
   name = "github.com/mailru/easyjson"
   packages = [
-    ".",
     "buffer",
     "jlexer",
     "jwriter",
@@ -674,7 +673,6 @@
     "github.com/labstack/echo/engine/fasthttp",
     "github.com/labstack/echo/engine/standard",
     "github.com/labstack/echo/middleware",
-    "github.com/mailru/easyjson",
     "github.com/mailru/easyjson/jlexer",
     "github.com/mailru/easyjson/jwriter",
     "github.com/newrelic/go-agent",

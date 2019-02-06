@@ -207,6 +207,11 @@ func (p *Podium) buildGetMemberURL(leaderboard, memberID string) string {
 	return p.buildURL(pathname)
 }
 
+func (p *Podium) buildGetMemberInLeaderboardsURL(leaderboards []string, memberID string, order string) string {
+	pathname := fmt.Sprintf("/m/%s/scores?leaderboardIds=%s?order=%s", memberID, strings.Join(leaderboards, ","), order)
+	return p.buildURL(pathname)
+}
+
 func (p *Podium) buildGetCountURL(leaderboard string) string {
 	pathname := fmt.Sprintf("/l/%s/members-count", leaderboard)
 	return p.buildURL(pathname)
@@ -404,6 +409,26 @@ func (p *Podium) GetMembers(ctx context.Context, leaderboard string, memberIDs [
 	err = json.Unmarshal(body, &members)
 
 	return &members, err
+}
+
+// GetMemberInLeaderboards returns the ranking and score of a player in multiple leaderboards
+func (p *Podium) GetMemberInLeaderboards(ctx context.Context, leaderboards []string, memberID string, order ...string) (*ScoreList, error) {
+	var o = "desc"
+	if len(order) > 0 {
+		o = order[0]
+	}
+
+	route := p.buildGetMemberInLeaderboardsURL(leaderboards, memberID, o)
+	body, err := p.sendTo(ctx, "GET", route, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var scores ScoreList
+	err = json.Unmarshal(body, &scores)
+
+	return &scores, err
 }
 
 // Healthcheck verifies if podium is still up
