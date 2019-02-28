@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -88,25 +89,62 @@ type Response struct {
 	Reason  string
 }
 
-func getHTTPClient(timeout time.Duration) *http.Client {
+func getHTTPClient(
+	timeout time.Duration,
+	maxIdleConns, maxIdleConnsPerHost int,
+) *http.Client {
 	once.Do(func() {
 		client = &http.Client{
-			Timeout: timeout,
+			Transport: getHTTPTransport(maxIdleConns, maxIdleConnsPerHost),
+			Timeout:   timeout,
 		}
 		ehttp.Instrument(client)
 	})
 	return client
 }
 
+func getHTTPTransport(
+	maxIdleConns, maxIdleConnsPerHost int,
+) http.RoundTripper {
+	if _, ok := http.DefaultTransport.(*http.Transport); !ok {
+		return http.DefaultTransport // tests use a mock transport
+	}
+
+	// We can't get http.DefaultTransport here and update its
+	// fields since it's an exported variable, so other libs could
+	// also change it and overwrite. This hardcoded values are copied
+	// from http.DefaultTransport but could be configurable too.
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          maxIdleConns,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConnsPerHost:   maxIdleConnsPerHost,
+	}
+}
+
 // NewPodium returns a new podium API application
 func NewPodium(config *viper.Viper) PodiumInterface {
 	config.SetDefault("podium.timeout", 1*time.Second)
+	config.SetDefault("podium.maxIdleConnsPerHost", http.DefaultMaxIdleConnsPerHost)
+	config.SetDefault("podium.maxIdleConns", 100)
+
 	p := &Podium{
-		httpClient: getHTTPClient(config.GetDuration("podium.timeout")),
-		Config:     config,
-		URL:        config.GetString("podium.url"),
-		User:       config.GetString("podium.user"),
-		Pass:       config.GetString("podium.pass"),
+		httpClient: getHTTPClient(
+			config.GetDuration("podium.timeout"),
+			config.GetInt("podium.maxIdleConns"),
+			config.GetInt("podium.maxIdleConnsPerHost"),
+		),
+		Config: config,
+		URL:    config.GetString("podium.url"),
+		User:   config.GetString("podium.user"),
+		Pass:   config.GetString("podium.pass"),
 	}
 	return p
 }
