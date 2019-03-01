@@ -13,7 +13,9 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/getsentry/raven-go"
@@ -174,6 +176,7 @@ func (app *App) configureJaeger() {
 
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
+	app.Config.SetDefault("graceperiod.ms", 5000)
 	app.Config.SetDefault("api.maxReturnedMembers", 2000)
 	app.Config.SetDefault("api.maxReadBufferSize", 32000)
 	app.Config.SetDefault("redis.host", "localhost")
@@ -315,22 +318,28 @@ func (app *App) Start() error {
 	l := app.Logger.With(
 		zap.String("source", "app"),
 		zap.String("operation", "Start"),
+		zap.String("host", app.Host),
+		zap.Int("port", app.Port),
 	)
 
-	err := app.App.Run(app.Engine)
-	if err != nil {
-		log.E(l, "App failed to start.", func(cm log.CM) {
-			cm.Write(
-				zap.String("host", app.Host),
-				zap.Int("port", app.Port),
-				zap.Error(err),
-			)
-		})
-		return err
-	}
+	go func() {
+		app.App.Run(app.Engine)
+	}()
 
-	log.I(l, "App started.", func(cm log.CM) {
-		cm.Write(zap.String("host", app.Host), zap.Int("port", app.Port))
-	})
+	log.I(l, "app started")
+	sg := make(chan os.Signal)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
+
+	// stop server
+	select {
+	case s := <-sg:
+		graceperiod := app.Config.GetInt("graceperiod.ms")
+		log.I(l, "shutting down", func(cm log.CM) {
+			cm.Write(zap.String("signal", fmt.Sprintf("%v", s)),
+				zap.Int("graceperiod", graceperiod))
+		})
+		time.Sleep(time.Duration(graceperiod) * time.Millisecond)
+	}
+	log.I(l, "app stopped")
 	return nil
 }
