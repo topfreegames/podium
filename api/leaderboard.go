@@ -57,10 +57,11 @@ func serializeMembers(members leaderboard.Members, includePosition bool, include
 // BulkUpsertMembersScoreHandler is the handler responsible for creating or updating members score
 func BulkUpsertMembersScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "BulkUpsertMembersScoreHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
-		leaderboardID := c.Param("leaderboardID")
 
 		var payload setMembersScorePayload
 		prevRank := c.QueryParam("prevRank") == "true"
@@ -103,11 +104,12 @@ func BulkUpsertMembersScoreHandler(app *App) func(c echo.Context) error {
 // UpsertMemberScoreHandler is the handler responsible for creating or updating the member score
 func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		lg := app.Logger.With(
-			zap.String("handler", "UpsertMemberScoreHandler"),
-		)
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
+		lg := app.Logger.With(
+			zap.String("handler", "UpsertMemberScoreHandler"),
+			zap.String("leaderboard", leaderboardID),
+		)
 
 		var payload setScorePayload
 		prevRank := false
@@ -161,12 +163,13 @@ func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
 // IncrementMemberScoreHandler is the handler responsible for incrementing the member score
 func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		lg := app.Logger.With(
-			zap.String("handler", "IncrementMemberScoreHandler"),
-		)
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
 		scoreTTL := c.QueryParam("scoreTTL")
+		lg := app.Logger.With(
+			zap.String("handler", "IncrementMemberScoreHandler"),
+			zap.String("leaderboard", leaderboardID),
+		)
 
 		var payload incrementScorePayload
 
@@ -203,12 +206,12 @@ func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
 //RemoveMemberHandler removes a member from a leaderboard
 func RemoveMemberHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		lg := app.Logger.With(
-			zap.String("handler", "RemoveMemberHandler"),
-		)
-
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
+		lg := app.Logger.With(
+			zap.String("handler", "RemoveMemberHandler"),
+			zap.String("leaderboard", leaderboardID),
+		)
 
 		err := WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
@@ -231,13 +234,13 @@ func RemoveMemberHandler(app *App) func(c echo.Context) error {
 //RemoveMembersHandler removes several members from a leaderboard
 func RemoveMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveMembersHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
 
-		leaderboardID := c.Param("leaderboardID")
 		ids := c.QueryParam("ids")
-
 		if ids == "" {
 			app.AddError()
 			return FailWith(400, "Member IDs are required using the 'ids' querystring parameter", c)
@@ -270,8 +273,10 @@ func RemoveMembersHandler(app *App) func(c echo.Context) error {
 // GetMemberHandler is the handler responsible for retrieving a member score and rank
 func GetMemberHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMemberHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
 
 		order := c.QueryParam("order")
@@ -279,7 +284,6 @@ func GetMemberHandler(app *App) func(c echo.Context) error {
 			order = "desc"
 		}
 
-		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
 		scoreTTL := c.QueryParam("scoreTTL") == "true"
 		var member *leaderboard.Member
@@ -310,12 +314,13 @@ func GetMemberHandler(app *App) func(c echo.Context) error {
 // GetMemberRankHandler is the handler responsible for retrieving a member rank
 func GetMemberRankHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		lg := app.Logger.With(
-			zap.String("handler", "GetMemberRankHandler"),
-		)
-
 		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
+		lg := app.Logger.With(
+			zap.String("handler", "GetMemberRankHandler"),
+			zap.String("leaderboard", leaderboardID),
+		)
+
 		order := c.QueryParam("order")
 		if order == "" || (order != "asc" && order != "desc") {
 			order = "desc"
@@ -410,8 +415,10 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 // GetAroundMemberHandler retrieves a list of member score and rank centered in the given member
 func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "GetAroundMemberHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
 
 		order := c.QueryParam("order")
@@ -424,7 +431,6 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 			getLastIfNotFound = true
 		}
 
-		leaderboardID := c.Param("leaderboardID")
 		memberPublicID := c.Param("memberPublicID")
 		pageSize, err := GetPageSize(app, c, defaultPageSize)
 		if err != nil {
@@ -460,8 +466,10 @@ func GetAroundMemberHandler(app *App) func(c echo.Context) error {
 // GetAroundScoreHandler retrieves a list of member score and rank centered in a given
 func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "GetAroundScoreHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
 
 		order := c.QueryParam("order")
@@ -469,7 +477,6 @@ func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 			order = "desc"
 		}
 
-		leaderboardID := c.Param("leaderboardID")
 		score, err := strconv.ParseInt(c.Param("score"), 10, 64)
 		if err != nil {
 			return FailWith(400, "Score not sent or wrongly formatted", c)
@@ -509,11 +516,11 @@ func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 // GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
 func GetTotalMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTotalMembersHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
-
-		leaderboardID := c.Param("leaderboardID")
 
 		count := 0
 		err := WithSegment("Model", c, func() error {
@@ -540,11 +547,12 @@ func GetTotalMembersHandler(app *App) func(c echo.Context) error {
 // GetTopMembersHandler retrieves onePage of member score and rank
 func GetTopMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTopMembersHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
 
-		leaderboardID := c.Param("leaderboardID")
 		order := c.QueryParam("order")
 		if order == "" || (order != "asc" && order != "desc") {
 			order = "desc"
@@ -585,8 +593,10 @@ func GetTopMembersHandler(app *App) func(c echo.Context) error {
 // GetTopPercentageHandler retrieves top x % members in the leaderboard
 func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "GetTopPercentageHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
 
 		order := c.QueryParam("order")
@@ -594,7 +604,6 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 			order = "desc"
 		}
 
-		leaderboardID := c.Param("leaderboardID")
 		percentageStr := c.Param("percentage")
 		percentage, err := strconv.ParseInt(percentageStr, 10, 32)
 		if err != nil {
@@ -638,8 +647,10 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 // GetMembersHandler retrieves several members at once
 func GetMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "GetMembersHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
 
 		order := c.QueryParam("order")
@@ -648,7 +659,6 @@ func GetMembersHandler(app *App) func(c echo.Context) error {
 		}
 		scoreTTL := c.QueryParam("scoreTTL") == "true"
 
-		leaderboardID := c.Param("leaderboardID")
 		ids := c.QueryParam("ids")
 		if ids == "" {
 			app.AddError()
@@ -761,10 +771,11 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 // RemoveLeaderboardHandler is the handler responsible for removing a leaderboard
 func RemoveLeaderboardHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		leaderboardID := c.Param("leaderboardID")
 		lg := app.Logger.With(
 			zap.String("handler", "RemoveLeaderboardHandler"),
+			zap.String("leaderboard", leaderboardID),
 		)
-		leaderboardID := c.Param("leaderboardID")
 
 		err := WithSegment("Model", c, func() error {
 			l := leaderboard.NewLeaderboard(app.RedisClient.Trace(c.StdContext()), leaderboardID, 0, lg)
