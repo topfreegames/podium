@@ -10,6 +10,7 @@ MAINTAINER TFG Co <backend@tfgco.com>
 
 EXPOSE 80
 
+RUN apk add bash
 ADD bin/podium-linux-x86_64 /go/bin/podium
 RUN chmod +x /go/bin/podium
 
