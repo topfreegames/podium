@@ -17,7 +17,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/leaderboard"
-	test "github.com/topfreegames/podium/testing"
 )
 
 func getRedis() *redis.Client {
@@ -98,12 +97,11 @@ func validateResp(statusCode int, body string, err error) {
 }
 
 func generateNMembers(amount int) *leaderboard.Leaderboard {
-	logger := test.NewMockLogger()
 	redisClient := getRedis()
 
 	lbID := "leaderboard-0"
 
-	l := leaderboard.NewLeaderboard(redisClient.Client, lbID, 10, logger)
+	l := leaderboard.NewLeaderboard(redisClient.Client, lbID, 10)
 
 	for i := 0; i < amount; i++ {
 		l.SetMemberScore(fmt.Sprintf("bench-member-%d", i), int64(100+i), false, "inf")
