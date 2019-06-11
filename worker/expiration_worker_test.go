@@ -61,7 +61,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 	It("should expire scores and delete set", func() {
 		ttl := "2"
 		lbName := "test-expire-leaderboard"
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
@@ -104,7 +104,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 	It("should not expire scores that are in the future", func() {
 		ttl := "20"
 		lbName := "test-expire-leaderboard"
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
@@ -148,7 +148,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		lbName := "test-expire-leaderboard"
 		ttl := ""
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
@@ -186,7 +186,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 
 		ttl := "2"
 		lbName := "test-expire-leaderboard"
-		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10, logger)
+		testLeaderboard := leaderboard.NewLeaderboard(redisClient.Client, lbName, 10)
 		_, err := testLeaderboard.SetMemberScore("denix", 481516, false, ttl)
 		_, err = testLeaderboard.SetMemberScore("denix2", 481512, false, ttl)
 		Expect(err).NotTo(HaveOccurred())

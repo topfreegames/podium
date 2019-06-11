@@ -218,7 +218,7 @@ func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi2(in *jlexer.Lexer, out
 						if v4 == nil {
 							v4 = new(memberScorePayload)
 						}
-						easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi3(in, &*v4)
+						easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi3(in, v4)
 					}
 					out.MembersScore = append(out.MembersScore, v4)
 					in.WantComma()
