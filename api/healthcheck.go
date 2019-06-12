@@ -24,7 +24,7 @@ func HealthCheckHandler(app *App) func(c echo.Context) error {
 		workingString := app.Config.GetString("healthcheck.workingText")
 
 		err := WithSegment("redis", c, func() error {
-			res, err := app.RedisClient.Trace(c.StdContext()).Ping().Result()
+			res, err := app.Leaderboards.Ping(c.StdContext())
 			if err != nil || res != "PONG" {
 				return fmt.Errorf("Error connecting to redis: %s", err)
 			}

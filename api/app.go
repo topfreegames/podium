@@ -11,12 +11,13 @@ package api
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/topfreegames/podium/leaderboard"
 
 	"github.com/getsentry/raven-go"
 	"github.com/labstack/echo/engine"
@@ -30,7 +31,6 @@ import (
 	extechomiddleware "github.com/topfreegames/extensions/echo/middleware"
 	"github.com/topfreegames/extensions/jaeger"
 	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
-	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 )
@@ -40,19 +40,19 @@ type JSON map[string]interface{}
 
 // App is a struct that represents a podium Application
 type App struct {
-	Debug       bool
-	Fast        bool
-	Port        int
-	Host        string
-	ConfigPath  string
-	Errors      metrics.EWMA
-	App         *echo.Echo
-	Engine      engine.Server
-	Config      *viper.Viper
-	Logger      zap.Logger
-	RedisClient *redis.Client
-	NewRelic    newrelic.Application
-	DDStatsD    *extnethttpmiddleware.DogStatsD
+	Debug        bool
+	Fast         bool
+	Port         int
+	Host         string
+	ConfigPath   string
+	Errors       metrics.EWMA
+	App          *echo.Echo
+	Engine       engine.Server
+	Config       *viper.Viper
+	Logger       zap.Logger
+	Leaderboards *leaderboard.Client
+	NewRelic     newrelic.Application
+	DDStatsD     *extnethttpmiddleware.DogStatsD
 }
 
 // GetApp returns a new podium Application
@@ -279,32 +279,20 @@ func (app *App) configureApplication() error {
 		time.Sleep(5 * time.Second)
 	}()
 
-	redisHost := app.Config.GetString("redis.host")
-	redisPort := app.Config.GetInt("redis.port")
-	redisPass := app.Config.GetString("redis.password")
-	redisDB := app.Config.GetInt("redis.db")
-	redisConnectionTimeout := app.Config.GetString("redis.connectionTimeout")
-
-	redisURLObject := url.URL{
-		Scheme: "redis",
-		User:   url.UserPassword("", redisPass),
-		Host:   fmt.Sprintf("%s:%d", redisHost, redisPort),
-		Path:   fmt.Sprint(redisDB),
-	}
-	redisURL := redisURLObject.String()
-	app.Config.Set("redis.url", redisURL)
-
 	rl := l.With(
-		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", redisHost, redisPort, redisDB)),
-		zap.String("connectionTimeout", redisConnectionTimeout),
+		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v",
+			app.Config.GetString("redis.host"),
+			app.Config.GetInt("redis.port"),
+			app.Config.GetInt("redis.db"))),
+		zap.String("connectionTimeout", app.Config.GetString("redis.connectionTimeout")),
 	)
-	rl.Info("Connecting to redis...")
-	cli, err := redis.NewClient("redis", app.Config)
+	rl.Info("Creating leaderboard client.")
+	cli, err := leaderboard.NewClient(app.Config)
 	if err != nil {
 		return err
 	}
-	app.RedisClient = cli
-	rl.Info("Connected to redis successfully.")
+	app.Leaderboards = cli
+	rl.Info("Leaderboard client creation successfull.")
 	return nil
 }
 

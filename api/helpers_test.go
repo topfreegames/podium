@@ -11,6 +11,7 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,6 +37,11 @@ func GetFaultyRedis() *redis.Client {
 		DB:       0,
 		PoolSize: 20,
 	})
+}
+
+//Creates an empty context (shortcut for context.Background())
+func NewEmptyCtx() context.Context {
+	return context.Background()
 }
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
