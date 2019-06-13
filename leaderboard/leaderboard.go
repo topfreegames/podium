@@ -76,10 +76,6 @@ type Client struct {
 	redisClient *tfgredis.Client
 }
 
-func (c *Client) RedisClient() *tfgredis.Client {
-	return c.redisClient
-}
-
 func (c *Client) redisWithTracing(ctx context.Context) interfaces.RedisClient {
 	return c.redisClient.Trace(ctx)
 }

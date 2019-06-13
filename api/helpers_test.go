@@ -20,14 +20,26 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"github.com/spf13/viper"
+	"github.com/topfreegames/podium/leaderboard"
+
 	"github.com/go-redis/redis"
 
 	"github.com/labstack/echo/engine/standard"
 	. "github.com/onsi/gomega"
+	extredis "github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/testing"
 	"github.com/valyala/fasthttp"
 )
+
+func GetConnectedRedis() (*extredis.Client, error) {
+	config := viper.New()
+	config.Set("redis.url", "redis://localhost:1234/0")
+	config.Set("redis.connectionTimeout", 200)
+
+	return extredis.NewClient("redis", config)
+}
 
 //GetFaultyRedis returns an invalid connection to redis
 func GetFaultyRedis() *redis.Client {
@@ -50,6 +62,16 @@ func GetDefaultTestApp() *api.App {
 	app, err := api.GetApp("0.0.0.0", 8890, "../config/test.yaml", false, false, logger)
 	Expect(err).NotTo(HaveOccurred())
 	app.Configure()
+	return app
+}
+
+// GetFaultyTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test but with a failing Redis
+func GetDefaultTestAppWithFaultyRedis() *api.App {
+	app := GetDefaultTestApp()
+	faultyRedisClient, err := GetConnectedRedis()
+	Expect(err).NotTo(HaveOccurred())
+	faultyRedisClient.Client = GetFaultyRedis()
+	app.Leaderboards = leaderboard.NewClientWithRedis(faultyRedisClient)
 	return app
 }
 

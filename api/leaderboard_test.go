@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/topfreegames/extensions/redis/interfaces"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	uuid "github.com/satori/go.uuid"
@@ -27,6 +29,7 @@ import (
 
 var _ = Describe("Leaderboard Handler", func() {
 	var a *api.App
+	var redisClient interfaces.RedisClient
 	const testLeaderboardID = "testkey"
 
 	BeforeSuite(func() {
@@ -34,7 +37,9 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	BeforeEach(func() {
-		redisClient := a.Leaderboards.RedisClient().Client
+		extRedisClient, err := GetConnectedRedis()
+		Expect(err).NotTo(HaveOccurred())
+		redisClient = extRedisClient.Client
 		redisClient.Del("testkey")
 		redisClient.Del("testkey1")
 		redisClient.Del("testkey2")
@@ -227,20 +232,20 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-			result2, err := a.Leaderboards.RedisClient().Client.Exists(redisLBExpirationKey).Result()
+			result2, err := redisClient.Exists(redisLBExpirationKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(Equal(int64(1)))
 			redisExpirationSetKey := "expiration-sets"
-			result2, err = a.Leaderboards.RedisClient().Client.Exists(redisExpirationSetKey).Result()
+			result2, err = redisClient.Exists(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(Equal(int64(1)))
-			result3, err := a.Leaderboards.RedisClient().Client.SMembers(redisExpirationSetKey).Result()
+			result3, err := redisClient.SMembers(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3).To(ContainElement(redisLBExpirationKey))
-			result4, err := a.Leaderboards.RedisClient().Client.ZScore(redisLBExpirationKey, "memberpublicid1").Result()
+			result4, err := redisClient.ZScore(redisLBExpirationKey, "memberpublicid1").Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result4).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
-			result5, err := a.Leaderboards.RedisClient().Client.ZScore(redisLBExpirationKey, "memberpublicid2").Result()
+			result5, err := redisClient.ZScore(redisLBExpirationKey, "memberpublicid2").Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result5).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 
@@ -340,8 +345,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				{"publicID": "memberpublicid1", "score": int64(0)},
 				{"publicID": "memberpublicid2", "score": int64(0)},
 			}}
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := PutJSON(app, "/l/testkey/scores", payload)
 			Expect(status).To(Equal(500), body)
@@ -433,17 +437,17 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.ExpireAt).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-			result2, err := a.Leaderboards.RedisClient().Client.Exists(redisLBExpirationKey).Result()
+			result2, err := redisClient.Exists(redisLBExpirationKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(Equal(int64(1)))
 			redisExpirationSetKey := "expiration-sets"
-			result2, err = a.Leaderboards.RedisClient().Client.Exists(redisExpirationSetKey).Result()
+			result2, err = redisClient.Exists(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(Equal(int64(1)))
-			result3, err := a.Leaderboards.RedisClient().Client.SMembers(redisExpirationSetKey).Result()
+			result3, err := redisClient.SMembers(redisExpirationSetKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3).To(ContainElement(redisLBExpirationKey))
-			result4, err := a.Leaderboards.RedisClient().Client.ZScore(redisLBExpirationKey, "memberpublicid").Result()
+			result4, err := redisClient.ZScore(redisLBExpirationKey, "memberpublicid").Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result4).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 		})
@@ -536,8 +540,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			payload := map[string]interface{}{
 				"score": int64(100),
 			}
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := PutJSON(app, "/l/testkey/members/memberpublicid/score", payload)
 			Expect(status).To(Equal(500), body)
@@ -645,8 +648,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			payload := map[string]interface{}{
 				"increment": 100,
 			}
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := PatchJSON(app, "/l/testkey/members/memberpublicid/score", payload)
 			Expect(status).To(Equal(500), body)
@@ -722,8 +724,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
 			Expect(err).NotTo(HaveOccurred())
 
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Delete(app, "/l/testkey/members?ids=memberpublicid")
 			Expect(status).To(Equal(500), body)
@@ -847,8 +848,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99")
 			Expect(status).To(Equal(500), body)
@@ -922,8 +922,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99/rank")
 			Expect(status).To(Equal(500), body)
@@ -1229,8 +1228,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99/around")
 			Expect(status).To(Equal(500), body)
@@ -1238,8 +1236,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members/member_99/around?getLastIfNotFound=true")
 			Expect(status).To(Equal(500), body)
@@ -1479,8 +1476,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/scores/50/around")
 			Expect(status).To(Equal(500), body)
@@ -1512,8 +1508,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/members-count")
 			Expect(status).To(Equal(500), body)
@@ -1716,8 +1711,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error getting top members from Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/top/1")
 			Expect(status).To(Equal(500), body)
@@ -1820,8 +1814,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(app, "/l/testkey/top-percent/10")
 			Expect(status).To(Equal(500), body)
@@ -1944,8 +1937,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis when upserting many leaderboards", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			payload := map[string]interface{}{
 				"score":        100,
@@ -1998,8 +1990,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Delete(app, fmt.Sprintf("/l/%s", uuid.NewV4().String()))
 			Expect(status).To(Equal(500), body)
@@ -2106,8 +2097,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if error in Redis", func() {
-			app := GetDefaultTestApp()
-			app.Leaderboards.RedisClient().Client = GetFaultyRedis()
+			app := GetDefaultTestAppWithFaultyRedis()
 
 			status, body := Get(
 				app,
