@@ -13,12 +13,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/context"
+
+	"github.com/spf13/viper"
+
 	"github.com/go-redis/redis"
+	tfgredis "github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/extensions/redis/interfaces"
 	"github.com/topfreegames/podium/util"
 )
@@ -65,11 +71,13 @@ func (slice Members) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-// Leaderboard identifies a leaderboard with given redis client
-type Leaderboard struct {
-	RedisClient interfaces.RedisClient
-	PublicID    string
-	PageSize    int
+// Client represents the leaderboard manager object. Capable of managing multiple leaderboards.
+type Client struct {
+	redisClient *tfgredis.Client
+}
+
+func (c *Client) redisWithTracing(ctx context.Context) interfaces.RedisClient {
+	return c.redisClient.Trace(ctx)
 }
 
 func getSetScoreScript(operation string) *redis.Script {
@@ -139,8 +147,8 @@ func getSetScoreScript(operation string) *redis.Script {
 	`, operation, operation))
 }
 
-//GetMembersByRange for a given leaderboard
-func GetMembersByRange(redisClient interfaces.RedisClient, leaderboard string, startOffset int, endOffset int, order string) ([]*Member, error) {
+//getMembersByRange for a given leaderboard
+func getMembersByRange(redisClient interfaces.RedisClient, leaderboard string, startOffset int, endOffset int, order string) ([]*Member, error) {
 	cli := redisClient
 
 	var values []redis.Z
@@ -164,6 +172,11 @@ func GetMembersByRange(redisClient interfaces.RedisClient, leaderboard string, s
 	return members, nil
 }
 
+//GetMembersByRange for a given leaderboard
+func (c *Client) GetMembersByRange(ctx context.Context, leaderboard string, startOffset int, endOffset int, order string) ([]*Member, error) {
+	return getMembersByRange(c.redisWithTracing(ctx), leaderboard, startOffset, endOffset, order)
+}
+
 // getMemberIDWithClosestScore returns a member in a given leaderboard with score >= the score provided
 func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard string, score int64) (string, error) {
 	cli := redisClient
@@ -181,18 +194,52 @@ func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard
 	return values[0], nil
 }
 
-// NewLeaderboard creates a new Leaderboard with given settings, ID and pageSize
-func NewLeaderboard(redisClient interfaces.RedisClient, publicID string, pageSize int) *Leaderboard {
-	return &Leaderboard{RedisClient: redisClient, PublicID: publicID, PageSize: pageSize}
+// NewClient creates a leaderboard prepared to receive commands
+func NewClient(config *viper.Viper) (*Client, error) {
+	redisHost := config.GetString("redis.host")
+
+	if redisHost == "" {
+		return nil, fmt.Errorf("redis.host not defined")
+	}
+
+	redisPort := config.GetInt("redis.port")
+
+	if redisPort == 0 {
+		return nil, fmt.Errorf("redis.port not defined")
+	}
+
+	redisPass := config.GetString("redis.password")
+	redisDB := config.GetInt("redis.db")
+
+	redisURLObject := url.URL{
+		Scheme: "redis",
+		User:   url.UserPassword("", redisPass),
+		Host:   fmt.Sprintf("%s:%d", redisHost, redisPort),
+		Path:   fmt.Sprint(redisDB),
+	}
+	redisURL := redisURLObject.String()
+	config.Set("redis.url", redisURL)
+
+	cli, err := tfgredis.NewClient("redis", config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{redisClient: cli}, nil
+}
+
+//NewClientWithRedis creates a leaderboard using an already connected tfg Redis
+func NewClientWithRedis(cli *tfgredis.Client) *Client {
+	return &Client{redisClient: cli}
 }
 
 // IncrementMemberScore sets the score to the member with the given ID
-func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scoreTTL string) (*Member, error) {
-	cli := lb.RedisClient
+func (c *Client) IncrementMemberScore(ctx context.Context, leaderboardID string, memberID string, increment int,
+	scoreTTL string) (*Member, error) {
 
 	script := getSetScoreScript("ZINCRBY")
 
-	expireAt, err := util.GetExpireAt(lb.PublicID)
+	expireAt, err := util.GetExpireAt(leaderboardID)
 	if err != nil {
 		if _, ok := err.(*util.LeaderboardExpiredError); ok {
 			return nil, err
@@ -203,7 +250,7 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 
 	jsonMembers, _ := json.Marshal(Members{&Member{PublicID: memberID, Score: int64(increment)}})
 	// TODO use prevRank instead of hard coded false
-	result, err := script.Run(cli, []string{lb.PublicID}, jsonMembers, expireAt, false, scoreTTL, time.Now().Unix()).Result()
+	result, err := script.Run(c.redisWithTracing(ctx), []string{leaderboardID}, jsonMembers, expireAt, false, scoreTTL, time.Now().Unix()).Result()
 	if err != nil {
 		return nil, fmt.Errorf("Could not increment score for member: %v", err)
 	}
@@ -218,17 +265,17 @@ func (lb *Leaderboard) IncrementMemberScore(memberID string, increment int, scor
 }
 
 // SetMemberScore sets the score to the member with the given ID
-func (lb *Leaderboard) SetMemberScore(memberID string, score int64, prevRank bool, scoreTTL string) (*Member, error) {
+func (c *Client) SetMemberScore(ctx context.Context, leaderboardID string, memberID string, score int64, prevRank bool, scoreTTL string) (*Member, error) {
 	members := Members{&Member{PublicID: memberID, Score: score}}
-	err := lb.SetMembersScore(members, prevRank, scoreTTL)
+	err := c.SetMembersScore(ctx, leaderboardID, members, prevRank, scoreTTL)
 	return members[0], err
 }
 
 // SetMembersScore sets the scores of the members with the given IDs
-func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL string) error {
-	cli := lb.RedisClient
+func (c *Client) SetMembersScore(ctx context.Context, leaderboardID string, members Members, prevRank bool,
+	scoreTTL string) error {
 
-	expireAt, err := util.GetExpireAt(lb.PublicID)
+	expireAt, err := util.GetExpireAt(leaderboardID)
 	if err != nil {
 		if _, ok := err.(*util.LeaderboardExpiredError); ok {
 			return err
@@ -240,7 +287,8 @@ func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL 
 	script := getSetScoreScript("ZADD")
 
 	jsonMembers, _ := json.Marshal(members)
-	newRanks, err := script.Run(cli, []string{lb.PublicID}, jsonMembers, expireAt, prevRank, scoreTTL, time.Now().Unix()).Result()
+	newRanks, err := script.Run(c.redisWithTracing(ctx), []string{leaderboardID}, jsonMembers, expireAt, prevRank,
+		scoreTTL, time.Now().Unix()).Result()
 	if err != nil {
 		return fmt.Errorf("Failed to update rank for members: %v", err)
 	}
@@ -260,22 +308,22 @@ func (lb *Leaderboard) SetMembersScore(members Members, prevRank bool, scoreTTL 
 	return err
 }
 
-// TotalMembers returns the total number of members in a given leaderboard
-func (lb *Leaderboard) TotalMembers() (int, error) {
-	cli := lb.RedisClient
-
-	total, err := cli.ZCard(lb.PublicID).Result()
+func (c *Client) totalMembers(r interfaces.RedisClient, leaderboardID string) (int, error) {
+	total, err := r.ZCard(leaderboardID).Result()
 	if err != nil {
 		return 0, fmt.Errorf("Retrieval of total members failed: %v", err)
 	}
 	return int(total), nil
 }
 
-// RemoveMembers removes the members with the given publicIDs from the leaderboard
-func (lb *Leaderboard) RemoveMembers(memberIDs []interface{}) error {
-	cli := lb.RedisClient
+// TotalMembers returns the total number of members in a given leaderboard
+func (c *Client) TotalMembers(ctx context.Context, leaderboardID string) (int, error) {
+	return c.totalMembers(c.redisWithTracing(ctx), leaderboardID)
+}
 
-	_, err := cli.ZRem(lb.PublicID, memberIDs...).Result()
+// RemoveMembers removes the members with the given publicIDs from the leaderboard
+func (c *Client) RemoveMembers(ctx context.Context, leaderboardID string, memberIDs []interface{}) error {
+	_, err := c.redisWithTracing(ctx).ZRem(leaderboardID, memberIDs...).Result()
 	if err != nil {
 		return fmt.Errorf("Members removal failed: %v", err)
 	}
@@ -283,36 +331,34 @@ func (lb *Leaderboard) RemoveMembers(memberIDs []interface{}) error {
 }
 
 // RemoveMember removes the member with the given publicID from the leaderboard
-func (lb *Leaderboard) RemoveMember(memberID string) error {
-	cli := lb.RedisClient
-
-	_, err := cli.ZRem(lb.PublicID, memberID).Result()
+func (c *Client) RemoveMember(ctx context.Context, leaderboardID string, memberID string) error {
+	_, err := c.redisWithTracing(ctx).ZRem(leaderboardID, memberID).Result()
 	if err != nil {
 		return fmt.Errorf("Member removal failed: %v", err)
 	}
 	return nil
 }
 
-// TotalPages returns the number of pages of the leaderboard
-func (lb *Leaderboard) TotalPages() (int, error) {
-	cli := lb.RedisClient
-
+// totalPages returns the number of pages of the leaderboard
+func (c *Client) totalPages(redisClient interfaces.RedisClient, leaderboardID string, pageSize int) (int, error) {
 	pages := 0
-	total, err := cli.ZCard(lb.PublicID).Result()
+	total, err := redisClient.ZCard(leaderboardID).Result()
 	if err != nil {
 		return 0, fmt.Errorf("Number of pages could not be retrieved: %v", err)
 	}
-	pages = int(math.Ceil(float64(total) / float64(lb.PageSize)))
+	pages = int(math.Ceil(float64(total) / float64(pageSize)))
 	return pages, nil
 }
 
-// GetMember returns the score and the rank of the member with the given ID
-func (lb *Leaderboard) GetMember(memberID string, order string, includeTTL bool) (*Member, error) {
+func (c *Client) TotalPages(ctx context.Context, leaderboardID string, pageSize int) (int, error) {
+	return c.totalPages(c.redisWithTracing(ctx), leaderboardID, pageSize)
+}
+
+func (c *Client) getMember(r interfaces.RedisClient, leaderboardID string, memberID string, order string, includeTTL bool) (*Member, error) {
 	if order != "desc" && order != "asc" {
 		order = "desc"
 	}
 
-	cli := lb.RedisClient
 	var operations = map[string]string{
 		"rank_desc": "ZREVRANK",
 		"rank_asc":  "ZRANK",
@@ -335,7 +381,7 @@ func (lb *Leaderboard) GetMember(memberID string, order string, includeTTL bool)
 		return {rank,score}
 	`)
 
-	result, err := script.Run(cli, []string{lb.PublicID, memberID}, strconv.FormatBool(includeTTL)).Result()
+	result, err := script.Run(r, []string{leaderboardID, memberID}, strconv.FormatBool(includeTTL)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("Getting member information failed: %v", err)
 	}
@@ -343,7 +389,7 @@ func (lb *Leaderboard) GetMember(memberID string, order string, includeTTL bool)
 	res := result.([]interface{})
 
 	if res[0] == nil || res[1] == nil {
-		return nil, NewMemberNotFound(lb.PublicID, memberID)
+		return nil, NewMemberNotFound(leaderboardID, memberID)
 	}
 
 	rank := int(res[0].(int64))
@@ -359,9 +405,13 @@ func (lb *Leaderboard) GetMember(memberID string, order string, includeTTL bool)
 	return &nMember, nil
 }
 
+// GetMember returns the score and the rank of the member with the given ID
+func (c *Client) GetMember(ctx context.Context, leaderboardID string, memberID string, order string, includeTTL bool) (*Member, error) {
+	return c.getMember(c.redisWithTracing(ctx), leaderboardID, memberID, order, includeTTL)
+}
+
 // GetMembers returns the score and the rank of the members with the given IDs
-func (lb *Leaderboard) GetMembers(memberIDs []string, order string, includeTTL bool) ([]*Member, error) {
-	cli := lb.RedisClient
+func (c *Client) GetMembers(ctx context.Context, leaderboardID string, memberIDs []string, order string, includeTTL bool) ([]*Member, error) {
 
 	var operations = map[string]string{
 		"rank_desc": "ZREVRANK",
@@ -397,7 +447,7 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string, includeTTL b
 		return members
 	`)
 
-	result, err := script.Run(cli, []string{lb.PublicID}, strings.Join(memberIDs, ","), strconv.FormatBool(includeTTL)).Result()
+	result, err := script.Run(c.redisWithTracing(ctx), []string{leaderboardID}, strings.Join(memberIDs, ","), strconv.FormatBool(includeTTL)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("Getting members information failed: %v", err)
 	}
@@ -431,19 +481,20 @@ func (lb *Leaderboard) GetMembers(memberIDs []string, order string, includeTTL b
 	return members, nil
 }
 
-// GetAroundMe returns a page of results centered in the member with the given ID
-func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFound bool) ([]*Member, error) {
+func (c *Client) getAroundMe(redisClient interfaces.RedisClient, leaderboardID string, pageSize int, memberID string,
+	order string, getLastIfNotFound bool) ([]*Member, error) {
+
 	if order != "desc" && order != "asc" {
 		order = "desc"
 	}
 
-	currentMember, err := lb.GetMember(memberID, order, false)
+	currentMember, err := c.getMember(redisClient, leaderboardID, memberID, order, false)
 	_, memberNotFound := err.(*MemberNotFoundError)
 	if (err != nil && !memberNotFound) || (memberNotFound && !getLastIfNotFound) {
 		return nil, err
 	}
 
-	totalMembers, err := lb.TotalMembers()
+	totalMembers, err := c.totalMembers(redisClient, leaderboardID)
 	if err != nil {
 		return nil, err
 	}
@@ -452,20 +503,20 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFo
 		currentMember = &Member{PublicID: memberID, Score: 0, Rank: totalMembers + 1}
 	}
 
-	startOffset := currentMember.Rank - (lb.PageSize / 2)
+	startOffset := currentMember.Rank - (pageSize / 2)
 	if startOffset < 0 {
 		startOffset = 0
 	}
-	endOffset := (startOffset + lb.PageSize) - 1
+	endOffset := (startOffset + pageSize) - 1
 	if totalMembers < endOffset {
 		endOffset = totalMembers
-		startOffset = endOffset - lb.PageSize
+		startOffset = endOffset - pageSize
 		if startOffset < 0 {
 			startOffset = 0
 		}
 	}
 
-	members, err := GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, order)
+	members, err := getMembersByRange(redisClient, leaderboardID, startOffset, endOffset, order)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve information around a specific member: %v", err)
 	}
@@ -473,31 +524,36 @@ func (lb *Leaderboard) GetAroundMe(memberID string, order string, getLastIfNotFo
 	return members, nil
 }
 
+// GetAroundMe returns a page of results centered in the member with the given ID
+func (c *Client) GetAroundMe(ctx context.Context, leaderboardID string, pageSize int, memberID string, order string,
+	getLastIfNotFound bool) ([]*Member, error) {
+	return c.getAroundMe(c.redisWithTracing(ctx), leaderboardID, pageSize, memberID, order, getLastIfNotFound)
+}
+
 // GetAroundScore returns a page of results centered in the score provided
-func (lb *Leaderboard) GetAroundScore(score int64, order string) ([]*Member, error) {
-	//GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, order, l)
-	memberID, err := getMemberIDWithClosestScore(lb.RedisClient, lb.PublicID, score)
+func (c *Client) GetAroundScore(ctx context.Context, leaderboardID string, pageSize int, score int64, order string) ([]*Member, error) {
+	//getMembersByRange(c.RedisClient, c.PublicID, startOffset, endOffset, order, l)
+	redisClient := c.redisWithTracing(ctx)
+	memberID, err := getMemberIDWithClosestScore(redisClient, leaderboardID, score)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve information around a specific score (%d): %v", score, err)
 	}
 
-	return lb.GetAroundMe(memberID, order, true)
+	return c.getAroundMe(redisClient, leaderboardID, pageSize, memberID, order, true)
 }
 
 // GetRank returns the rank of the member with the given ID
-func (lb *Leaderboard) GetRank(memberID string, order string) (int, error) {
-	cli := lb.RedisClient
-
+func (c *Client) GetRank(ctx context.Context, leaderboardID string, memberID string, order string) (int, error) {
 	var rank int64
 	var err error
 	if order == "desc" {
-		rank, err = cli.ZRevRank(lb.PublicID, memberID).Result()
+		rank, err = c.redisWithTracing(ctx).ZRevRank(leaderboardID, memberID).Result()
 	} else {
-		rank, err = cli.ZRank(lb.PublicID, memberID).Result()
+		rank, err = c.redisWithTracing(ctx).ZRank(leaderboardID, memberID).Result()
 	}
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "redis: nil") {
-			return -1, NewMemberNotFound(lb.PublicID, memberID)
+			return -1, NewMemberNotFound(leaderboardID, memberID)
 		}
 
 		return -1, fmt.Errorf("Failed to retrieve rank of specific member: %v", err)
@@ -506,12 +562,13 @@ func (lb *Leaderboard) GetRank(memberID string, order string) (int, error) {
 }
 
 // GetLeaders returns a page of members with rank and score
-func (lb *Leaderboard) GetLeaders(page int, order string) ([]*Member, error) {
+func (c *Client) GetLeaders(ctx context.Context, leaderboardID string, pageSize, page int, order string) ([]*Member, error) {
+	redisClient := c.redisWithTracing(ctx)
 	if page < 1 {
 		page = 1
 	}
 
-	totalPages, err := lb.TotalPages()
+	totalPages, err := c.totalPages(redisClient, leaderboardID, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -521,13 +578,13 @@ func (lb *Leaderboard) GetLeaders(page int, order string) ([]*Member, error) {
 	}
 
 	redisIndex := page - 1
-	startOffset := redisIndex * lb.PageSize
-	endOffset := (startOffset + lb.PageSize) - 1
-	return GetMembersByRange(lb.RedisClient, lb.PublicID, startOffset, endOffset, order)
+	startOffset := redisIndex * pageSize
+	endOffset := (startOffset + pageSize) - 1
+	return getMembersByRange(redisClient, leaderboardID, startOffset, endOffset, order)
 }
 
 //GetTopPercentage of members in the leaderboard.
-func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int, order string) ([]*Member, error) {
+func (c *Client) GetTopPercentage(ctx context.Context, leaderboardID string, pageSize, amount, maxMembers int, order string) ([]*Member, error) {
 	if amount < 1 || amount > 100 {
 		return nil, fmt.Errorf("Percentage must be a valid integer between 1 and 100.")
 	}
@@ -536,7 +593,6 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int, order string) ([
 		order = "desc"
 	}
 
-	cli := lb.RedisClient
 	var operations = map[string]string{
 		"range_desc": "ZREVRANGE",
 		"rank_desc":  "ZREVRANK",
@@ -576,7 +632,7 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int, order string) ([
 		return fullMembers
 	`)
 
-	result, err := script.Run(cli, []string{lb.PublicID}, float64(amount)/100.0, maxMembers).Result()
+	result, err := script.Run(c.redisWithTracing(ctx), []string{leaderboardID}, float64(amount)/100.0, maxMembers).Result()
 
 	if err != nil {
 		return nil, fmt.Errorf("Getting top percentage of members failed; %v", err)
@@ -602,13 +658,15 @@ func (lb *Leaderboard) GetTopPercentage(amount, maxMembers int, order string) ([
 }
 
 // RemoveLeaderboard removes a leaderboard from redis
-func (lb *Leaderboard) RemoveLeaderboard() error {
-	cli := lb.RedisClient
-
-	_, err := cli.Del(lb.PublicID).Result()
+func (c *Client) RemoveLeaderboard(ctx context.Context, leaderboardID string) error {
+	_, err := c.redisWithTracing(ctx).Del(leaderboardID).Result()
 	if err != nil {
 		return fmt.Errorf("Failed to remove leaderboard: %v", err)
 	}
 
 	return nil
+}
+
+func (c *Client) Ping(ctx context.Context) (string, error) {
+	return c.redisWithTracing(ctx).Ping().Result()
 }

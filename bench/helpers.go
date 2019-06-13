@@ -9,6 +9,7 @@ package bench
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -96,16 +97,14 @@ func validateResp(statusCode int, body string, err error) {
 	}
 }
 
-func generateNMembers(amount int) *leaderboard.Leaderboard {
-	redisClient := getRedis()
+func generateNMembers(amount int) string {
+	client := leaderboard.NewClientWithRedis(getRedis())
 
 	lbID := "leaderboard-0"
 
-	l := leaderboard.NewLeaderboard(redisClient.Client, lbID, 10)
-
 	for i := 0; i < amount; i++ {
-		l.SetMemberScore(fmt.Sprintf("bench-member-%d", i), int64(100+i), false, "inf")
+		client.SetMemberScore(context.Background(), lbID, fmt.Sprintf("bench-member-%d", i), int64(100+i), false, "inf")
 	}
 
-	return l
+	return lbID
 }
