@@ -35,18 +35,19 @@ var _ = Describe("Leaderboard Model", func() {
 
 	BeforeEach(func() {
 		var err error
+		const host = "localhost"
+		const port = 1234
+		const db = 0
+		const connectionTimeout = 200
 
 		config := viper.New()
-		config.Set("redis.host", "localhost")
-		config.Set("redis.port", 1234)
-		config.Set("redis.db", 0)
-		config.Set("redis.connectionTimeout", 200)
-		config.Set("redis.url", "redis://localhost:1234/0")
+		config.Set("redis.url", fmt.Sprintf("redis://%s:%d/%d", host, port, db))
+		config.Set("redis.connectionTimeout", connectionTimeout)
 
 		redisClient, err = extredis.NewClient("redis", config)
 		Expect(err).NotTo(HaveOccurred())
 
-		leaderboards, err = NewClient(config)
+		leaderboards, err = NewClient(host, port, "", db, connectionTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		//First we connect properly

@@ -279,20 +279,25 @@ func (app *App) configureApplication() error {
 		time.Sleep(5 * time.Second)
 	}()
 
+	host := app.Config.GetString("redis.host")
+	port := app.Config.GetInt("redis.port")
+	password := app.Config.GetString("redis.password")
+	db := app.Config.GetInt("redis.db")
+	connectionTimeout := app.Config.GetInt("redis.connectionTimeout")
+
 	rl := l.With(
-		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v",
-			app.Config.GetString("redis.host"),
-			app.Config.GetInt("redis.port"),
-			app.Config.GetInt("redis.db"))),
-		zap.String("connectionTimeout", app.Config.GetString("redis.connectionTimeout")),
+		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", host, port, db)),
+		zap.Int("connectionTimeout", connectionTimeout),
 	)
+
 	rl.Info("Creating leaderboard client.")
-	cli, err := leaderboard.NewClient(app.Config)
+	cli, err := leaderboard.NewClient(host, port, password, db, connectionTimeout)
 	if err != nil {
 		return err
 	}
 	app.Leaderboards = cli
 	rl.Info("Leaderboard client creation successfull.")
+
 	return nil
 }
 
