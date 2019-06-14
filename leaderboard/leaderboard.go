@@ -194,31 +194,18 @@ func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard
 	return values[0], nil
 }
 
-// NewClient creates a leaderboard prepared to receive commands
-func NewClient(config *viper.Viper) (*Client, error) {
-	redisHost := config.GetString("redis.host")
-
-	if redisHost == "" {
-		return nil, fmt.Errorf("redis.host not defined")
-	}
-
-	redisPort := config.GetInt("redis.port")
-
-	if redisPort == 0 {
-		return nil, fmt.Errorf("redis.port not defined")
-	}
-
-	redisPass := config.GetString("redis.password")
-	redisDB := config.GetInt("redis.db")
-
-	redisURLObject := url.URL{
+// NewClient creates a leaderboard prepared to receive commands (host, port, password, db and connectionTimeout are used for connecting to Redis)
+func NewClient(host string, port int, password string, db int, connectionTimeout int) (*Client, error) {
+	redisURL := url.URL{
 		Scheme: "redis",
-		User:   url.UserPassword("", redisPass),
-		Host:   fmt.Sprintf("%s:%d", redisHost, redisPort),
-		Path:   fmt.Sprint(redisDB),
+		User:   url.UserPassword("", password),
+		Host:   fmt.Sprintf("%s:%d", host, port),
+		Path:   fmt.Sprint(db),
 	}
-	redisURL := redisURLObject.String()
-	config.Set("redis.url", redisURL)
+
+	config := viper.New()
+	config.Set("redis.url", redisURL.String())
+	config.Set("redis.connectionTimeout", fmt.Sprint(connectionTimeout))
 
 	cli, err := tfgredis.NewClient("redis", config)
 	if err != nil {
