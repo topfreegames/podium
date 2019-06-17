@@ -17,4 +17,5 @@ Contents:
    hosting
    leaderboard-names
    API
+   library
    benchmark

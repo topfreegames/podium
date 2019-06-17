@@ -18,7 +18,8 @@ Features
 * **Members around me** - Podium easily returns members around a specific member in the leaderboard. It will even compensate if you ask for the top member or last member to make sure you get a consistent amount of members;
 * **Batch score update** - In a single operation, send a member score to many different leaderboards or many members score to the same leaderboard. This allows easy tracking of member rankings in several leaderboards at once (global, regional, clan, etc.);
 * **Easy to deploy** - Podium comes with containers already exported to docker hub for every single of our successful builds. Just pick your choice!
-* **Leaderboards with expiration** - If a player last update is older than (timeNow - X seconds), delete it from the leaderboard
+* **Leaderboards with expiration** - If a player last update is older than (timeNow - X seconds), delete it from the leaderboard;
+* **Use as library** - You can use podium as a library as well, adding leaderboard functionality directly to your application;
 
 Installation
 ------------
@@ -30,8 +31,49 @@ Install Leaderboard using the "go get" command:
 And then run
 
     make setup
+    
+Quickstart (for using as library)
+--------------------------------
 
-Testing
+```
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/topfreegames/podium/leaderboard"
+)
+
+func main() {
+	leaderboards, err := leaderboard.NewClient("localhost", 1234, "", 0, 200)
+	if err != nil {
+		log.Fatalf("leaderboard.NewClient failed: %v", err)
+	}
+
+	const leaderboardID = "myleaderboardID"
+
+	//setting player scores
+	players := leaderboard.Members{
+		&leaderboard.Member{Score: 10, PublicID: "player1"},
+		&leaderboard.Member{Score: 20, PublicID: "player2"},
+	}
+
+	err = leaderboards.SetMembersScore(context.Background(), leaderboardID, players, false, "")
+	if err != nil {
+		log.Fatalf("leaderboards.SetMembersScore failed: %v", err)
+	}
+
+	//getting the leaders of the leaderboard
+	leaders, err := leaderboards.GetLeaders(context.Background(), leaderboardID, 10, 1, "desc")
+	if err != nil {
+		log.Fatalf("leaderboards.GetLeaders failed: %v", err)
+	}
+
+	for _, player := range leaders {
+		fmt.Printf("Player(id: %s, score: %d rank: %d)\n", player.PublicID, player.Score, player.Rank)
+	}
+}
+```
 -------
     make test
 
