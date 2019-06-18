@@ -1,7 +1,7 @@
 Overview
 ========
 
-What is Podium? Podium is a blazing-fast HTTP Leaderboard service. It could be used to manage any number of leaderboards of people or groups, but our aim is players in a game.
+What is Podium? Podium is a blazing-fast HTTP Leaderboard service and library. It could be used to manage any number of leaderboards of people or groups, but our aim is players in a game.
 
 Podium allows easy creation of different types of leaderboards with no set-up involved. Create seasonal, localized leaderboards just by varying their names.
 
@@ -14,6 +14,7 @@ Podium allows easy creation of different types of leaderboards with no set-up in
 * **Members around me** - Podium easily returns members around a specific member in the leaderboard. It will even compensate if you ask for the top member or last member to make sure you get a consistent amount of members;
 * **Batch score update** - In a single operation, send a member score to many different leaderboards or many members score to the same leaderboard. This allows easy tracking of member rankings in several leaderboards at once (global, regional, clan, etc.);
 * **Easy to deploy** - Podium comes with containers already exported to docker hub for every single of our successful builds. Just pick your choice!
+* **Use as library** - You can use podium as a library as well, adding leaderboard functionality directly to your application;
 
 ## Architecture
 
