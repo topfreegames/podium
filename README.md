@@ -3,8 +3,9 @@
 [![Build Status](https://travis-ci.org/topfreegames/podium.svg?branch=master)](https://travis-ci.org/topfreegames/podium)
 [![Coverage Status](https://coveralls.io/repos/github/topfreegames/podium/badge.svg?branch=master)](https://coveralls.io/github/topfreegames/podium?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/topfreegames/podium)](https://goreportcard.com/report/github.com/topfreegames/podium)
-[![Docs](https://readthedocs.org/projects/podium/badge/?version=latest
-)](http://podium.readthedocs.io/en/latest/) [![](https://imagelayers.io/badge/tfgco/podium:latest.svg)](https://imagelayers.io/?images=tfgco/podium:latest 'Podium Image Layers')
+[![Docs](https://readthedocs.org/projects/podium/badge/?version=latest)](http://podium.readthedocs.io/en/latest/)
+[![GoDoc](https://godoc.org/github.com/topfreegames/podium/leaderboard?status.svg)](https://godoc.org/github.com/topfreegames/podium/leaderboard)
+[![](https://imagelayers.io/badge/tfgco/podium:latest.svg)](https://imagelayers.io/?images=tfgco/podium:latest 'Podium Image Layers')
 
 A leaderboard system written in [Go](http://golang.org/) using [Redis](http://redis.io/) database. For more info, [read the docs](http://podium.readthedocs.io/en/latest/).
 

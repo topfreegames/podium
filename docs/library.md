@@ -1,7 +1,8 @@
-Library Examples
-================
+Library
+=======
 
-All examples have imported the leaderboard module using:
+For detailed information, check our [reference](https://godoc.org/github.com/topfreegames/podium/leaderboard).
+All examples below have imported the leaderboard module using:
 
 ```
 import "github.com/topfreegames/podium/leaderboard"
@@ -19,7 +20,7 @@ const connectionTimeout = 200
 leaderboards, err := leaderboard.NewClient(host, port, password, db, connectionTimeout)
 ```
 
-## Creating or updating member score and retrieving
+## Creating, updating or retrieving member scores
 
 ```
 const leaderboardID = "lbID"
@@ -101,8 +102,6 @@ for _, player := range leaders {
 
 ## Incrementing player scores
 
-This code example assumes that there is a playerA score stored on leaderboard lbID
-and  
 ```
 const leaderboardID = "lbID"
 const playerID = "playerA"
