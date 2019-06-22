@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
-	"github.com/labstack/echo/engine/standard"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/types"
 	"github.com/onsi/gomega"
@@ -37,16 +37,15 @@ func BeforeOnce(beforeBlock func()) {
 var client *http.Client
 var transport *http.Transport
 
-func initClient() {
+func initializeTestServer(app *api.App) {
 	if client == nil {
 		transport = &http.Transport{DisableKeepAlives: true}
 		client = &http.Client{Transport: transport}
 	}
-}
-func initializeTestServer(app *api.App) *httptest.Server {
-	initClient()
-	app.Engine.SetHandler(app.App)
-	return httptest.NewServer(app.Engine.(*standard.Server))
+	go func() {
+		_ = app.Start()
+	}()
+	time.Sleep(200 * time.Millisecond)
 }
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
@@ -55,7 +54,7 @@ func getDefaultTestApp() *api.App {
 		zap.NewJSONEncoder(),
 		zap.FatalLevel,
 	)
-	app, err := api.GetApp("0.0.0.0", 8890, "../config/test.yaml", false, false, logger)
+	app, err := api.GetApp("0.0.0.0", 8890, 8900, "../config/test.yaml", false, false, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
 	}
@@ -94,7 +93,7 @@ func measure(description string, setup func(map[string]interface{}), f func(*htt
 		var ctx map[string]interface{}
 
 		BeforeOnce(func() {
-			ts = initializeTestServer(app)
+			initializeTestServer(app)
 			ctx = map[string]interface{}{"app": app}
 			setup(ctx)
 		})

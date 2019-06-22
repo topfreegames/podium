@@ -16,7 +16,8 @@ import (
 )
 
 var host string
-var port int
+var httpPort int
+var grpcPort int
 var debug, quiet, fast bool
 
 // startCmd represents the start command
@@ -42,7 +43,8 @@ var startCmd = &cobra.Command{
 
 		app, err := api.GetApp(
 			host,
-			port,
+			httpPort,
+			grpcPort,
 			ConfigFile,
 			debug,
 			fast,
@@ -64,7 +66,8 @@ func init() {
 	RootCmd.AddCommand(startCmd)
 
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind podium to")
-	startCmd.Flags().IntVarP(&port, "port", "p", 8880, "Port to bind podium to")
+	startCmd.Flags().IntVarP(&httpPort, "http_port", "p", 8880, "HTTP Port to bind podium to")
+	startCmd.Flags().IntVarP(&grpcPort, "grpc_port", "g", 8890, "GRPC Port to bind podium to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode (log=debug)")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log=warn)")
 	startCmd.Flags().BoolVarP(&fast, "fast", "f", true, "FastHTTP server mode")

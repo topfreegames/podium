@@ -10,32 +10,32 @@
 package api
 
 import (
+	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
-	"github.com/labstack/echo"
+	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
-// HealthCheckHandler is the handler responsible for validating that the app is still up
-func HealthCheckHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		c.Set("route", "Healthcheck")
-		workingString := app.Config.GetString("healthcheck.workingText")
+func (app *App) HealthCheck(ctx context.Context, in *api.HealthCheckRequest) (*api.HealthCheckResponse, error) {
+	var res string
 
-		err := WithSegment("redis", c, func() error {
-			res, err := app.Leaderboards.Ping(c.StdContext())
-			if err != nil || res != "PONG" {
-				return fmt.Errorf("Error connecting to redis: %s", err)
-			}
-
-			return nil
-		})
+	err := withSegment("redis", ctx, func() error {
+		var err error
+		res, err = app.Leaderboards.Ping(ctx)
 		if err != nil {
-			return FailWith(http.StatusInternalServerError, err.Error(), c)
+			return fmt.Errorf("Error trying to ping redis: %v", err)
+		} else if res != "PONG" {
+			return fmt.Errorf("Redis return = %s, want PONG", res)
 		}
+		return nil
+	})
 
-		workingString = strings.TrimSpace(workingString)
-		return c.String(http.StatusOK, workingString)
+	if err != nil {
+		return nil, err
 	}
+
+	workingString := strings.TrimSpace(app.Config.GetString("healthcheck.workingText"))
+
+	return &api.HealthCheckResponse{WorkingString: workingString}, nil
 }

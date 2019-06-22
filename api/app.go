@@ -10,12 +10,18 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"google.golang.org/grpc"
 
 	"github.com/topfreegames/podium/leaderboard"
 
@@ -33,6 +39,9 @@ import (
 	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
+
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 // JSON type
@@ -42,12 +51,17 @@ type JSON map[string]interface{}
 type App struct {
 	Debug        bool
 	Fast         bool
-	Port         int
+	HTTPPort     int
+	GRPCPort     int
+	HTTPEndpoint string
+	GRPCEndpoint string
 	Host         string
 	ConfigPath   string
 	Errors       metrics.EWMA
 	App          *echo.Echo
 	Engine       engine.Server
+	grpcServer   *grpc.Server
+	httpServer   *http.Server
 	Config       *viper.Viper
 	Logger       zap.Logger
 	Leaderboards *leaderboard.Client
@@ -56,14 +70,17 @@ type App struct {
 }
 
 // GetApp returns a new podium Application
-func GetApp(host string, port int, configPath string, debug, fast bool, logger zap.Logger) (*App, error) {
+func GetApp(host string, httpPort, grpcPort int, configPath string, debug, fast bool, logger zap.Logger) (*App, error) {
 	app := &App{
-		Host:       host,
-		Port:       port,
-		ConfigPath: configPath,
-		Config:     viper.New(),
-		Debug:      debug,
-		Logger:     logger,
+		Host:         host,
+		HTTPPort:     httpPort,
+		GRPCPort:     grpcPort,
+		HTTPEndpoint: fmt.Sprintf("localhost:%d", httpPort),
+		GRPCEndpoint: fmt.Sprintf("localhost:%d", grpcPort),
+		ConfigPath:   configPath,
+		Config:       viper.New(),
+		Debug:        debug,
+		Logger:       logger,
 	}
 	err := app.Configure()
 	if err != nil {
@@ -223,10 +240,10 @@ func (app *App) configureApplication() error {
 		zap.String("operation", "configureApplication"),
 	)
 
-	app.Engine = standard.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
+	app.Engine = standard.New(fmt.Sprintf("%s:%d", app.Host, app.HTTPPort))
 	if app.Fast {
 		rb := app.Config.GetInt("api.maxReadBufferSize")
-		engine := fasthttp.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
+		engine := fasthttp.New(fmt.Sprintf("%s:%d", app.Host, app.HTTPPort))
 		engine.ReadBufferSize = rb
 		app.Engine = engine
 	}
@@ -253,7 +270,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	a.Get("/healthcheck", HealthCheckHandler(app))
 	a.Get("/status", StatusHandler(app))
 	a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
 	a.Put("/l/:leaderboardID/scores", BulkUpsertMembersScoreHandler(app))
@@ -271,6 +287,23 @@ func (app *App) configureApplication() error {
 	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
 	a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
 	a.Get("/l/:leaderboardID/scores/:score/around", GetAroundScoreHandler(app))
+
+	gatewayMux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	endpoint := fmt.Sprintf("localhost:%d", app.GRPCPort)
+
+	if err := api.RegisterPodiumAPIHandlerFromEndpoint(context.Background(), gatewayMux, endpoint, opts); err != nil {
+		return fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", gatewayMux)
+	mux.HandleFunc("/healthcheck", app.healthCheckHandler)
+
+	app.httpServer = &http.Server{
+		Addr:    app.HTTPEndpoint,
+		Handler: mux,
+	}
 
 	app.Errors = metrics.NewEWMA15()
 
@@ -312,12 +345,14 @@ func (app *App) Start() error {
 		zap.String("source", "app"),
 		zap.String("operation", "Start"),
 		zap.String("host", app.Host),
-		zap.Int("port", app.Port),
+		zap.Int("port", app.HTTPPort),
 	)
 
-	go func() {
-		app.App.Run(app.Engine)
-	}()
+	//errch is the channel for retrieving errors from server goroutines.
+	errch := make(chan error, 2)
+
+	go app.startGRPCServer(errch)
+	go app.startHTTPServer(errch)
 
 	log.I(l, "app started")
 	sg := make(chan os.Signal)
@@ -332,7 +367,84 @@ func (app *App) Start() error {
 				zap.Int("graceperiod", graceperiod))
 		})
 		time.Sleep(time.Duration(graceperiod) * time.Millisecond)
+	case err := <-errch:
+		return err
 	}
 	log.I(l, "app stopped")
 	return nil
+}
+
+func (app *App) startGRPCServer(errch chan<- error) {
+	lis, err := net.Listen("tcp", app.GRPCEndpoint)
+	if err != nil {
+		errch <- fmt.Errorf("error trying to listen for connections: %v", err)
+		return
+	}
+
+	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
+		grpc_middleware.ChainUnaryServer(
+			grpc.UnaryServerInterceptor(app.newRelicMiddleware),
+		),
+	))
+	api.RegisterPodiumAPIServer(app.grpcServer, app)
+
+	if err := app.grpcServer.Serve(lis); err != nil {
+		errch <- fmt.Errorf("error trying to serve with grpc server: %v", err)
+	}
+}
+
+func (app *App) startHTTPServer(errch chan<- error) {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	list, err := net.Listen("tcp", app.HTTPEndpoint)
+	if err != nil {
+		errch <- fmt.Errorf("error listening on HTTPEndpoint: %v", err)
+		return
+	}
+
+	if err := app.httpServer.Serve(list); err != http.ErrServerClosed {
+		errch <- fmt.Errorf("error listening and serving http requests: %v", err)
+	}
+}
+
+func (app *App) Stop() {
+	if app.grpcServer != nil {
+		app.grpcServer.GracefulStop()
+	}
+	if app.httpServer != nil {
+		if err := app.httpServer.Shutdown(context.Background()); err != nil {
+			app.Logger.Error("HTTP server Shutdown.", zap.Error(err))
+		}
+	}
+}
+
+//healthCheckHandler is the handler responsible for validating that the app is still up
+func (app *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	workingString := app.Config.GetString("healthcheck.workingText")
+	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	res, err := app.Leaderboards.Ping(context.Background())
+	var msg string
+	if err != nil || res != "PONG" {
+		w.WriteHeader(500)
+		msg = fmt.Sprintf("Error connecting to redis: %v", err)
+	} else {
+		w.WriteHeader(200)
+		msg = workingString
+	}
+
+	if _, err := w.Write([]byte(msg)); err != nil {
+		app.Logger.Error("Error writing /healthcheck response: %v", zap.Error(err))
+	}
+}
+
+func (app *App) closeAll(ctx context.Context) {
+	if app.httpServer != nil {
+		_ = app.httpServer.Shutdown(ctx)
+		_ = app.httpServer.Close()
+	}
+	if app.grpcServer != nil {
+		app.grpcServer.GracefulStop()
+	}
 }

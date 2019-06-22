@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"runtime/debug"
@@ -19,6 +20,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 //NewVersionMiddleware with API version
@@ -235,4 +237,25 @@ func (nr *NewRelicMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 
 		return nil
 	}
+}
+
+type newRelicContextKey struct {
+	key string
+}
+
+func (app *App) newRelicMiddleware(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (interface{}, error) {
+	txn := app.NewRelic.StartTransaction(info.FullMethod, nil, nil)
+	newCtx := context.WithValue(ctx, newRelicContextKey{"txn"}, txn)
+	defer func() {
+		txn.End()
+	}()
+	h, err := handler(newCtx, req)
+	if err != nil {
+		txn.NoticeError(err)
+	}
+	return h, err
 }

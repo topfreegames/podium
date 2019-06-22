@@ -1,0 +1,27 @@
+syntax = "proto3";
+package podium.api.v1;
+
+import "google/api/annotations.proto";
+
+service PodiumAPI {
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+    rpc TotalMembers(TotalMembersRequest) returns (TotalMembersResponse) {
+        option (google.api.http) = {
+            post: "/l/{leaderboardID}/members-count"
+        };
+    }
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+    string workingString = 1;
+}
+
+message TotalMembersRequest {
+    string leaderboardID = 1;
+}
+
+message TotalMembersResponse {
+    int32 count = 1;
+}

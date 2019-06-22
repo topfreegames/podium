@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,6 +19,8 @@ import (
 	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/leaderboard"
 	"go.uber.org/zap"
+
+	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 var notFoundError = "Could not find data for member"
@@ -583,6 +586,35 @@ func GetTotalMembersHandler(app *App) func(c echo.Context) error {
 	}
 }
 
+func (app *App) TotalMembers(ctx context.Context, in *api.TotalMembersRequest) (*api.TotalMembersResponse, error) {
+	leaderboardID := in.LeaderboardID
+	lg := app.Logger.With(
+		zap.String("handler", "GetTotalMembersHandler"),
+		zap.String("leaderboard", leaderboardID),
+	)
+
+	var count int
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting total members.")
+		count, err = app.Leaderboards.TotalMembers(ctx, leaderboardID)
+
+		if err != nil {
+			lg.Error("Getting total members failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting total members succeeded.")
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.TotalMembersResponse{Count: int32(count)}, nil
+}
+
 // GetTopMembersHandler retrieves onePage of member score and rank
 func GetTopMembersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
@@ -839,7 +871,7 @@ func RemoveLeaderboardHandler(app *App) func(c echo.Context) error {
 				app.AddError()
 				return err
 			}
-			lg.Debug("Remove leaderboard succeeeded.")
+			lg.Debug("Remove leaderboard succeeded.")
 			return nil
 		})
 		if err != nil {

@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -213,5 +214,15 @@ func WithSegment(name string, c echo.Context, f func() error) error {
 	}
 	segment := newrelic.StartSegment(tx, name)
 	defer segment.End()
+	return f()
+}
+
+func withSegment(name string, ctx context.Context, f func() error) error {
+	if txn := ctx.Value(newRelicContextKey{"txn"}); txn != nil {
+		if txn := txn.(newrelic.Transaction); txn != nil {
+			segment := newrelic.StartSegment(txn, name)
+			defer segment.End()
+		}
+	}
 	return f()
 }

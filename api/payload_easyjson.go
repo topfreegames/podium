@@ -218,7 +218,7 @@ func easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi2(in *jlexer.Lexer, out
 						if v4 == nil {
 							v4 = new(memberScorePayload)
 						}
-						easyjsonA8a797f8DecodeGithubComTopfreegamesPodiumApi3(in, v4)
+						(*v4).UnmarshalEasyJSON(in)
 					}
 					out.MembersScore = append(out.MembersScore, v4)
 					in.WantComma()
@@ -258,7 +258,7 @@ func easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi2(out *jwriter.Writer, 
 				if v6 == nil {
 					out.RawString("null")
 				} else {
-					easyjsonA8a797f8EncodeGithubComTopfreegamesPodiumApi3(out, *v6)
+					(*v6).MarshalEasyJSON(out)
 				}
 			}
 			out.RawByte(']')
