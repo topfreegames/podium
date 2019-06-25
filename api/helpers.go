@@ -38,6 +38,10 @@ type EasyJSONMarshaler interface {
 	MarshalEasyJSON(w *jwriter.Writer)
 }
 
+func newFailMsg(msg string) string {
+	return fmt.Sprintf(`{"success":false,"reason":"%s"}`, msg)
+}
+
 // FailWith fails with the specified message
 func FailWith(status int, message string, c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)

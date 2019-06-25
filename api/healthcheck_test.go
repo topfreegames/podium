@@ -16,11 +16,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	pb "github.com/topfreegames/podium/proto/podium/api/v1"
+	"github.com/golang/protobuf/ptypes/empty"
+	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 var _ = Describe("Healthcheck Handler", func() {
-	It("Should respond with default WORKING string", func() {
+	It("Should respond with default WORKING string (http)", func() {
 		a := GetDefaultTestApp()
 		status, body := Get(a, "/healthcheck")
 
@@ -28,17 +29,19 @@ var _ = Describe("Healthcheck Handler", func() {
 		Expect(body).To(Equal("WORKING"))
 	})
 
-	It("Should respond with default WORKING string", func() {
+	It("Should respond with default WORKING string (grpc)", func() {
 		a := GetDefaultTestApp()
-		req := &pb.HealthCheckRequest{}
-		resp, err := a.HealthCheck(context.Background(), req)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(resp.WorkingString).To(Equal("WORKING"))
+
+		SetupGRPC(a, func(cli api.PodiumAPIClient) {
+			resp, err := cli.HealthCheck(context.Background(), &empty.Empty{})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.WorkingString).To(Equal("WORKING"))
+		})
 	})
 
-	It("Should respond with customized WORKING string", func() {
+	It("Should respond with customized WORKING string (http)", func() {
 		a := GetDefaultTestApp()
-
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
 		status, body := Get(a, "/healthcheck")
 
@@ -46,18 +49,19 @@ var _ = Describe("Healthcheck Handler", func() {
 		Expect(body).To(Equal("OTHERWORKING"))
 	})
 
-	It("Should respond with customized WORKING string", func() {
+	It("Should respond with customized WORKING string (grpc)", func() {
 		a := GetDefaultTestApp()
-
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
-		req := &pb.HealthCheckRequest{}
-		resp, err := a.HealthCheck(context.Background(), req)
 
-		Expect(err).NotTo(HaveOccurred())
-		Expect(resp.WorkingString).To(Equal("OTHERWORKING"))
+		SetupGRPC(a, func(cli api.PodiumAPIClient) {
+			resp, err := cli.HealthCheck(context.Background(), &empty.Empty{})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.WorkingString).To(Equal("OTHERWORKING"))
+		})
 	})
 
-	It("Should fail if redis failing", func() {
+	It("Should fail if redis failing (http)", func() {
 		a := GetDefaultTestAppWithFaultyRedis()
 
 		status, body := Get(a, "/healthcheck")
@@ -66,14 +70,15 @@ var _ = Describe("Healthcheck Handler", func() {
 		Expect(body).To(ContainSubstring("connection refused"))
 	})
 
-	It("Should fail if redis failing", func() {
+	It("Should fail if redis failing (grpc)", func() {
 		a := GetDefaultTestAppWithFaultyRedis()
 
-		req := &pb.HealthCheckRequest{}
-		resp, err := a.HealthCheck(context.Background(), req)
+		SetupGRPC(a, func(cli api.PodiumAPIClient) {
+			resp, err := cli.HealthCheck(context.Background(), &empty.Empty{})
 
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("connection refused"))
-		Expect(resp).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection refused"))
+			Expect(resp).To(BeNil())
+		})
 	})
 })

@@ -2,20 +2,38 @@ syntax = "proto3";
 package podium.api.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 
 service PodiumAPI {
-    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+    rpc HealthCheck(google.protobuf.Empty) returns (HealthCheckResponse);
+    rpc Status(google.protobuf.Empty) returns (StatusResponse);
+    rpc RemoveLeaderboard(RemoveLeaderboardRequest) returns (BasicResponse) {
+        option (google.api.http) = {
+            delete: "/l/{leaderboardID}"
+        };
+    }
     rpc TotalMembers(TotalMembersRequest) returns (TotalMembersResponse) {
         option (google.api.http) = {
-            post: "/l/{leaderboardID}/members-count"
+            get: "/l/{leaderboardID}/members-count"
         };
     }
 }
 
-message HealthCheckRequest {}
-
 message HealthCheckResponse {
     string workingString = 1;
+}
+
+message StatusResponse {
+    double errorRate = 1;
+}
+
+message RemoveLeaderboardRequest {
+    string leaderboardID = 1;
+}
+
+message BasicResponse {
+    bool success = 1;
+    string reason = 2;
 }
 
 message TotalMembersRequest {
@@ -23,5 +41,6 @@ message TotalMembersRequest {
 }
 
 message TotalMembersResponse {
-    int32 count = 1;
+    bool success = 1;
+    int32 count = 2;
 }

@@ -20,6 +20,8 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/leaderboard"
 
@@ -30,6 +32,8 @@ import (
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/testing"
 	"github.com/valyala/fasthttp"
+
+	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 func GetConnectedRedis() (*extredis.Client, error) {
@@ -221,4 +225,22 @@ func fastSendTo(method, url string, payload []byte) (int, []byte, error) {
 	resp := fasthttp.AcquireResponse()
 	err := c.Do(req, resp)
 	return resp.StatusCode(), resp.Body(), err
+}
+
+//sets up the environment for grpc communication, starting the app and creating a connected client
+func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
+	go func() {
+		_ = app.Start()
+	}()
+	time.Sleep(25 * time.Millisecond)
+
+	conn, err := grpc.Dial(app.GRPCEndpoint, grpc.WithInsecure())
+	Expect(err).NotTo(HaveOccurred())
+	defer conn.Close()
+
+	cli := pb.NewPodiumAPIClient(conn)
+
+	f(cli)
+
+	app.Stop()
 }

@@ -553,43 +553,11 @@ func GetAroundScoreHandler(app *App) func(c echo.Context) error {
 	}
 }
 
-// GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
-func GetTotalMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetTotalMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
-
-		count := 0
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting total members.")
-			count, err = app.Leaderboards.TotalMembers(c.StdContext(), leaderboardID)
-
-			if err != nil {
-				lg.Error("Getting total members failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Getting total members succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"count": count,
-		}, c)
-	}
-}
-
+// TotalMembers is the handler responsible for returning the total number of members in a leaderboard
 func (app *App) TotalMembers(ctx context.Context, in *api.TotalMembersRequest) (*api.TotalMembersResponse, error) {
 	leaderboardID := in.LeaderboardID
 	lg := app.Logger.With(
-		zap.String("handler", "GetTotalMembersHandler"),
+		zap.String("handler", "TotalMembers"),
 		zap.String("leaderboard", leaderboardID),
 	)
 
@@ -612,7 +580,7 @@ func (app *App) TotalMembers(ctx context.Context, in *api.TotalMembersRequest) (
 		return nil, err
 	}
 
-	return &api.TotalMembersResponse{Count: int32(count)}, nil
+	return &api.TotalMembersResponse{Success: true, Count: int32(count)}, nil
 }
 
 // GetTopMembersHandler retrieves onePage of member score and rank
@@ -853,31 +821,29 @@ func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
 	}
 }
 
-// RemoveLeaderboardHandler is the handler responsible for removing a leaderboard
-func RemoveLeaderboardHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "RemoveLeaderboardHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+// RemoveLeaderboard is the handler responsible for removing a leaderboard
+func (app *App) RemoveLeaderboard(ctx context.Context, in *api.RemoveLeaderboardRequest) (*api.BasicResponse, error) {
+	leaderboardID := in.LeaderboardID
+	lg := app.Logger.With(
+		zap.String("handler", "RemoveLeaderboard"),
+		zap.String("leaderboard", leaderboardID),
+	)
 
-		err := WithSegment("Model", c, func() error {
-			lg.Debug("Removing leaderboard.")
-			err := app.Leaderboards.RemoveLeaderboard(c.StdContext(), leaderboardID)
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Removing leaderboard.")
+		err := app.Leaderboards.RemoveLeaderboard(ctx, leaderboardID)
 
-			if err != nil {
-				lg.Error("Remove leaderboard failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Remove leaderboard succeeded.")
-			return nil
-		})
 		if err != nil {
-			return FailWith(500, err.Error(), c)
+			lg.Error("Remove leaderboard failed.", zap.Error(err))
+			app.AddError()
+			return err
 		}
-
-		return SucceedWith(map[string]interface{}{}, c)
+		lg.Debug("Remove leaderboard succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	return &api.BasicResponse{Success: true}, nil
 }

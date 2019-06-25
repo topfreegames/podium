@@ -10,6 +10,7 @@
 package api_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -25,6 +26,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/topfreegames/podium/api"
 	. "github.com/topfreegames/podium/testing"
+
+	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 var _ = Describe("Leaderboard Handler", func() {
@@ -1485,17 +1488,32 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Total Members Handler", func() {
-		It("Should get the number of members in a leaderboard it exists", func() {
+		It("Should get the number of members in a leaderboard it exists (http)", func() {
 			for i := 1; i <= 100; i++ {
 				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(a, "/l/testkey/members-count")
+			status, body := Get(a, fmt.Sprintf("/l/%s/members-count", testLeaderboardID))
 			Expect(status).To(Equal(http.StatusOK), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(int(result["count"].(float64))).To(Equal(100))
+		})
+
+		It("Should get the number of members in a leaderboard it exists (grpc)", func() {
+			for i := 1; i <= 100; i++ {
+				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				resp, err := cli.TotalMembers(context.Background(),
+					&pb.TotalMembersRequest{LeaderboardID: testLeaderboardID})
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(int(resp.Count)).To(Equal(100))
+			})
 		})
 
 		It("Should not fail if leaderboard does not exist", func() {

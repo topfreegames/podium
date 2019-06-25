@@ -20,6 +20,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/topfreegames/podium/util"
+
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 
@@ -40,7 +44,6 @@ import (
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
@@ -114,6 +117,40 @@ func (app *App) Configure() error {
 	err = app.configureApplication()
 	if err != nil {
 		return err
+	}
+
+	//we are customizing the default http error reply
+	runtime.HTTPError = func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler,
+		w http.ResponseWriter, _ *http.Request, err error) {
+		w.Header().Set("Content-Type", marshaler.ContentType())
+		var s int
+
+		switch err.(type) {
+		case *util.LeaderboardExpiredError:
+			s = http.StatusBadRequest
+		default:
+			s = http.StatusInternalServerError
+		}
+
+		w.WriteHeader(s)
+
+		type errorBody struct {
+			Success bool   `json:"success"`
+			Reason  string `json:"reason"`
+		}
+
+		body := &errorBody{
+			Success: false,
+			Reason:  err.Error(),
+		}
+
+		buf, merr := marshaler.Marshal(body)
+		if merr != nil {
+			app.Logger.Error("Failed to marshal error body,", zap.Error(merr))
+		}
+		if _, err := w.Write(buf); err != nil {
+			app.Logger.Error("Failed to write response.,", zap.Error(err))
+		}
 	}
 
 	return nil
@@ -270,8 +307,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	a.Get("/status", StatusHandler(app))
-	a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
 	a.Put("/l/:leaderboardID/scores", BulkUpsertMembersScoreHandler(app))
 	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
 	a.Patch("/l/:leaderboardID/members/:memberPublicID/score", IncrementMemberScoreHandler(app))
@@ -281,29 +316,11 @@ func (app *App) configureApplication() error {
 	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
-	a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
 	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopMembersHandler(app))
 	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
 	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
 	a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
 	a.Get("/l/:leaderboardID/scores/:score/around", GetAroundScoreHandler(app))
-
-	gatewayMux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-	endpoint := fmt.Sprintf("localhost:%d", app.GRPCPort)
-
-	if err := api.RegisterPodiumAPIHandlerFromEndpoint(context.Background(), gatewayMux, endpoint, opts); err != nil {
-		return fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/", gatewayMux)
-	mux.HandleFunc("/healthcheck", app.healthCheckHandler)
-
-	app.httpServer = &http.Server{
-		Addr:    app.HTTPEndpoint,
-		Handler: mux,
-	}
 
 	app.Errors = metrics.NewEWMA15()
 
@@ -394,6 +411,25 @@ func (app *App) startGRPCServer(errch chan<- error) {
 }
 
 func (app *App) startHTTPServer(errch chan<- error) {
+	gatewayMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard,
+		&runtime.JSONPb{EmitDefaults: true}))
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	endpoint := fmt.Sprintf("localhost:%d", app.GRPCPort)
+
+	if err := api.RegisterPodiumAPIHandlerFromEndpoint(context.Background(), gatewayMux, endpoint, opts); err != nil {
+		errch <- fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", gatewayMux)
+	mux.HandleFunc("/healthcheck", app.healthCheckHandler)
+	mux.HandleFunc("/status", app.statusHandler)
+
+	app.httpServer = &http.Server{
+		Addr:    app.HTTPEndpoint,
+		Handler: mux,
+	}
+
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -417,25 +453,6 @@ func (app *App) Stop() {
 		if err := app.httpServer.Shutdown(context.Background()); err != nil {
 			app.Logger.Error("HTTP server Shutdown.", zap.Error(err))
 		}
-	}
-}
-
-//healthCheckHandler is the handler responsible for validating that the app is still up
-func (app *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	workingString := app.Config.GetString("healthcheck.workingText")
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	res, err := app.Leaderboards.Ping(context.Background())
-	var msg string
-	if err != nil || res != "PONG" {
-		w.WriteHeader(500)
-		msg = fmt.Sprintf("Error connecting to redis: %v", err)
-	} else {
-		w.WriteHeader(200)
-		msg = workingString
-	}
-
-	if _, err := w.Write([]byte(msg)); err != nil {
-		app.Logger.Error("Error writing /healthcheck response: %v", zap.Error(err))
 	}
 }
 
