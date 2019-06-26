@@ -12,6 +12,12 @@ service PodiumAPI {
             delete: "/l/{leaderboardID}"
         };
     }
+    rpc BulkUpsertScores(BulkUpsertScoresRequest) returns (BulkUpsertScoresResponse) {
+        option (google.api.http) = {
+            put: "/l/{leaderboardID}/scores"
+            body: "scoreUpserts"
+        };
+    }
     rpc TotalMembers(TotalMembersRequest) returns (TotalMembersResponse) {
         option (google.api.http) = {
             get: "/l/{leaderboardID}/members-count"
@@ -29,6 +35,36 @@ message StatusResponse {
 
 message RemoveLeaderboardRequest {
     string leaderboardID = 1;
+}
+
+message ScoreUpsert {
+    string publicID = 1;
+    int64 score = 2;
+}
+
+message ScoreUpserts {
+    repeated ScoreUpsert members = 1;
+}
+
+message BulkUpsertScoresRequest {
+    string leaderboardID = 1;
+    bool prevRank = 2;
+    string scoreTTL = 3;
+    ScoreUpserts scoreUpserts = 4;
+}
+
+message Member {
+    string publicID = 1;
+    double score = 2; //implemented as double because int64 is exported as string through grpc-gateway
+    int64 intScore = 3; //the full int64 score received from Redis
+    int32 rank = 4;
+    int32 previousRank = 5;
+    int32 expireAt = 6;
+}
+
+message BulkUpsertScoresResponse {
+    bool success = 1;
+    repeated Member members = 2;
 }
 
 message BasicResponse {

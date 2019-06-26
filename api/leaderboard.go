@@ -15,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
+
 	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/leaderboard"
@@ -57,53 +61,66 @@ func serializeMembers(members leaderboard.Members, includePosition bool, include
 	return serializedMembers
 }
 
-// BulkUpsertMembersScoreHandler is the handler responsible for creating or updating members score
-func BulkUpsertMembersScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "BulkUpsertMembersScoreHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
-
-		var payload setMembersScorePayload
-		prevRank := c.QueryParam("prevRank") == "true"
-		scoreTTL := c.QueryParam("scoreTTL")
-
-		err := WithSegment("Payload", c, func() error {
-			if err := LoadJSONPayload(&payload, c, lg); err != nil {
-				app.AddError()
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(400, err.Error(), c)
+func validateBulkUpsertScoresRequest(in *api.BulkUpsertScoresRequest) error {
+	for _, m := range in.ScoreUpserts.Members {
+		if m.PublicID == "" {
+			return status.New(codes.InvalidArgument, "publicID is required").Err()
 		}
-
-		members := make(leaderboard.Members, len(payload.MembersScore))
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Setting member scores.")
-			for i, ms := range payload.MembersScore {
-				members[i] = &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID}
-			}
-			err = app.Leaderboards.SetMembersScore(c.StdContext(), leaderboardID, members, prevRank, scoreTTL)
-
-			if err != nil {
-				lg.Error("Setting member scores failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Setting member scores succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWithError(err, c)
-		}
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, scoreTTL != ""),
-		}, c)
 	}
+	return nil
+}
+
+// BulkUpsertMembersScoreHandler is the handler responsible for creating or updating members score
+func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRequest) (*api.BulkUpsertScoresResponse, error) {
+	if err := validateBulkUpsertScoresRequest(in); err != nil {
+		return nil, err
+	}
+
+	leaderboardID := in.LeaderboardID
+	lg := app.Logger.With(
+		zap.String("handler", "BulkUpsertMembersScoreHandler"),
+		zap.String("leaderboard", leaderboardID),
+	)
+
+	prevRank := in.PrevRank
+	scoreTTL := in.ScoreTTL
+
+	members := make(leaderboard.Members, len(in.ScoreUpserts.Members))
+
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Setting member scores.")
+		for i, ms := range in.ScoreUpserts.Members {
+			members[i] = &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID}
+		}
+		err := app.Leaderboards.SetMembersScore(ctx, leaderboardID, members, prevRank, scoreTTL)
+
+		if err != nil {
+			lg.Error("Setting member scores failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Setting member scores succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	states := make([]*api.Member, len(in.ScoreUpserts.Members))
+
+	for i, m := range members {
+		states[i] = &api.Member{PublicID: m.PublicID, Score: float64(m.Score), IntScore: m.Score, Rank: int32(m.Rank)}
+
+		if prevRank {
+			states[i].PreviousRank = int32(m.PreviousRank)
+		}
+
+		if scoreTTL != "" {
+			states[i].ExpireAt = int32(m.ExpireAt)
+		}
+	}
+
+	return &api.BulkUpsertScoresResponse{Success: true, Members: states}, nil
 }
 
 // UpsertMemberScoreHandler is the handler responsible for creating or updating the member score

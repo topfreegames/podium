@@ -20,12 +20,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/topfreegames/podium/util"
-
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 
 	"github.com/topfreegames/podium/leaderboard"
 
@@ -125,11 +124,11 @@ func (app *App) Configure() error {
 		w.Header().Set("Content-Type", marshaler.ContentType())
 		var s int
 
-		switch err.(type) {
-		case *util.LeaderboardExpiredError:
-			s = http.StatusBadRequest
-		default:
+		st, ok := status.FromError(err)
+		if !ok {
 			s = http.StatusInternalServerError
+		} else {
+			s = runtime.HTTPStatusFromCode(st.Code())
 		}
 
 		w.WriteHeader(s)
@@ -141,7 +140,7 @@ func (app *App) Configure() error {
 
 		body := &errorBody{
 			Success: false,
-			Reason:  err.Error(),
+			Reason:  st.Message(),
 		}
 
 		buf, merr := marshaler.Marshal(body)
@@ -307,7 +306,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	a.Put("/l/:leaderboardID/scores", BulkUpsertMembersScoreHandler(app))
 	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
 	a.Patch("/l/:leaderboardID/members/:memberPublicID/score", IncrementMemberScoreHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))

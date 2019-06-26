@@ -156,7 +156,6 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
 				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
-				Expect(member).NotTo(HaveKey("previousRank"))
 			}
 
 			member1, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid1", "desc", false)
@@ -189,7 +188,6 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(int64(member["score"].(float64))).To(Equal(payload["members"].([]map[string]interface{})[i]["score"].(int64)))
 				Expect(member["publicID"]).To(Equal(payload["members"].([]map[string]interface{})[i]["publicID"].(string)))
-				Expect(member).NotTo(HaveKey("previousRank"))
 			}
 
 			member1, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid1", "desc", false)
@@ -311,15 +309,15 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if wrong type for score", func() {
 			payload := map[string]interface{}{"members": []map[string]interface{}{
-				{"publicID": "memberpublicid1", "score": "100"},
-				{"publicID": "memberpublicid2", "score": "50"},
+				{"publicID": "memberpublicid1", "score": "hundred"},
+				{"publicID": "memberpublicid2", "score": "fifty"},
 			}}
 			status, body := PutJSON(a, "/l/testkey/scores", payload)
 			Expect(status).To(Equal(http.StatusBadRequest), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(ContainSubstring("parse error: expected number"))
+			Expect(result["reason"]).To(ContainSubstring("invalid character"))
 		})
 
 		It("Should fail if missing parameters", func() {
@@ -340,7 +338,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(ContainSubstring("parse error: syntax error"))
+			Expect(result["reason"]).To(ContainSubstring("invalid character"))
 		})
 
 		It("Should fail if error updating score", func() {
