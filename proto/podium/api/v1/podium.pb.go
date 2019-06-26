@@ -27,7 +27,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type HealthCheckResponse struct {
-	WorkingString        string   `protobuf:"bytes,1,opt,name=workingString,proto3" json:"workingString,omitempty"`
+	WorkingString        string   `protobuf:"bytes,1,opt,name=working_string,json=workingString,proto3" json:"working_string,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -66,7 +66,7 @@ func (m *HealthCheckResponse) GetWorkingString() string {
 }
 
 type StatusResponse struct {
-	ErrorRate            float64  `protobuf:"fixed64,1,opt,name=errorRate,proto3" json:"errorRate,omitempty"`
+	ErrorRate            float64  `protobuf:"fixed64,1,opt,name=error_rate,json=errorRate,proto3" json:"error_rate,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -105,7 +105,7 @@ func (m *StatusResponse) GetErrorRate() float64 {
 }
 
 type RemoveLeaderboardRequest struct {
-	LeaderboardID        string   `protobuf:"bytes,1,opt,name=leaderboardID,proto3" json:"leaderboardID,omitempty"`
+	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -136,9 +136,9 @@ func (m *RemoveLeaderboardRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RemoveLeaderboardRequest proto.InternalMessageInfo
 
-func (m *RemoveLeaderboardRequest) GetLeaderboardID() string {
+func (m *RemoveLeaderboardRequest) GetLeaderboardId() string {
 	if m != nil {
-		return m.LeaderboardID
+		return m.LeaderboardId
 	}
 	return ""
 }
@@ -230,10 +230,10 @@ func (m *ScoreUpserts) GetMembers() []*ScoreUpsert {
 }
 
 type BulkUpsertScoresRequest struct {
-	LeaderboardID        string        `protobuf:"bytes,1,opt,name=leaderboardID,proto3" json:"leaderboardID,omitempty"`
-	PrevRank             bool          `protobuf:"varint,2,opt,name=prevRank,proto3" json:"prevRank,omitempty"`
+	LeaderboardId        string        `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
+	PrevRank             bool          `protobuf:"varint,2,opt,name=prev_rank,json=prevRank,proto3" json:"prev_rank,omitempty"`
 	ScoreTTL             string        `protobuf:"bytes,3,opt,name=scoreTTL,proto3" json:"scoreTTL,omitempty"`
-	ScoreUpserts         *ScoreUpserts `protobuf:"bytes,4,opt,name=scoreUpserts,proto3" json:"scoreUpserts,omitempty"`
+	ScoreUpserts         *ScoreUpserts `protobuf:"bytes,4,opt,name=score_upserts,json=scoreUpserts,proto3" json:"score_upserts,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -264,9 +264,9 @@ func (m *BulkUpsertScoresRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_BulkUpsertScoresRequest proto.InternalMessageInfo
 
-func (m *BulkUpsertScoresRequest) GetLeaderboardID() string {
+func (m *BulkUpsertScoresRequest) GetLeaderboardId() string {
 	if m != nil {
-		return m.LeaderboardID
+		return m.LeaderboardId
 	}
 	return ""
 }
@@ -292,79 +292,79 @@ func (m *BulkUpsertScoresRequest) GetScoreUpserts() *ScoreUpserts {
 	return nil
 }
 
-type Member struct {
+type MemberResponse struct {
 	PublicID             string   `protobuf:"bytes,1,opt,name=publicID,proto3" json:"publicID,omitempty"`
 	Score                float64  `protobuf:"fixed64,2,opt,name=score,proto3" json:"score,omitempty"`
-	IntScore             int64    `protobuf:"varint,3,opt,name=intScore,proto3" json:"intScore,omitempty"`
+	IntScore             int64    `protobuf:"varint,3,opt,name=int_score,json=intScore,proto3" json:"int_score,omitempty"`
 	Rank                 int32    `protobuf:"varint,4,opt,name=rank,proto3" json:"rank,omitempty"`
-	PreviousRank         int32    `protobuf:"varint,5,opt,name=previousRank,proto3" json:"previousRank,omitempty"`
-	ExpireAt             int32    `protobuf:"varint,6,opt,name=expireAt,proto3" json:"expireAt,omitempty"`
+	PreviousRank         int32    `protobuf:"varint,5,opt,name=previous_rank,json=previousRank,proto3" json:"previous_rank,omitempty"`
+	ExpireAt             int32    `protobuf:"varint,6,opt,name=expire_at,json=expireAt,proto3" json:"expire_at,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Member) Reset()         { *m = Member{} }
-func (m *Member) String() string { return proto.CompactTextString(m) }
-func (*Member) ProtoMessage()    {}
-func (*Member) Descriptor() ([]byte, []int) {
+func (m *MemberResponse) Reset()         { *m = MemberResponse{} }
+func (m *MemberResponse) String() string { return proto.CompactTextString(m) }
+func (*MemberResponse) ProtoMessage()    {}
+func (*MemberResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d33144d47ebf9898, []int{6}
 }
 
-func (m *Member) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Member.Unmarshal(m, b)
+func (m *MemberResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_MemberResponse.Unmarshal(m, b)
 }
-func (m *Member) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Member.Marshal(b, m, deterministic)
+func (m *MemberResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_MemberResponse.Marshal(b, m, deterministic)
 }
-func (m *Member) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Member.Merge(m, src)
+func (m *MemberResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MemberResponse.Merge(m, src)
 }
-func (m *Member) XXX_Size() int {
-	return xxx_messageInfo_Member.Size(m)
+func (m *MemberResponse) XXX_Size() int {
+	return xxx_messageInfo_MemberResponse.Size(m)
 }
-func (m *Member) XXX_DiscardUnknown() {
-	xxx_messageInfo_Member.DiscardUnknown(m)
+func (m *MemberResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MemberResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Member proto.InternalMessageInfo
+var xxx_messageInfo_MemberResponse proto.InternalMessageInfo
 
-func (m *Member) GetPublicID() string {
+func (m *MemberResponse) GetPublicID() string {
 	if m != nil {
 		return m.PublicID
 	}
 	return ""
 }
 
-func (m *Member) GetScore() float64 {
+func (m *MemberResponse) GetScore() float64 {
 	if m != nil {
 		return m.Score
 	}
 	return 0
 }
 
-func (m *Member) GetIntScore() int64 {
+func (m *MemberResponse) GetIntScore() int64 {
 	if m != nil {
 		return m.IntScore
 	}
 	return 0
 }
 
-func (m *Member) GetRank() int32 {
+func (m *MemberResponse) GetRank() int32 {
 	if m != nil {
 		return m.Rank
 	}
 	return 0
 }
 
-func (m *Member) GetPreviousRank() int32 {
+func (m *MemberResponse) GetPreviousRank() int32 {
 	if m != nil {
 		return m.PreviousRank
 	}
 	return 0
 }
 
-func (m *Member) GetExpireAt() int32 {
+func (m *MemberResponse) GetExpireAt() int32 {
 	if m != nil {
 		return m.ExpireAt
 	}
@@ -372,11 +372,11 @@ func (m *Member) GetExpireAt() int32 {
 }
 
 type BulkUpsertScoresResponse struct {
-	Success              bool      `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Members              []*Member `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
+	Success              bool              `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Members              []*MemberResponse `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
 func (m *BulkUpsertScoresResponse) Reset()         { *m = BulkUpsertScoresResponse{} }
@@ -411,11 +411,208 @@ func (m *BulkUpsertScoresResponse) GetSuccess() bool {
 	return false
 }
 
-func (m *BulkUpsertScoresResponse) GetMembers() []*Member {
+func (m *BulkUpsertScoresResponse) GetMembers() []*MemberResponse {
 	if m != nil {
 		return m.Members
 	}
 	return nil
+}
+
+type ScoreChange struct {
+	Score                int64    `protobuf:"varint,1,opt,name=score,proto3" json:"score,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ScoreChange) Reset()         { *m = ScoreChange{} }
+func (m *ScoreChange) String() string { return proto.CompactTextString(m) }
+func (*ScoreChange) ProtoMessage()    {}
+func (*ScoreChange) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{8}
+}
+
+func (m *ScoreChange) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ScoreChange.Unmarshal(m, b)
+}
+func (m *ScoreChange) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ScoreChange.Marshal(b, m, deterministic)
+}
+func (m *ScoreChange) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScoreChange.Merge(m, src)
+}
+func (m *ScoreChange) XXX_Size() int {
+	return xxx_messageInfo_ScoreChange.Size(m)
+}
+func (m *ScoreChange) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScoreChange.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScoreChange proto.InternalMessageInfo
+
+func (m *ScoreChange) GetScore() int64 {
+	if m != nil {
+		return m.Score
+	}
+	return 0
+}
+
+type UpsertScoreRequest struct {
+	LeaderboardId        string       `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
+	MemberPublicId       string       `protobuf:"bytes,2,opt,name=member_public_id,json=memberPublicId,proto3" json:"member_public_id,omitempty"`
+	PrevRank             bool         `protobuf:"varint,3,opt,name=prev_rank,json=prevRank,proto3" json:"prev_rank,omitempty"`
+	ScoreTTL             int32        `protobuf:"varint,4,opt,name=scoreTTL,proto3" json:"scoreTTL,omitempty"`
+	ScoreChange          *ScoreChange `protobuf:"bytes,5,opt,name=score_change,json=scoreChange,proto3" json:"score_change,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
+}
+
+func (m *UpsertScoreRequest) Reset()         { *m = UpsertScoreRequest{} }
+func (m *UpsertScoreRequest) String() string { return proto.CompactTextString(m) }
+func (*UpsertScoreRequest) ProtoMessage()    {}
+func (*UpsertScoreRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{9}
+}
+
+func (m *UpsertScoreRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpsertScoreRequest.Unmarshal(m, b)
+}
+func (m *UpsertScoreRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpsertScoreRequest.Marshal(b, m, deterministic)
+}
+func (m *UpsertScoreRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpsertScoreRequest.Merge(m, src)
+}
+func (m *UpsertScoreRequest) XXX_Size() int {
+	return xxx_messageInfo_UpsertScoreRequest.Size(m)
+}
+func (m *UpsertScoreRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpsertScoreRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpsertScoreRequest proto.InternalMessageInfo
+
+func (m *UpsertScoreRequest) GetLeaderboardId() string {
+	if m != nil {
+		return m.LeaderboardId
+	}
+	return ""
+}
+
+func (m *UpsertScoreRequest) GetMemberPublicId() string {
+	if m != nil {
+		return m.MemberPublicId
+	}
+	return ""
+}
+
+func (m *UpsertScoreRequest) GetPrevRank() bool {
+	if m != nil {
+		return m.PrevRank
+	}
+	return false
+}
+
+func (m *UpsertScoreRequest) GetScoreTTL() int32 {
+	if m != nil {
+		return m.ScoreTTL
+	}
+	return 0
+}
+
+func (m *UpsertScoreRequest) GetScoreChange() *ScoreChange {
+	if m != nil {
+		return m.ScoreChange
+	}
+	return nil
+}
+
+type UpsertScoreResponse struct {
+	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	PublicID             string   `protobuf:"bytes,2,opt,name=publicID,proto3" json:"publicID,omitempty"`
+	Score                float64  `protobuf:"fixed64,3,opt,name=score,proto3" json:"score,omitempty"`
+	IntScore             int64    `protobuf:"varint,4,opt,name=int_score,json=intScore,proto3" json:"int_score,omitempty"`
+	Rank                 int32    `protobuf:"varint,5,opt,name=rank,proto3" json:"rank,omitempty"`
+	PreviousRank         int32    `protobuf:"varint,6,opt,name=previous_rank,json=previousRank,proto3" json:"previous_rank,omitempty"`
+	ExpireAt             int32    `protobuf:"varint,7,opt,name=expire_at,json=expireAt,proto3" json:"expire_at,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *UpsertScoreResponse) Reset()         { *m = UpsertScoreResponse{} }
+func (m *UpsertScoreResponse) String() string { return proto.CompactTextString(m) }
+func (*UpsertScoreResponse) ProtoMessage()    {}
+func (*UpsertScoreResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{10}
+}
+
+func (m *UpsertScoreResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpsertScoreResponse.Unmarshal(m, b)
+}
+func (m *UpsertScoreResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpsertScoreResponse.Marshal(b, m, deterministic)
+}
+func (m *UpsertScoreResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpsertScoreResponse.Merge(m, src)
+}
+func (m *UpsertScoreResponse) XXX_Size() int {
+	return xxx_messageInfo_UpsertScoreResponse.Size(m)
+}
+func (m *UpsertScoreResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpsertScoreResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpsertScoreResponse proto.InternalMessageInfo
+
+func (m *UpsertScoreResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
+func (m *UpsertScoreResponse) GetPublicID() string {
+	if m != nil {
+		return m.PublicID
+	}
+	return ""
+}
+
+func (m *UpsertScoreResponse) GetScore() float64 {
+	if m != nil {
+		return m.Score
+	}
+	return 0
+}
+
+func (m *UpsertScoreResponse) GetIntScore() int64 {
+	if m != nil {
+		return m.IntScore
+	}
+	return 0
+}
+
+func (m *UpsertScoreResponse) GetRank() int32 {
+	if m != nil {
+		return m.Rank
+	}
+	return 0
+}
+
+func (m *UpsertScoreResponse) GetPreviousRank() int32 {
+	if m != nil {
+		return m.PreviousRank
+	}
+	return 0
+}
+
+func (m *UpsertScoreResponse) GetExpireAt() int32 {
+	if m != nil {
+		return m.ExpireAt
+	}
+	return 0
 }
 
 type BasicResponse struct {
@@ -430,7 +627,7 @@ func (m *BasicResponse) Reset()         { *m = BasicResponse{} }
 func (m *BasicResponse) String() string { return proto.CompactTextString(m) }
 func (*BasicResponse) ProtoMessage()    {}
 func (*BasicResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{8}
+	return fileDescriptor_d33144d47ebf9898, []int{11}
 }
 
 func (m *BasicResponse) XXX_Unmarshal(b []byte) error {
@@ -466,7 +663,7 @@ func (m *BasicResponse) GetReason() string {
 }
 
 type TotalMembersRequest struct {
-	LeaderboardID        string   `protobuf:"bytes,1,opt,name=leaderboardID,proto3" json:"leaderboardID,omitempty"`
+	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -476,7 +673,7 @@ func (m *TotalMembersRequest) Reset()         { *m = TotalMembersRequest{} }
 func (m *TotalMembersRequest) String() string { return proto.CompactTextString(m) }
 func (*TotalMembersRequest) ProtoMessage()    {}
 func (*TotalMembersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{9}
+	return fileDescriptor_d33144d47ebf9898, []int{12}
 }
 
 func (m *TotalMembersRequest) XXX_Unmarshal(b []byte) error {
@@ -497,9 +694,9 @@ func (m *TotalMembersRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TotalMembersRequest proto.InternalMessageInfo
 
-func (m *TotalMembersRequest) GetLeaderboardID() string {
+func (m *TotalMembersRequest) GetLeaderboardId() string {
 	if m != nil {
-		return m.LeaderboardID
+		return m.LeaderboardId
 	}
 	return ""
 }
@@ -516,7 +713,7 @@ func (m *TotalMembersResponse) Reset()         { *m = TotalMembersResponse{} }
 func (m *TotalMembersResponse) String() string { return proto.CompactTextString(m) }
 func (*TotalMembersResponse) ProtoMessage()    {}
 func (*TotalMembersResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{10}
+	return fileDescriptor_d33144d47ebf9898, []int{13}
 }
 
 func (m *TotalMembersResponse) XXX_Unmarshal(b []byte) error {
@@ -558,8 +755,11 @@ func init() {
 	proto.RegisterType((*ScoreUpsert)(nil), "podium.api.v1.ScoreUpsert")
 	proto.RegisterType((*ScoreUpserts)(nil), "podium.api.v1.ScoreUpserts")
 	proto.RegisterType((*BulkUpsertScoresRequest)(nil), "podium.api.v1.BulkUpsertScoresRequest")
-	proto.RegisterType((*Member)(nil), "podium.api.v1.Member")
+	proto.RegisterType((*MemberResponse)(nil), "podium.api.v1.MemberResponse")
 	proto.RegisterType((*BulkUpsertScoresResponse)(nil), "podium.api.v1.BulkUpsertScoresResponse")
+	proto.RegisterType((*ScoreChange)(nil), "podium.api.v1.ScoreChange")
+	proto.RegisterType((*UpsertScoreRequest)(nil), "podium.api.v1.UpsertScoreRequest")
+	proto.RegisterType((*UpsertScoreResponse)(nil), "podium.api.v1.UpsertScoreResponse")
 	proto.RegisterType((*BasicResponse)(nil), "podium.api.v1.BasicResponse")
 	proto.RegisterType((*TotalMembersRequest)(nil), "podium.api.v1.TotalMembersRequest")
 	proto.RegisterType((*TotalMembersResponse)(nil), "podium.api.v1.TotalMembersResponse")
@@ -568,48 +768,59 @@ func init() {
 func init() { proto.RegisterFile("proto/podium/api/v1/podium.proto", fileDescriptor_d33144d47ebf9898) }
 
 var fileDescriptor_d33144d47ebf9898 = []byte{
-	// 653 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x5f, 0x6e, 0xd3, 0x4e,
-	0x10, 0x96, 0x9b, 0x26, 0x6d, 0x26, 0xe9, 0x4f, 0x3f, 0x96, 0x50, 0x8c, 0x5b, 0xa4, 0x68, 0x41,
-	0x34, 0x20, 0x61, 0xab, 0x85, 0x27, 0x78, 0x28, 0x2d, 0x05, 0x51, 0xa9, 0x48, 0xd5, 0xb6, 0x1c,
-	0x60, 0xe3, 0x2e, 0xa9, 0x15, 0xc7, 0x6b, 0x76, 0xd7, 0x01, 0x84, 0x78, 0x80, 0x2b, 0xc0, 0x29,
-	0x7a, 0x02, 0xee, 0xc1, 0x15, 0x38, 0x08, 0xf2, 0xd8, 0x71, 0x62, 0x37, 0xa5, 0xed, 0x9b, 0xbf,
-	0x9d, 0x6f, 0xc6, 0xdf, 0xfc, 0x85, 0x6e, 0xac, 0xa4, 0x91, 0x5e, 0x2c, 0x4f, 0x82, 0x64, 0xe4,
-	0xf1, 0x38, 0xf0, 0xc6, 0x9b, 0x39, 0x72, 0xd1, 0x44, 0x56, 0x72, 0xc4, 0xe3, 0xc0, 0x1d, 0x6f,
-	0x3a, 0xeb, 0x03, 0x29, 0x07, 0xa1, 0x40, 0x2a, 0x8f, 0x22, 0x69, 0xb8, 0x09, 0x64, 0xa4, 0x33,
-	0xb2, 0xb3, 0x96, 0x5b, 0x11, 0xf5, 0x93, 0xf7, 0x9e, 0x18, 0xc5, 0xe6, 0x73, 0x66, 0xa4, 0xcf,
-	0xe1, 0xe6, 0x1b, 0xc1, 0x43, 0x73, 0xfa, 0xf2, 0x54, 0xf8, 0x43, 0x26, 0x74, 0x2c, 0x23, 0x2d,
-	0xc8, 0x7d, 0x58, 0xf9, 0x28, 0xd5, 0x30, 0x88, 0x06, 0x47, 0x46, 0x05, 0xd1, 0xc0, 0xb6, 0xba,
-	0x56, 0xaf, 0xc9, 0xca, 0x8f, 0xd4, 0x85, 0xff, 0x8e, 0x0c, 0x37, 0x89, 0x2e, 0xfc, 0xd6, 0xa1,
-	0x29, 0x94, 0x92, 0x8a, 0x71, 0x23, 0xd0, 0xc7, 0x62, 0xd3, 0x07, 0xfa, 0x02, 0x6c, 0x26, 0x46,
-	0x72, 0x2c, 0x0e, 0x04, 0x3f, 0x11, 0xaa, 0x2f, 0xb9, 0x3a, 0x61, 0xe2, 0x43, 0x22, 0xb4, 0x49,
-	0xff, 0x18, 0x4e, 0x5f, 0xf7, 0xf7, 0x26, 0x7f, 0x2c, 0x3d, 0xd2, 0x6d, 0x68, 0x1d, 0xf9, 0x52,
-	0x89, 0x77, 0xb1, 0x16, 0xca, 0x10, 0x07, 0x96, 0xe3, 0xa4, 0x1f, 0x06, 0x7e, 0xc1, 0x2f, 0x30,
-	0xe9, 0x40, 0x5d, 0xa7, 0x54, 0x7b, 0xa1, 0x6b, 0xf5, 0x6a, 0x2c, 0x03, 0x74, 0x0f, 0xda, 0x33,
-	0x01, 0x34, 0x79, 0x0a, 0x4b, 0x23, 0x31, 0xea, 0x0b, 0xa5, 0x6d, 0xab, 0x5b, 0xeb, 0xb5, 0xb6,
-	0x1c, 0xb7, 0x54, 0x5b, 0x77, 0x86, 0xcd, 0x26, 0x54, 0xfa, 0xcb, 0x82, 0xdb, 0xbb, 0x49, 0x38,
-	0xcc, 0xde, 0x91, 0xa2, 0xaf, 0x95, 0x08, 0x2a, 0x57, 0x62, 0xcc, 0x78, 0x34, 0x44, 0x81, 0xcb,
-	0xac, 0xc0, 0xa9, 0x0d, 0xc5, 0x1e, 0x1f, 0x1f, 0xd8, 0xb5, 0x2c, 0xab, 0x09, 0x26, 0xdb, 0xd0,
-	0xd6, 0x33, 0xfa, 0xed, 0xc5, 0xae, 0xd5, 0x6b, 0x6d, 0xad, 0x5d, 0x2c, 0x5a, 0xb3, 0x92, 0x03,
-	0x3d, 0xb3, 0xa0, 0xf1, 0x16, 0xd3, 0xb8, 0x7a, 0xf5, 0xac, 0xbc, 0x7a, 0xa9, 0x47, 0x10, 0x65,
-	0xf9, 0xa2, 0xb2, 0x1a, 0x2b, 0x30, 0x21, 0xb0, 0xa8, 0xd2, 0x6c, 0x52, 0x45, 0x75, 0x86, 0xdf,
-	0x84, 0x42, 0x3b, 0xcd, 0x2a, 0x90, 0x89, 0xc6, 0x4c, 0xeb, 0x68, 0x2b, 0xbd, 0xa5, 0x31, 0xc5,
-	0xa7, 0x38, 0x50, 0x62, 0xc7, 0xd8, 0x0d, 0xb4, 0x17, 0x98, 0x0a, 0xb0, 0xcf, 0x97, 0x39, 0x1f,
-	0x35, 0x1b, 0x96, 0x74, 0xe2, 0xfb, 0x42, 0x6b, 0x14, 0xbf, 0xcc, 0x26, 0x90, 0x78, 0xd3, 0x9e,
-	0x2e, 0x60, 0x4f, 0x6f, 0x55, 0xca, 0x93, 0xe5, 0x3f, 0x6d, 0xe7, 0x0e, 0xac, 0xec, 0x72, 0x1d,
-	0xf8, 0x57, 0x88, 0xbd, 0x0a, 0x0d, 0x25, 0xb8, 0x96, 0x11, 0x16, 0xa6, 0xc9, 0x72, 0x94, 0xee,
-	0xd1, 0xb1, 0x34, 0x3c, 0xcc, 0x42, 0x5f, 0x6f, 0x18, 0xe8, 0x6b, 0xe8, 0x94, 0x9d, 0x2f, 0x95,
-	0xd1, 0x81, 0xba, 0x2f, 0x93, 0xc8, 0xa0, 0x8a, 0x3a, 0xcb, 0xc0, 0xd6, 0xd9, 0x22, 0x34, 0x0f,
-	0x31, 0xd3, 0x9d, 0xc3, 0x7d, 0xb2, 0x0f, 0xad, 0x99, 0xd5, 0x26, 0xab, 0x6e, 0x76, 0x07, 0xdc,
-	0xc9, 0x1d, 0x70, 0x5f, 0xa5, 0x77, 0xc0, 0xa1, 0x95, 0xe2, 0xcc, 0x3b, 0x07, 0xdb, 0xd0, 0xc8,
-	0x16, 0xfd, 0xc2, 0x28, 0x77, 0xab, 0x13, 0x58, 0xbe, 0x0b, 0x63, 0xb8, 0x71, 0x6e, 0xf3, 0xc9,
-	0x46, 0xc5, 0xe7, 0xa2, 0xdb, 0xe0, 0xac, 0x57, 0x88, 0xa5, 0x66, 0x51, 0xe7, 0xfb, 0xef, 0x3f,
-	0x3f, 0x16, 0x3a, 0x8f, 0x88, 0x17, 0x7a, 0x5f, 0x4a, 0x85, 0xfd, 0x4a, 0x7e, 0x5a, 0xf0, 0x7f,
-	0x75, 0x82, 0xc8, 0x83, 0x6a, 0xb8, 0xf9, 0x9b, 0xec, 0x6c, 0x5c, 0xca, 0xcb, 0x15, 0x78, 0xa8,
-	0xe0, 0xa1, 0x73, 0xe7, 0xbc, 0x02, 0x0f, 0x17, 0x47, 0x3f, 0x2b, 0x2d, 0x21, 0xf9, 0x66, 0x41,
-	0x7b, 0xb6, 0xe3, 0xa4, 0xda, 0x84, 0x39, 0xb3, 0xe4, 0xdc, 0xfb, 0x27, 0x27, 0x97, 0xd2, 0x43,
-	0x29, 0x94, 0x74, 0xe7, 0x48, 0xc9, 0xc7, 0xfd, 0x31, 0x0e, 0x4b, 0xbf, 0x81, 0x1d, 0x7c, 0xf2,
-	0x37, 0x00, 0x00, 0xff, 0xff, 0xc3, 0xb4, 0x42, 0xb5, 0x6e, 0x06, 0x00, 0x00,
+	// 830 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xdd, 0x6e, 0xc3, 0x34,
+	0x14, 0x56, 0xda, 0xb5, 0x6b, 0x4f, 0x7f, 0x34, 0xbc, 0x31, 0xa2, 0x74, 0x93, 0xba, 0x54, 0xb0,
+	0x02, 0xa2, 0xd1, 0xc6, 0x24, 0xa4, 0x09, 0x34, 0xba, 0x0d, 0x44, 0xd1, 0x90, 0xa6, 0x6c, 0x5c,
+	0x47, 0x6e, 0x6a, 0xba, 0xa8, 0x6d, 0x1c, 0x6c, 0xa7, 0x03, 0x4d, 0xdc, 0xec, 0x15, 0x90, 0xb8,
+	0xe6, 0x25, 0xb8, 0xe2, 0x29, 0x10, 0xdc, 0x72, 0xc7, 0x83, 0xa0, 0xd8, 0xe9, 0x9a, 0xa4, 0x7f,
+	0xdb, 0x5d, 0xce, 0xf1, 0xb1, 0xfd, 0x7d, 0xe7, 0x7c, 0xf9, 0x0c, 0xcd, 0x80, 0x51, 0x41, 0xad,
+	0x80, 0x0e, 0xbc, 0x70, 0x62, 0xe1, 0xc0, 0xb3, 0xa6, 0x27, 0x71, 0xd4, 0x91, 0x4b, 0xa8, 0x16,
+	0x47, 0x38, 0xf0, 0x3a, 0xd3, 0x13, 0xe3, 0x60, 0x48, 0xe9, 0x70, 0x4c, 0x64, 0x29, 0xf6, 0x7d,
+	0x2a, 0xb0, 0xf0, 0xa8, 0xcf, 0x55, 0xb1, 0xd1, 0x88, 0x57, 0x65, 0xd4, 0x0f, 0x7f, 0xb0, 0xc8,
+	0x24, 0x10, 0x3f, 0xab, 0x45, 0xf3, 0x73, 0xd8, 0xfd, 0x86, 0xe0, 0xb1, 0x78, 0xb8, 0x7a, 0x20,
+	0xee, 0xc8, 0x26, 0x3c, 0xa0, 0x3e, 0x27, 0xe8, 0x7d, 0xa8, 0x3f, 0x52, 0x36, 0xf2, 0xfc, 0xa1,
+	0xc3, 0x05, 0xf3, 0xfc, 0xa1, 0xae, 0x35, 0xb5, 0x76, 0xd9, 0xae, 0xc5, 0xd9, 0x3b, 0x99, 0x34,
+	0x2d, 0xa8, 0xdf, 0x09, 0x2c, 0x42, 0xfe, 0xb2, 0xf1, 0x10, 0x80, 0x30, 0x46, 0x99, 0xc3, 0xb0,
+	0x20, 0x72, 0x93, 0x66, 0x97, 0x65, 0xc6, 0xc6, 0x82, 0x98, 0x5d, 0xd0, 0x6d, 0x32, 0xa1, 0x53,
+	0x72, 0x43, 0xf0, 0x80, 0xb0, 0x3e, 0xc5, 0x6c, 0x60, 0x93, 0x1f, 0x43, 0xc2, 0x45, 0x74, 0xe7,
+	0x78, 0x9e, 0x75, 0xbc, 0xc1, 0xec, 0xce, 0x44, 0xb6, 0x37, 0x30, 0x2f, 0xa0, 0x72, 0xe7, 0x52,
+	0x46, 0xbe, 0x0f, 0x38, 0x61, 0x02, 0x19, 0x50, 0x0a, 0xc2, 0xfe, 0xd8, 0x73, 0x7b, 0xd7, 0x71,
+	0xfd, 0x4b, 0x8c, 0xf6, 0xa0, 0xc0, 0xa3, 0x52, 0x3d, 0xd7, 0xd4, 0xda, 0x79, 0x5b, 0x05, 0xe6,
+	0x35, 0x54, 0x13, 0x07, 0x70, 0x74, 0x06, 0xdb, 0x13, 0x32, 0xe9, 0x13, 0xc6, 0x75, 0xad, 0x99,
+	0x6f, 0x57, 0x4e, 0x8d, 0x4e, 0xaa, 0xbd, 0x9d, 0x44, 0xb5, 0x3d, 0x2b, 0x35, 0xff, 0xd4, 0xe0,
+	0xbd, 0xcb, 0x70, 0x3c, 0x52, 0x79, 0x59, 0xc2, 0xdf, 0xc6, 0x04, 0x35, 0xa0, 0x1c, 0x30, 0x32,
+	0x75, 0x18, 0xf6, 0x47, 0x12, 0x62, 0xc9, 0x2e, 0x45, 0x09, 0x1b, 0xfb, 0xa3, 0x88, 0x97, 0x84,
+	0x7b, 0x7f, 0x7f, 0xa3, 0xe7, 0x15, 0xaf, 0x59, 0x8c, 0xbe, 0x84, 0x9a, 0xfc, 0x76, 0x42, 0x45,
+	0x41, 0xdf, 0x6a, 0x6a, 0xed, 0xca, 0x69, 0x63, 0x35, 0x6e, 0x6e, 0x57, 0x79, 0x22, 0x32, 0xff,
+	0xd0, 0xa0, 0xfe, 0x9d, 0x64, 0xf2, 0x32, 0xb9, 0x57, 0x37, 0x52, 0x8b, 0x1b, 0x19, 0xe1, 0xf7,
+	0x7c, 0xe1, 0xa8, 0x95, 0xbc, 0x6c, 0x71, 0xc9, 0xf3, 0x55, 0x2f, 0x10, 0x82, 0x2d, 0xc9, 0x2b,
+	0x82, 0x56, 0xb0, 0xe5, 0x37, 0x6a, 0x41, 0x2d, 0xe2, 0xe7, 0xd1, 0x90, 0x2b, 0xd2, 0x05, 0xb9,
+	0x58, 0x9d, 0x25, 0x25, 0xf1, 0x06, 0x94, 0xc9, 0x4f, 0x81, 0xc7, 0x88, 0x83, 0x85, 0x5e, 0x94,
+	0x05, 0x25, 0x95, 0xe8, 0x0a, 0x73, 0x02, 0xfa, 0x62, 0xd3, 0x63, 0x02, 0x3a, 0x6c, 0xf3, 0xd0,
+	0x75, 0x09, 0xe7, 0x12, 0x7f, 0xc9, 0x9e, 0x85, 0xe8, 0xb3, 0xf9, 0x84, 0x73, 0x72, 0xc2, 0x87,
+	0x99, 0x4e, 0xa5, 0x5b, 0x31, 0x1f, 0x72, 0x2b, 0xd6, 0xda, 0xd5, 0x03, 0xf6, 0x87, 0x64, 0xde,
+	0x06, 0x2d, 0xa9, 0xa7, 0x7f, 0x35, 0x40, 0x09, 0x40, 0x6f, 0x14, 0x41, 0x1b, 0x76, 0xd4, 0x6d,
+	0x8e, 0xea, 0x76, 0x54, 0x98, 0x93, 0x85, 0x75, 0x95, 0xbf, 0x55, 0x43, 0xc8, 0xc8, 0x25, 0xbf,
+	0x46, 0x2e, 0xaa, 0xe5, 0x73, 0xb9, 0x7c, 0x01, 0x6a, 0xf8, 0x8e, 0x2b, 0x69, 0xc8, 0xae, 0xaf,
+	0x50, 0xb9, 0x22, 0x6a, 0x57, 0xf8, 0x3c, 0x30, 0xff, 0xd1, 0x60, 0x37, 0xc5, 0x6f, 0x63, 0xbf,
+	0x93, 0x52, 0xca, 0xad, 0x92, 0x52, 0x7e, 0xa5, 0x94, 0xb6, 0x56, 0x48, 0xa9, 0xb0, 0x4e, 0x4a,
+	0xc5, 0x4d, 0x52, 0xda, 0xce, 0x48, 0xa9, 0x0b, 0xb5, 0x4b, 0xcc, 0x3d, 0xf7, 0x15, 0x7c, 0xf6,
+	0xa1, 0xc8, 0x08, 0xe6, 0xd4, 0x8f, 0xd9, 0xc4, 0x51, 0x64, 0x9e, 0xf7, 0x54, 0xe0, 0xb1, 0x92,
+	0xcf, 0x1b, 0x7f, 0x7f, 0xf3, 0x6b, 0xd8, 0x4b, 0xef, 0xde, 0x88, 0x63, 0x0f, 0x0a, 0x2e, 0x0d,
+	0x7d, 0x21, 0x61, 0x14, 0x6c, 0x15, 0x9c, 0xfe, 0x55, 0x80, 0xf2, 0xad, 0x1c, 0x65, 0xf7, 0xb6,
+	0x87, 0x7a, 0x50, 0x49, 0x18, 0x3a, 0xda, 0xef, 0x28, 0xf7, 0xef, 0xcc, 0xdc, 0xbf, 0xf3, 0x55,
+	0xe4, 0xfe, 0x86, 0x99, 0x99, 0xfe, 0xb2, 0x47, 0xe0, 0x02, 0x8a, 0xca, 0xdd, 0x57, 0x9e, 0x92,
+	0xfd, 0x8f, 0x32, 0x8f, 0xc1, 0x23, 0xbc, 0xb3, 0xe0, 0xf6, 0xe8, 0x38, 0xb3, 0x67, 0xd5, 0x7b,
+	0x60, 0x1c, 0x64, 0x0a, 0x53, 0xd3, 0x32, 0x1b, 0xcf, 0x7f, 0xff, 0xf7, 0x6b, 0xee, 0xdd, 0x8f,
+	0x76, 0xad, 0xb1, 0xf5, 0x94, 0x6e, 0xf7, 0x2f, 0xe8, 0x37, 0x0d, 0x76, 0xb2, 0x3e, 0x81, 0x3e,
+	0xc8, 0x9e, 0xb7, 0xdc, 0xbd, 0x8d, 0xe3, 0x8d, 0x75, 0x31, 0x84, 0x13, 0x09, 0xe1, 0x63, 0xc3,
+	0x58, 0x02, 0xc1, 0x92, 0x52, 0xe6, 0xe7, 0x69, 0xa3, 0x46, 0xbf, 0x6b, 0x50, 0x49, 0x9c, 0x85,
+	0x8e, 0x32, 0x77, 0x2d, 0xfa, 0xc8, 0xc2, 0xa4, 0x96, 0xfc, 0x8a, 0xe6, 0xb7, 0x12, 0xc9, 0xb5,
+	0x71, 0xb6, 0x0c, 0x49, 0x6c, 0x66, 0xd6, 0x53, 0xd6, 0x67, 0x62, 0x90, 0xe7, 0x29, 0x77, 0x40,
+	0xcf, 0x1a, 0x54, 0x93, 0xba, 0x44, 0x59, 0x00, 0x4b, 0x24, 0x6f, 0xb4, 0xd6, 0xd6, 0xc4, 0x28,
+	0x3f, 0x94, 0x28, 0x5b, 0xe8, 0x68, 0x0d, 0xca, 0x4f, 0xa4, 0xa6, 0xfb, 0x45, 0x29, 0xb4, 0x4f,
+	0xff, 0x0f, 0x00, 0x00, 0xff, 0xff, 0x97, 0x57, 0xdf, 0xfb, 0x0b, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -628,6 +839,7 @@ type PodiumAPIClient interface {
 	Status(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
 	RemoveLeaderboard(ctx context.Context, in *RemoveLeaderboardRequest, opts ...grpc.CallOption) (*BasicResponse, error)
 	BulkUpsertScores(ctx context.Context, in *BulkUpsertScoresRequest, opts ...grpc.CallOption) (*BulkUpsertScoresResponse, error)
+	UpsertScore(ctx context.Context, in *UpsertScoreRequest, opts ...grpc.CallOption) (*UpsertScoreResponse, error)
 	TotalMembers(ctx context.Context, in *TotalMembersRequest, opts ...grpc.CallOption) (*TotalMembersResponse, error)
 }
 
@@ -675,6 +887,15 @@ func (c *podiumAPIClient) BulkUpsertScores(ctx context.Context, in *BulkUpsertSc
 	return out, nil
 }
 
+func (c *podiumAPIClient) UpsertScore(ctx context.Context, in *UpsertScoreRequest, opts ...grpc.CallOption) (*UpsertScoreResponse, error) {
+	out := new(UpsertScoreResponse)
+	err := c.cc.Invoke(ctx, "/podium.api.v1.PodiumAPI/UpsertScore", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *podiumAPIClient) TotalMembers(ctx context.Context, in *TotalMembersRequest, opts ...grpc.CallOption) (*TotalMembersResponse, error) {
 	out := new(TotalMembersResponse)
 	err := c.cc.Invoke(ctx, "/podium.api.v1.PodiumAPI/TotalMembers", in, out, opts...)
@@ -690,6 +911,7 @@ type PodiumAPIServer interface {
 	Status(context.Context, *empty.Empty) (*StatusResponse, error)
 	RemoveLeaderboard(context.Context, *RemoveLeaderboardRequest) (*BasicResponse, error)
 	BulkUpsertScores(context.Context, *BulkUpsertScoresRequest) (*BulkUpsertScoresResponse, error)
+	UpsertScore(context.Context, *UpsertScoreRequest) (*UpsertScoreResponse, error)
 	TotalMembers(context.Context, *TotalMembersRequest) (*TotalMembersResponse, error)
 }
 
@@ -708,6 +930,9 @@ func (*UnimplementedPodiumAPIServer) RemoveLeaderboard(ctx context.Context, req 
 }
 func (*UnimplementedPodiumAPIServer) BulkUpsertScores(ctx context.Context, req *BulkUpsertScoresRequest) (*BulkUpsertScoresResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BulkUpsertScores not implemented")
+}
+func (*UnimplementedPodiumAPIServer) UpsertScore(ctx context.Context, req *UpsertScoreRequest) (*UpsertScoreResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertScore not implemented")
 }
 func (*UnimplementedPodiumAPIServer) TotalMembers(ctx context.Context, req *TotalMembersRequest) (*TotalMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TotalMembers not implemented")
@@ -789,6 +1014,24 @@ func _PodiumAPI_BulkUpsertScores_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PodiumAPI_UpsertScore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertScoreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PodiumAPIServer).UpsertScore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/podium.api.v1.PodiumAPI/UpsertScore",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PodiumAPIServer).UpsertScore(ctx, req.(*UpsertScoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PodiumAPI_TotalMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TotalMembersRequest)
 	if err := dec(in); err != nil {
@@ -826,6 +1069,10 @@ var _PodiumAPI_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BulkUpsertScores",
 			Handler:    _PodiumAPI_BulkUpsertScores_Handler,
+		},
+		{
+			MethodName: "UpsertScore",
+			Handler:    _PodiumAPI_UpsertScore_Handler,
 		},
 		{
 			MethodName: "TotalMembers",

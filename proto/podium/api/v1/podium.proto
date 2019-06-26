@@ -5,36 +5,42 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
 service PodiumAPI {
-    rpc HealthCheck(google.protobuf.Empty) returns (HealthCheckResponse);
-    rpc Status(google.protobuf.Empty) returns (StatusResponse);
-    rpc RemoveLeaderboard(RemoveLeaderboardRequest) returns (BasicResponse) {
+    rpc HealthCheck (google.protobuf.Empty) returns (HealthCheckResponse);
+    rpc Status (google.protobuf.Empty) returns (StatusResponse);
+    rpc RemoveLeaderboard (RemoveLeaderboardRequest) returns (BasicResponse) {
         option (google.api.http) = {
-            delete: "/l/{leaderboardID}"
+            delete: "/l/{leaderboard_id}"
         };
     }
-    rpc BulkUpsertScores(BulkUpsertScoresRequest) returns (BulkUpsertScoresResponse) {
+    rpc BulkUpsertScores (BulkUpsertScoresRequest) returns (BulkUpsertScoresResponse) {
         option (google.api.http) = {
-            put: "/l/{leaderboardID}/scores"
-            body: "scoreUpserts"
+            put: "/l/{leaderboard_id}/scores"
+            body: "score_upserts"
         };
     }
-    rpc TotalMembers(TotalMembersRequest) returns (TotalMembersResponse) {
+    rpc UpsertScore (UpsertScoreRequest) returns (UpsertScoreResponse) {
         option (google.api.http) = {
-            get: "/l/{leaderboardID}/members-count"
+            put: "/l/{leaderboard_id}/members/{member_public_id}/score"
+            body: "score_change"
+        };
+    }
+    rpc TotalMembers (TotalMembersRequest) returns (TotalMembersResponse) {
+        option (google.api.http) = {
+            get: "/l/{leaderboard_id}/members-count"
         };
     }
 }
 
 message HealthCheckResponse {
-    string workingString = 1;
+    string working_string = 1;
 }
 
 message StatusResponse {
-    double errorRate = 1;
+    double error_rate = 1;
 }
 
 message RemoveLeaderboardRequest {
-    string leaderboardID = 1;
+    string leaderboard_id = 1;
 }
 
 message ScoreUpsert {
@@ -47,24 +53,46 @@ message ScoreUpserts {
 }
 
 message BulkUpsertScoresRequest {
-    string leaderboardID = 1;
-    bool prevRank = 2;
+    string leaderboard_id = 1;
+    bool prev_rank = 2;
     string scoreTTL = 3;
-    ScoreUpserts scoreUpserts = 4;
+    ScoreUpserts score_upserts = 4;
 }
 
-message Member {
+message MemberResponse {
     string publicID = 1;
     double score = 2; //implemented as double because int64 is exported as string through grpc-gateway
-    int64 intScore = 3; //the full int64 score received from Redis
+    int64 int_score = 3; //the full int64 score received from Redis
     int32 rank = 4;
-    int32 previousRank = 5;
-    int32 expireAt = 6;
+    int32 previous_rank = 5;
+    int32 expire_at = 6;
 }
 
 message BulkUpsertScoresResponse {
     bool success = 1;
-    repeated Member members = 2;
+    repeated MemberResponse members = 2;
+}
+
+message ScoreChange {
+    int64 score = 1;
+}
+
+message UpsertScoreRequest {
+    string leaderboard_id = 1;
+    string member_public_id = 2;
+    bool prev_rank = 3;
+    int32 scoreTTL = 4;
+    ScoreChange score_change = 5;
+}
+
+message UpsertScoreResponse {
+    bool success = 1;
+    string publicID = 2;
+    double score = 3; //implemented as double because int64 is exported as string through grpc-gateway
+    int64 int_score = 4; //the full int64 score received from Redis
+    int32 rank = 5;
+    int32 previous_rank = 6;
+    int32 expire_at = 7;
 }
 
 message BasicResponse {
@@ -73,7 +101,7 @@ message BasicResponse {
 }
 
 message TotalMembersRequest {
-    string leaderboardID = 1;
+    string leaderboard_id = 1;
 }
 
 message TotalMembersResponse {

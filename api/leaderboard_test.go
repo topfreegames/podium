@@ -141,7 +141,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Bulk Upsert Members Score", func() {
-		It("Should set correct members score in redis and respond with the correct values", func() {
+		It("Should set correct members score in redis and respond with the correct values (http)", func() {
 			payload := map[string]interface{}{"members": []map[string]interface{}{
 				{"publicID": "memberpublicid1", "score": int64(150)},
 				{"publicID": "memberpublicid2", "score": int64(100)},
@@ -169,6 +169,42 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member2.Rank).To(Equal(2))
 			Expect(member2.Score).To(Equal(int64(100)))
 			Expect(member2.PublicID).To(Equal("memberpublicid2"))
+		})
+
+		It("Should set correct members score in redis and respond with the correct values (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				req := &pb.BulkUpsertScoresRequest{
+					LeaderboardId: testLeaderboardID,
+					ScoreUpserts: &pb.ScoreUpserts{
+						Members: []*pb.ScoreUpsert{
+							{PublicID: "memberpublicid1", Score: int64(150)},
+							{PublicID: "memberpublicid2", Score: int64(100)},
+						},
+					},
+				}
+
+				resp, err := cli.BulkUpsertScores(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.Success).To(BeTrue())
+
+				for i, m := range resp.Members {
+					Expect(m.Rank).To(Equal(int32(i + 1)))
+					Expect(int64(m.Score)).To(Equal(req.ScoreUpserts.Members[i].Score))
+					Expect(m.PublicID).To(Equal(req.ScoreUpserts.Members[i].PublicID))
+				}
+
+				member1, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid1", "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(member1.Rank).To(Equal(1))
+				Expect(member1.Score).To(Equal(int64(150)))
+				Expect(member1.PublicID).To(Equal("memberpublicid1"))
+
+				member2, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid2", "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(member2.Rank).To(Equal(2))
+				Expect(member2.Score).To(Equal(int64(100)))
+				Expect(member2.PublicID).To(Equal("memberpublicid2"))
+			})
 		})
 
 		It("Should set correct members scores in redis and respond with the correct values if bigger than int", func() {
@@ -370,7 +406,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Upsert Member Score", func() {
-		It("Should set correct member score in redis and respond with the correct values", func() {
+		It("Should set correct member score in redis and respond with the correct values (http)", func() {
 			payload := map[string]interface{}{
 				"score": int64(100),
 			}
@@ -382,13 +418,36 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["publicID"]).To(Equal("memberpublicid"))
 			Expect(int64(result["score"].(float64))).To(Equal(payload["score"]))
 			Expect(int(result["rank"].(float64))).To(Equal(1))
-			Expect(result).NotTo(HaveKey("previousRank"))
 
 			member, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(member.Rank).To(Equal(1))
 			Expect(member.Score).To(Equal(int64(100)))
 			Expect(member.PublicID).To(Equal("memberpublicid"))
+		})
+
+		It("Should set correct member score in redis and respond with the correct values (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				req := &pb.UpsertScoreRequest{
+					LeaderboardId:  testLeaderboardID,
+					MemberPublicId: "memberpublicid",
+					ScoreChange:    &pb.ScoreChange{Score: int64(100)},
+				}
+
+				resp, err := cli.UpsertScore(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(resp.Success).To(BeTrue())
+				Expect(resp.PublicID).To(Equal("memberpublicid"))
+				Expect(int64(resp.Score)).To(Equal(req.ScoreChange.Score))
+				Expect(resp.Rank).To(Equal(int32(1)))
+
+				member, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(member.Rank).To(Equal(1))
+				Expect(member.Score).To(Equal(int64(100)))
+				Expect(member.PublicID).To(Equal("memberpublicid"))
+			})
 		})
 
 		It("Should set correct member score in redis and respond with the correct values if bigger than int", func() {
@@ -404,7 +463,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["publicID"]).To(Equal("memberpublicid"))
 			Expect(int64(result["score"].(float64))).To(Equal(payload["score"]))
 			Expect(int(result["rank"].(float64))).To(Equal(1))
-			Expect(result).NotTo(HaveKey("previousRank"))
 
 			member, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
 			Expect(err).NotTo(HaveOccurred())
@@ -506,17 +564,21 @@ var _ = Describe("Leaderboard Handler", func() {
 
 		It("Should fail if wrong type for score", func() {
 			payload := map[string]interface{}{
-				"score": "100",
+				"score": "hundred",
 			}
 			status, body := PutJSON(a, "/l/testkey/members/memberpublicid/score", payload)
 			Expect(status).To(Equal(http.StatusBadRequest), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("invalid type for score: string"))
+			Expect(result["reason"]).To(Equal("invalid character 'h' looking for beginning of value"))
 		})
 
+		//this test has been deactivated because grpc-gateway still isn't
+		//rejecting unknown values. This was implemented on this PR:
+		//https://github.com/grpc-ecosystem/grpc-gateway/commit/d6fec188bf351df151bcf40b65d6c326fe6ebbf0
 		It("Should fail if missing parameters", func() {
+			Skip("Functionality still isn't available on grpc-gateway")
 			payload := map[string]interface{}{
 				"notscore": 100,
 			}
@@ -534,7 +596,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(ContainSubstring("score is required"))
+			Expect(result["reason"]).To(ContainSubstring("invalid character 'i' looking for beginning of value"))
 		})
 
 		It("Should fail if error updating score", func() {
@@ -1507,7 +1569,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
 				resp, err := cli.TotalMembers(context.Background(),
-					&pb.TotalMembersRequest{LeaderboardID: testLeaderboardID})
+					&pb.TotalMembersRequest{LeaderboardId: testLeaderboardID})
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(int(resp.Count)).To(Equal(100))

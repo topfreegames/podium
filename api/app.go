@@ -306,7 +306,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
 	a.Patch("/l/:leaderboardID/members/:memberPublicID/score", IncrementMemberScoreHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
 	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))

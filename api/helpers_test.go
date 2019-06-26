@@ -233,6 +233,7 @@ func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
 		_ = app.Start()
 	}()
 	time.Sleep(25 * time.Millisecond)
+	defer app.Stop()
 
 	conn, err := grpc.Dial(app.GRPCEndpoint, grpc.WithInsecure())
 	Expect(err).NotTo(HaveOccurred())
@@ -241,6 +242,4 @@ func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
 	cli := pb.NewPodiumAPIClient(conn)
 
 	f(cli)
-
-	app.Stop()
 }

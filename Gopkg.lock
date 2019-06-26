@@ -128,7 +128,7 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:489a99067cd08971bd9c1ee0055119ba8febc1429f9200ab0bec68d35e8c4833"
+  digest = "1:b8e46955e8385b06d7b0b26165cdb7216dec8bce1cfcc05499cdd9da8af15445"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -140,6 +140,7 @@
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/struct",
     "ptypes/timestamp",
     "ptypes/wrappers",
@@ -770,6 +771,7 @@
     "github.com/go-redis/redis",
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes/empty",
     "github.com/gosuri/uiprogress",
     "github.com/gosuri/uiprogress/util/strutil",
     "github.com/grpc-ecosystem/go-grpc-middleware",
