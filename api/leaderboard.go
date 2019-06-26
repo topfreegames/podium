@@ -70,8 +70,9 @@ func validateBulkUpsertScoresRequest(in *api.BulkUpsertScoresRequest) error {
 	return nil
 }
 
-func newMemberResponse(member *leaderboard.Member) *api.MemberResponse {
-	return &api.MemberResponse{
+func newDefaultMemberResponse(member *leaderboard.Member) *api.DefaultMemberResponse {
+	return &api.DefaultMemberResponse{
+		Success:      true,
 		PublicID:     member.PublicID,
 		Score:        float64(member.Score),
 		IntScore:     member.Score,
@@ -116,14 +117,21 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 	responses := make([]*api.MemberResponse, len(in.ScoreUpserts.Members))
 
 	for i, m := range members {
-		responses[i] = newMemberResponse(m)
+		responses[i] = &api.MemberResponse{
+			PublicID:     m.PublicID,
+			Score:        float64(m.Score),
+			IntScore:     m.Score,
+			Rank:         int32(m.Rank),
+			PreviousRank: int32(m.PreviousRank),
+			ExpireAt:     int32(m.ExpireAt),
+		}
 	}
 
 	return &api.BulkUpsertScoresResponse{Success: true, Members: responses}, nil
 }
 
 // UpsertScore is the handler responsible for creating or updating the member score
-func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*api.UpsertScoreResponse, error) {
+func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*api.DefaultMemberResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "UpsertScore"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -151,61 +159,41 @@ func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*a
 		return nil, err
 	}
 
-	return &api.UpsertScoreResponse{Success: true,
-		PublicID:     member.PublicID,
-		Score:        float64(member.Score),
-		IntScore:     member.Score,
-		Rank:         int32(member.Rank),
-		PreviousRank: int32(member.PreviousRank),
-		ExpireAt:     int32(member.ExpireAt),
-	}, nil
+	return newDefaultMemberResponse(member), nil
 }
 
-// IncrementMemberScoreHandler is the handler responsible for incrementing the member score
-func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		scoreTTL := c.QueryParam("scoreTTL")
-		lg := app.Logger.With(
-			zap.String("handler", "IncrementMemberScoreHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		var payload incrementScorePayload
-
-		err := WithSegment("Payload", c, func() error {
-			if err := LoadJSONPayload(&payload, c, lg); err != nil {
-				app.AddError()
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var member *leaderboard.Member
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Incrementing member score.", zap.Int("increment", payload.Increment))
-			member, err = app.Leaderboards.IncrementMemberScore(c.StdContext(), leaderboardID, memberPublicID,
-				payload.Increment, scoreTTL)
-
-			if err != nil {
-				lg.Error("Member score increment failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Member score increment succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWithError(err, c)
-		}
-
-		return SucceedWith(serializeMember(member, -1, scoreTTL != ""), c)
+// IncrementMemberScore is the handler responsible for incrementing the member score
+func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreRequest) (*api.DefaultMemberResponse, error) {
+	if in.Body.Increment == 0 {
+		return nil, status.New(codes.InvalidArgument, "increment is required").Err()
 	}
+
+	lg := app.Logger.With(
+		zap.String("handler", "IncrementScore"),
+		zap.String("leaderboard", in.LeaderboardId),
+		zap.String("memberPublicID", in.MemberPublicId),
+	)
+
+	var member *leaderboard.Member
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Incrementing member score.", zap.Int64("increment", in.Body.Increment))
+		member, err = app.Leaderboards.IncrementMemberScore(context.Background(), in.LeaderboardId, in.MemberPublicId,
+			int(in.Body.Increment), strconv.Itoa(int(in.ScoreTTL)))
+
+		if err != nil {
+			lg.Error("Member score increment failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Member score increment succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return newDefaultMemberResponse(member), nil
 }
 
 //RemoveMemberHandler removes a member from a leaderboard

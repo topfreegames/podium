@@ -626,7 +626,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Increment Member Score", func() {
-		It("Should increment correct member score in redis and respond with the correct values", func() {
+		It("Should increment correct member score in redis and respond with the correct values (http)", func() {
 			payload := map[string]interface{}{
 				"increment": 10,
 			}
@@ -649,6 +649,33 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.Rank).To(Equal(1))
 			Expect(member.Score).To(Equal(int64(110)))
 			Expect(member.PublicID).To(Equal("memberpublicid"))
+		})
+
+		It("Should increment correct member score in redis and respond with the correct values (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				req := &pb.IncrementScoreRequest{
+					LeaderboardId:  testLeaderboardID,
+					MemberPublicId: "memberpublicid",
+					Body:           &pb.IncrementScoreRequest_Body{Increment: 10},
+				}
+
+				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
+				Expect(err).NotTo(HaveOccurred())
+
+				resp, err := cli.IncrementScore(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(resp.Success).To(BeTrue())
+				Expect(resp.PublicID).To(Equal("memberpublicid"))
+				Expect(int64(resp.Score)).To(Equal(int64(110)))
+				Expect(resp.Rank).To(Equal(int32(1)))
+
+				member, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(member.Rank).To(Equal(1))
+				Expect(member.Score).To(Equal(int64(110)))
+				Expect(member.PublicID).To(Equal("memberpublicid"))
+			})
 		})
 
 		It("Should increment correct member score when member does not exist", func() {
@@ -704,7 +731,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(ContainSubstring("parse error: syntax error"))
+			Expect(result["reason"]).To(ContainSubstring("invalid character"))
 		})
 
 		It("Should fail if error updating score", func() {

@@ -18,7 +18,7 @@ service PodiumAPI {
             body: "score_upserts"
         };
     }
-    rpc UpsertScore (UpsertScoreRequest) returns (UpsertScoreResponse) {
+    rpc UpsertScore (UpsertScoreRequest) returns (DefaultMemberResponse) {
         option (google.api.http) = {
             put: "/l/{leaderboard_id}/members/{member_public_id}/score"
             body: "score_change"
@@ -27,6 +27,12 @@ service PodiumAPI {
     rpc TotalMembers (TotalMembersRequest) returns (TotalMembersResponse) {
         option (google.api.http) = {
             get: "/l/{leaderboard_id}/members-count"
+        };
+    }
+    rpc IncrementScore (IncrementScoreRequest) returns (DefaultMemberResponse) {
+        option (google.api.http) = {
+            patch: "/l/{leaderboard_id}/members/{member_public_id}/score"
+            body: "body"
         };
     }
 }
@@ -85,7 +91,7 @@ message UpsertScoreRequest {
     ScoreChange score_change = 5;
 }
 
-message UpsertScoreResponse {
+message DefaultMemberResponse {
     bool success = 1;
     string publicID = 2;
     double score = 3; //implemented as double because int64 is exported as string through grpc-gateway
@@ -107,4 +113,16 @@ message TotalMembersRequest {
 message TotalMembersResponse {
     bool success = 1;
     int32 count = 2;
+}
+
+message IncrementScoreRequest {
+    string leaderboard_id = 1;
+    string member_public_id = 2;
+    int32 scoreTTL = 3;
+
+    message Body {
+        int64 increment = 1;
+    }
+
+    Body body = 4;
 }
