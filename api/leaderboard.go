@@ -89,7 +89,7 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 	}
 
 	lg := app.Logger.With(
-		zap.String("handler", "BulkUpsertMembersScoreHandler"),
+		zap.String("handler", "BulkUpsertScores"),
 		zap.String("leaderboard", in.LeaderboardId),
 	)
 
@@ -299,52 +299,46 @@ func (app *App) GetMember(ctx context.Context, in *api.GetMemberRequest) (*api.D
 	return newDefaultMemberResponse(member), nil
 }
 
-// GetMemberRankHandler is the handler responsible for retrieving a member rank
-func GetMemberRankHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetMemberRankHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
+// GetRank is the handler responsible for retrieving a member rank
+func (app *App) GetRank(ctx context.Context, in *api.GetRankRequest) (*api.GetRankResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetRank"),
+		zap.String("leaderboard", in.LeaderboardId),
+		zap.String("memberPublicID", in.MemberPublicId),
+	)
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		status := 404
-		rank := 0
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting rank.")
-			rank, err = app.Leaderboards.GetRank(c.StdContext(), leaderboardID, memberPublicID, order)
-
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
-				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
-			} else if err != nil {
-				lg.Error("Getting rank failed.", zap.Error(err))
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting rank succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"publicID": memberPublicID,
-			"rank":     rank,
-		}, c)
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
 	}
+
+	var rank int
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting rank.")
+		rank, err = app.Leaderboards.GetRank(ctx, in.LeaderboardId, in.MemberPublicId, order)
+
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member not found.", zap.Error(err))
+			app.AddError()
+			return status.New(codes.NotFound, "Member not found.").Err()
+		} else if err != nil {
+			lg.Error("Getting rank failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting rank succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.GetRankResponse{
+		Success:  true,
+		PublicID: in.MemberPublicId,
+		Rank:     int32(rank),
+	}, nil
 }
 
 //GetMemberRankInManyLeaderboardsHandler returns the member rank in several leaderboards at once

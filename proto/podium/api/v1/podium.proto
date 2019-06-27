@@ -55,6 +55,11 @@ service PodiumAPI {
             delete: "/l/{leaderboard_id}/members"
         };
     }
+    rpc GetRank (GetRankRequest) returns (GetRankResponse) {
+        option (google.api.http) = {
+            get: "/l/{leaderboard_id}/members/{member_public_id}/rank"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -176,4 +181,16 @@ message RemoveMemberRequest {
 message RemoveMembersRequest {
     string leaderboard_id = 1;
     string ids = 2;
+}
+
+message GetRankRequest {
+    string leaderboard_id = 1;
+    string member_public_id = 2;
+    string order = 3;
+}
+
+message GetRankResponse {
+    bool success = 1;
+    string publicID = 2;
+    int32 rank = 3;
 }
