@@ -1993,7 +1993,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Top Percentage Handler", func() {
-		It("Should get top members from redis if leaderboard exists", func() {
+		It("Should get top members from redis if leaderboard exists (http)", func() {
 			leaderboardID := uuid.NewV4().String()
 
 			for i := 1; i <= 100; i++ {
@@ -2017,6 +2017,33 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - i))
 			}
+		})
+
+		It("Should get top members from redis if leaderboard exists (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				leaderboardID := uuid.NewV4().String()
+
+				for i := 1; i <= 100; i++ {
+					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), leaderboardID, fmt.Sprintf("member_%d", i), int64(101-i), false, "")
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				req := &pb.GetTopPercentageRequest{
+					LeaderboardId: leaderboardID,
+					Percentage:    10,
+				}
+				resp, err := cli.GetTopPercentage(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(resp.Success).To(BeTrue())
+				Expect(len(resp.Members)).To(Equal(10))
+
+				for i, member := range resp.Members {
+					Expect(int(member.Rank)).To(Equal(i + 1))
+					Expect(member.PublicID).To(Equal(fmt.Sprintf("member_%d", i+1)))
+					Expect(int(member.Score)).To(Equal(100 - i))
+				}
+			})
 		})
 
 		It("Should get top members from redis if leaderboard exists and repeated scores", func() {
@@ -2049,7 +2076,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 			status, body := Get(a, fmt.Sprintf("/l/%s/top-percent/l", leaderboardID))
 			Expect(status).To(Equal(http.StatusBadRequest), body)
-			Expect(body).To(ContainSubstring("Invalid percentage provided"))
+			Expect(body).To(ContainSubstring("invalid syntax"))
 		})
 
 		It("Should fail if percentage greater than 100", func() {

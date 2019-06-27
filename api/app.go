@@ -306,7 +306,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
 	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
 	a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
 	a.Get("/l/:leaderboardID/scores/:score/around", GetAroundScoreHandler(app))

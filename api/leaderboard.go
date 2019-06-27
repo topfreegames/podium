@@ -595,61 +595,51 @@ func (app *App) GetTopMembers(ctx context.Context, in *api.GetTopMembersRequest)
 	}, nil
 }
 
-// GetTopPercentageHandler retrieves top x % members in the leaderboard
-func GetTopPercentageHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetTopPercentageHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+// GetTopPercentage retrieves top x % members in the leaderboard
+func (app *App) GetTopPercentage(ctx context.Context, in *api.GetTopPercentageRequest) (*api.MemberListResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetTopPercentageHandler"),
+		zap.String("leaderboard", in.LeaderboardId),
+	)
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		percentageStr := c.Param("percentage")
-		percentage, err := strconv.ParseInt(percentageStr, 10, 32)
-		if err != nil {
-			app.AddError()
-			return FailWith(400, fmt.Sprintf("Invalid percentage provided: %s", err.Error()), c)
-		}
-		if percentage == 0 {
-			app.AddError()
-			return FailWith(400, "Percentage must be a valid integer between 1 and 100.", c)
-		}
-
-		var members leaderboard.Members
-		status := 400
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting top percentage.", zap.Int64("percentage", percentage))
-			members, err = app.Leaderboards.GetTopPercentage(c.StdContext(), leaderboardID, defaultPageSize,
-				int(percentage), app.Config.GetInt("api.maxReturnedMembers"), order)
-
-			if err != nil {
-				lg.Error("Getting top percentage failed.", zap.Error(err))
-				if err.Error() == "Percentage must be a valid integer between 1 and 100." {
-					app.AddError()
-					status = 400
-					return err
-				}
-
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting top percentage succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
+	if in.Percentage == 0 {
+		app.AddError()
+		return nil, status.New(codes.InvalidArgument, "Percentage must be a valid integer between 1 and 100.").Err()
 	}
+
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
+	}
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting top percentage.", zap.Int("percentage", int(in.Percentage)))
+		members, err = app.Leaderboards.GetTopPercentage(ctx, in.LeaderboardId, defaultPageSize,
+			int(in.Percentage), app.Config.GetInt("api.maxReturnedMembers"), order)
+
+		if err != nil {
+			lg.Error("Getting top percentage failed.", zap.Error(err))
+			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
+				app.AddError()
+				return status.New(codes.InvalidArgument, err.Error()).Err()
+			}
+
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting top percentage succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MemberListResponse{
+		Success: true,
+		Members: newMemberResponseList(members),
+	}, nil
 }
 
 // GetMembers retrieves several members at once
