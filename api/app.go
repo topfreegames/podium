@@ -306,8 +306,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	a.Get("/l/:leaderboardID/scores/:score/around", GetAroundScoreHandler(app))
-
 	app.Errors = metrics.NewEWMA15()
 
 	go func() {

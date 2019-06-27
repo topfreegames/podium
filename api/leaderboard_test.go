@@ -1476,7 +1476,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Around Score Handler", func() {
-		It("Should get score neighbours from redis if score is sent", func() {
+		It("Should get score neighbours from redis if score is sent (http)", func() {
 			for i := 1; i <= 100; i++ {
 				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
 				Expect(err).NotTo(HaveOccurred())
@@ -1505,6 +1505,39 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(dbMember.Score).To(Equal(int64(member["score"].(float64))))
 				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
 			}
+		})
+
+		It("Should get score neighbours from redis if score is sent (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				for i := 1; i <= 100; i++ {
+					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				req := &pb.GetAroundScoreRequest{
+					LeaderboardId: testLeaderboardID,
+					Score:         50,
+				}
+				resp, err := cli.GetAroundScore(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(resp.Success).To(BeTrue())
+				Expect(len(resp.Members)).To(Equal(20))
+				rank := req.Score + 1
+				start := int(rank - 20/2)
+				for i, member := range resp.Members {
+					pos := start + i
+					Expect(int(member.Rank)).To(Equal(pos + 1))
+					Expect(member.PublicID).To(Equal(fmt.Sprintf("member_%d", pos+1)))
+					Expect(int(member.Score)).To(Equal(100 - pos))
+
+					dbMember, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, member.PublicID, "desc", false)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(dbMember.Rank).To(Equal(int(member.Rank)))
+					Expect(dbMember.Score).To(Equal(int64(member.Score)))
+					Expect(dbMember.PublicID).To(Equal(member.PublicID))
+				}
+			})
 		})
 
 		It("Should get rank neighbours from redis in reverse order if score is sent", func() {
@@ -1595,7 +1628,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			err := json.Unmarshal([]byte(body), &result)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("Score not sent or wrongly formatted"))
+			Expect(result["reason"]).To(ContainSubstring("invalid syntax"))
 		})
 
 		It("Should fail with 400 if bad pageSize provided", func() {
@@ -1605,7 +1638,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			err := json.Unmarshal([]byte(body), &result)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("Failed to process param pageSize: notint"))
+			Expect(result["reason"]).To(ContainSubstring("invalid syntax"))
 		})
 
 		It("Should fail with 400 if pageSize provided if bigger than maxPageSizeAllowed", func() {

@@ -19,7 +19,6 @@ import (
 
 	"google.golang.org/grpc/status"
 
-	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/leaderboard"
 	"go.uber.org/zap"
 
@@ -454,57 +453,53 @@ func (app *App) getPageSize(pageSize int) int {
 	return pageSize
 }
 
-// GetAroundScoreHandler retrieves a list of member scores and ranks centered in a given score
-func GetAroundScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetAroundScoreHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+// GetAroundScore retrieves a list of member scores and ranks centered in a given score
+func (app *App) GetAroundScore(ctx context.Context, in *api.GetAroundScoreRequest) (*api.MemberListResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetAroundScoreHandler"),
+		zap.String("leaderboard", in.LeaderboardId),
+	)
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		score, err := strconv.ParseInt(c.Param("score"), 10, 64)
-		if err != nil {
-			return FailWith(400, "Score not sent or wrongly formatted", c)
-		}
-
-		pageSize, err := GetPageSize(app, c, defaultPageSize)
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var members leaderboard.Members
-		status := 404
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting players around score.", zap.Int64("score", score))
-			members, err = app.Leaderboards.GetAroundScore(c.StdContext(), leaderboardID, pageSize, score, order)
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
-				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
-			} else if err != nil {
-				lg.Error("Getting players around score failed.", zap.Error(err))
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting players around score succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
 	}
+
+	pageSize := app.getPageSize(int(in.PageSize))
+	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+		msg := fmt.Sprintf(
+			"Max pageSize allowed: %d. pageSize requested: %d",
+			app.Config.GetInt("api.maxReturnedMembers"),
+			pageSize,
+		)
+		return nil, status.New(codes.InvalidArgument, msg).Err()
+	}
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting players around score.", zap.Int64("score", in.Score))
+		members, err = app.Leaderboards.GetAroundScore(ctx, in.LeaderboardId, pageSize, in.Score, order)
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member not found.", zap.Error(err))
+			app.AddError()
+			return status.New(codes.NotFound, "Member not found.").Err()
+		} else if err != nil {
+			lg.Error("Getting players around score failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting players around score succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MemberListResponse{
+		Success: true,
+		Members: newMemberResponseList(members),
+	}, nil
 }
 
 // TotalMembers is the handler responsible for returning the total number of members in a leaderboard
