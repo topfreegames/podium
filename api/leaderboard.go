@@ -340,66 +340,59 @@ func (app *App) GetRank(ctx context.Context, in *api.GetRankRequest) (*api.GetRa
 	}, nil
 }
 
-//GetMemberRankInManyLeaderboardsHandler returns the member rank in several leaderboards at once
-func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetMemberRankInManyLeaderboardsHandler"),
-			zap.String("memberPublicID", memberPublicID),
-		)
+//GetRankMultiLeaderboards returns the member rank in several leaderboards at once
+func (app *App) GetRankMultiLeaderboards(ctx context.Context, in *api.MultiGetRankRequest) (*api.MultiGetRankResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetRankMultiLeaderboards"),
+		zap.String("memberPublicID", in.MemberPublicId),
+	)
 
-		ids := c.QueryParam("leaderboardIds")
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-		scoreTTL := c.QueryParam("scoreTTL") == "true"
-
-		if ids == "" {
-			app.AddError()
-			return FailWith(400, "Leaderboard IDs are required using the 'leaderboardIds' querystring parameter", c)
-		}
-
-		leaderboardIDs := strings.Split(ids, ",")
-		serializedScores := make([]map[string]interface{}, len(leaderboardIDs))
-
-		status := 404
-		err := WithSegment("Model", c, func() error {
-			for i, leaderboardID := range leaderboardIDs {
-				lg.Debug("Getting member rank on leaderboard.", zap.String("leaderboard", leaderboardID))
-				member, err := app.Leaderboards.GetMember(c.StdContext(), leaderboardID, memberPublicID, order, scoreTTL)
-				if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-					lg.Error("Member not found.", zap.Error(err))
-					app.AddError()
-					status = 404
-					return fmt.Errorf("Leaderboard not found or member not found in leaderboard.")
-				} else if err != nil {
-					lg.Error("Getting member rank on leaderboard failed.", zap.Error(err))
-					app.AddError()
-					status = 500
-					return err
-				}
-				lg.Debug("Getting member rank on leaderboard succeeded.")
-				serializedScores[i] = map[string]interface{}{
-					"leaderboardID": leaderboardID,
-					"rank":          member.Rank,
-					"score":         member.Score,
-				}
-				if scoreTTL {
-					serializedScores[i]["expireAt"] = member.ExpireAt
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"scores": serializedScores,
-		}, c)
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
 	}
+
+	if in.LeaderboardIds == "" {
+		app.AddError()
+		return nil, status.New(codes.InvalidArgument,
+			"Leaderboard IDs are required using the 'leaderboardIds' querystring parameter").Err()
+	}
+
+	leaderboardIDs := strings.Split(in.LeaderboardIds, ",")
+	serializedScores := make([]*api.MultiGetRankResponse_Member, len(leaderboardIDs))
+
+	err := withSegment("Model", ctx, func() error {
+		for i, leaderboardID := range leaderboardIDs {
+			lg.Debug("Getting member rank on leaderboard.", zap.String("leaderboard", leaderboardID))
+			member, err := app.Leaderboards.GetMember(ctx, leaderboardID, in.MemberPublicId, order, in.ScoreTTL)
+			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+				lg.Error("Member not found.", zap.Error(err))
+				app.AddError()
+				return status.New(codes.NotFound, "Leaderboard not found or member not found in leaderboard.").Err()
+			} else if err != nil {
+				lg.Error("Getting member rank on leaderboard failed.", zap.Error(err))
+				app.AddError()
+				return err
+			}
+			lg.Debug("Getting member rank on leaderboard succeeded.")
+			serializedScores[i] = &api.MultiGetRankResponse_Member{
+				LeaderboardID: leaderboardID,
+				Rank:          int32(member.Rank),
+				Score:         float64(member.Score),
+				IntScore:      member.Score,
+				ExpireAt:      int32(member.ExpireAt),
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MultiGetRankResponse{
+		Success: true,
+		Scores:  serializedScores,
+	}, nil
 }
 
 // GetAroundMember retrieves a list of member score and rank centered in the given member

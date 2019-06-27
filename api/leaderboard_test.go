@@ -2120,7 +2120,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get member score in many leaderboads", func() {
-		It("Should get member score in many leaderboards", func() {
+		It("Should get member score in many leaderboards (http)", func() {
 			payload := map[string]interface{}{
 				"score":        100,
 				"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
@@ -2138,6 +2138,34 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(int(score["rank"].(float64))).To(Equal(1))
 				Expect(score["leaderboardID"]).To(Equal(payload["leaderboards"].([]string)[i]))
 			}
+		})
+
+		It("Should get member score in many leaderboards (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+
+				reqUpdate := &pb.MultiUpsertScoreRequest{
+					MemberPublicId: "memberpublicid",
+					ScoreMultiChange: &pb.MultiUpsertScoreRequest_ScoreMultiChange{
+						Score:        100,
+						Leaderboards: []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
+					},
+				}
+				_, err := cli.UpsertScoreMultiLeaderboards(context.Background(), reqUpdate)
+				Expect(err).NotTo(HaveOccurred())
+
+				reqRetrieve := &pb.MultiGetRankRequest{
+					MemberPublicId: "memberpublicid",
+					LeaderboardIds: "testkey1,testkey2,testkey3,testkey4,testkey5",
+				}
+
+				resp, err := cli.GetRankMultiLeaderboards(context.Background(), reqRetrieve)
+				Expect(err).NotTo(HaveOccurred())
+				for i, score := range resp.Scores {
+					Expect(int(score.Score)).To(Equal(int(reqUpdate.ScoreMultiChange.Score)))
+					Expect(int(score.Rank)).To(Equal(1))
+					Expect(score.LeaderboardID).To(Equal(reqUpdate.ScoreMultiChange.Leaderboards[i]))
+				}
+			})
 		})
 
 		It("Should fail if pass a leaderboard that does not exist", func() {

@@ -81,7 +81,11 @@ service PodiumAPI {
             body: "score_multi_change"
         };
     }
-
+    rpc GetRankMultiLeaderboards (MultiGetRankRequest) returns (MultiGetRankResponse) {
+        option (google.api.http) = {
+            get: "/m/{member_public_id}/scores"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -262,6 +266,27 @@ message MultiUpsertScoreResponse {
         int32 previous_rank = 5;
         int32 expire_at = 6;
         string leaderboardID = 8;
+    }
+
+    repeated Member scores = 2;
+}
+
+message MultiGetRankRequest {
+    string member_public_id = 1;
+    string leaderboard_ids = 2;
+    string order = 3;
+    bool scoreTTL = 4;
+}
+
+message MultiGetRankResponse {
+    bool success = 1;
+
+    message Member {
+        string leaderboardID = 1;
+        int32 rank = 2;
+        double score = 3;
+        int64 int_score = 4;
+        int32 expire_at = 5;
     }
 
     repeated Member scores = 2;

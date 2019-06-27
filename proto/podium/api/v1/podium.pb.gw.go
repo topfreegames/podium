@@ -647,6 +647,44 @@ func request_PodiumAPI_UpsertScoreMultiLeaderboards_0(ctx context.Context, marsh
 
 }
 
+var (
+	filter_PodiumAPI_GetRankMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_public_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+)
+
+func request_PodiumAPI_GetRankMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq MultiGetRankRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["member_public_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "member_public_id")
+	}
+
+	protoReq.MemberPublicId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "member_public_id", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetRankMultiLeaderboards_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.GetRankMultiLeaderboards(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
 // RegisterPodiumAPIHandlerFromEndpoint is same as RegisterPodiumAPIHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterPodiumAPIHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
@@ -965,6 +1003,26 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 
 	})
 
+	mux.Handle("GET", pattern_PodiumAPI_GetRankMultiLeaderboards_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_PodiumAPI_GetRankMultiLeaderboards_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_PodiumAPI_GetRankMultiLeaderboards_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -996,6 +1054,8 @@ var (
 	pattern_PodiumAPI_GetTopPercentage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "top-percent", "percentage"}, ""))
 
 	pattern_PodiumAPI_UpsertScoreMultiLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
+
+	pattern_PodiumAPI_GetRankMultiLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
 )
 
 var (
@@ -1026,4 +1086,6 @@ var (
 	forward_PodiumAPI_GetTopPercentage_0 = runtime.ForwardResponseMessage
 
 	forward_PodiumAPI_UpsertScoreMultiLeaderboards_0 = runtime.ForwardResponseMessage
+
+	forward_PodiumAPI_GetRankMultiLeaderboards_0 = runtime.ForwardResponseMessage
 )
