@@ -761,7 +761,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Remove Member Score", func() {
-		It("Should delete member score from redis if score exists", func() {
+		It("Should delete member score from redis if score exists (http)", func() {
 			_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -774,6 +774,44 @@ var _ = Describe("Leaderboard Handler", func() {
 			_, err = a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
+		})
+
+		It("Should delete member score from redis if score exists (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
+				Expect(err).NotTo(HaveOccurred())
+
+				req := &pb.RemoveMemberRequest{
+					LeaderboardId:  testLeaderboardID,
+					MemberPublicId: "memberpublicid",
+				}
+				resp, err := cli.RemoveMember(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.Success).To(BeTrue())
+
+				_, err = a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
+			})
+		})
+
+		It("Should delete members score from redis if score exists (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
+				Expect(err).NotTo(HaveOccurred())
+
+				req := &pb.RemoveMembersRequest{
+					LeaderboardId: testLeaderboardID,
+					Ids:           "memberpublicid",
+				}
+				resp, err := cli.RemoveMembers(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.Success).To(BeTrue())
+
+				_, err = a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
+			})
 		})
 
 		It("Should delete member score from redis if score exists", func() {
@@ -2129,7 +2167,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Members Handler", func() {
-		It("should get several members from leaderboard", func() {
+		It("should get several members from leaderboard (http)", func() {
 			leaderboardID := uuid.NewV4().String()
 
 			for i := 1; i <= 100; i++ {
@@ -2159,6 +2197,37 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(member["score"]).To(BeEquivalentTo(101 - (i+1)*10))
 				Expect(member["position"]).To(BeEquivalentTo(i))
 			}
+		})
+
+		It("should get several members from leaderboard (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				leaderboardID := uuid.NewV4().String()
+
+				for i := 1; i <= 100; i++ {
+					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), leaderboardID, fmt.Sprintf("member_%d", i), int64(101-i), false, "")
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				req := &pb.GetMembersRequest{
+					LeaderboardId: leaderboardID,
+					Ids:           "member_10,member_20,member_30",
+				}
+				resp, err := cli.GetMembers(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(resp.Success).To(BeTrue())
+				Expect(resp.NotFound).To(BeEmpty())
+				members := resp.Members
+				Expect(members).To(HaveLen(3))
+
+				for i := 0; i < 3; i++ {
+					By(fmt.Sprintf("Member %d", i))
+					Expect(members[i].PublicID).To(Equal(fmt.Sprintf("member_%d", (i+1)*10)))
+					Expect(members[i].Rank).To(BeEquivalentTo((i + 1) * 10))
+					Expect(members[i].Score).To(BeEquivalentTo(101 - (i+1)*10))
+					Expect(members[i].Position).To(BeEquivalentTo(i))
+				}
+			})
 		})
 
 		It("should return empty list if invalid leaderboard", func() {
