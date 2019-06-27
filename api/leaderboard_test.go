@@ -2164,7 +2164,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		It("should return empty list if invalid leaderboard", func() {
 			status, body := Get(
 				a,
-				"/l/invalid-leaderboard/members/?ids=member_10,member_20,member_30",
+				"/l/invalid-leaderboard/members?ids=member_10,member_20,member_30",
 			)
 			Expect(status).To(Equal(http.StatusOK), body)
 
@@ -2216,7 +2216,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		It("should fail if no public ids sent", func() {
 			leaderboardID := uuid.NewV4().String()
 
-			status, body := Get(a, fmt.Sprintf("/l/%s/members/", leaderboardID))
+			status, body := Get(a, fmt.Sprintf("/l/%s/members", leaderboardID))
 			Expect(status).To(Equal(http.StatusBadRequest), body)
 
 			var result map[string]interface{}

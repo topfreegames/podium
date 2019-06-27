@@ -659,67 +659,80 @@ func GetTopPercentageHandler(app *App) func(c echo.Context) error {
 	}
 }
 
-// GetMembersHandler retrieves several members at once
-func GetMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+// GetMembers retrieves several members at once
+func (app *App) GetMembers(ctx context.Context, in *api.GetMembersRequest) (*api.GetMembersResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetMembers"),
+		zap.String("leaderboard", in.LeaderboardId),
+	)
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-		scoreTTL := c.QueryParam("scoreTTL") == "true"
-
-		ids := c.QueryParam("ids")
-		if ids == "" {
-			app.AddError()
-			return FailWith(400, "Member IDs are required using the 'ids' querystring parameter", c)
-		}
-
-		memberIDs := strings.Split(ids, ",")
-
-		var members leaderboard.Members
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting members.", zap.String("ids", ids))
-			members, err = app.Leaderboards.GetMembers(c.StdContext(), leaderboardID, memberIDs, order, scoreTTL)
-
-			if err != nil {
-				lg.Error("Getting members failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Getting members succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		notFound := []string{}
-
-		for _, memberID := range memberIDs {
-			found := false
-			for _, member := range members {
-				if member.PublicID == memberID {
-					found = true
-					break
-				}
-			}
-			if !found {
-				notFound = append(notFound, memberID)
-			}
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members":  serializeMembers(members, true, scoreTTL),
-			"notFound": notFound,
-		}, c)
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
 	}
+
+	if in.Ids == "" {
+		app.AddError()
+		return nil, status.New(codes.InvalidArgument,
+			"Member IDs are required using the 'ids' querystring parameter").Err()
+	}
+
+	memberIDs := strings.Split(in.Ids, ",")
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting members.", zap.String("ids", in.Ids))
+		members, err = app.Leaderboards.GetMembers(ctx, in.LeaderboardId, memberIDs, order, in.ScoreTTL)
+
+		if err != nil {
+			lg.Error("Getting members failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting members succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var notFound []string
+
+	for _, memberID := range memberIDs {
+		found := false
+		for _, member := range members {
+			if member.PublicID == memberID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			notFound = append(notFound, memberID)
+		}
+	}
+
+	return &api.GetMembersResponse{
+		Success:  true,
+		Members:  newMemberResponseList(members),
+		NotFound: notFound,
+	}, nil
+}
+
+func newMemberResponseList(members leaderboard.Members) []*api.MemberResponse {
+	list := make([]*api.MemberResponse, len(members))
+	for i, m := range members {
+		list[i] = &api.MemberResponse{
+			PublicID:     m.PublicID,
+			Score:        float64(m.Score),
+			IntScore:     m.Score,
+			Rank:         int32(m.Rank),
+			PreviousRank: int32(m.PreviousRank),
+			ExpireAt:     int32(m.ExpireAt),
+			Position:     int32(i),
+		}
+	}
+	return list
 }
 
 // UpsertMemberLeaderboardsScoreHandler sets the member score for all leaderboards

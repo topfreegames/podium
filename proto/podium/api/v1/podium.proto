@@ -40,6 +40,11 @@ service PodiumAPI {
             get: "/l/{leaderboard_id}/members/{member_public_id}"
         };
     }
+    rpc GetMembers (GetMembersRequest) returns (GetMembersResponse) {
+        option (google.api.http) = {
+            get: "/l/{leaderboard_id}/members"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -77,6 +82,7 @@ message MemberResponse {
     int32 rank = 4;
     int32 previous_rank = 5;
     int32 expire_at = 6;
+    int32 position = 7;
 }
 
 message BulkUpsertScoresResponse {
@@ -137,4 +143,17 @@ message GetMemberRequest {
     string member_public_id = 2;
     string order = 3;
     bool scoreTTL = 4;
+}
+
+message GetMembersRequest {
+    string leaderboard_id = 1;
+    string order = 2;
+    bool scoreTTL = 3;
+    string ids = 4;
+}
+
+message GetMembersResponse {
+    bool success = 1;
+    repeated MemberResponse members = 2;
+    repeated string notFound = 3;
 }

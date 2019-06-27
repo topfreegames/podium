@@ -306,7 +306,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
-	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
 	a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
 	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
 	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
