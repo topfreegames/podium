@@ -65,6 +65,11 @@ service PodiumAPI {
             get: "/l/{leaderboard_id}/members/{member_public_id}/around"
         };
     }
+    rpc GetTopMembers (GetTopMembersRequest) returns (MemberListResponse) {
+        option (google.api.http) = {
+            get: "/l/{leaderboard_id}/top/{page_number}"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -205,5 +210,12 @@ message GetAroundMemberRequest {
     string member_public_id = 2;
     string order = 3;
     bool get_last_if_not_found = 4;
+    int32 page_size = 5;
+}
+
+message GetTopMembersRequest {
+    string leaderboard_id = 1;
+    int32 page_number = 2;
+    string order = 3;
     int32 page_size = 5;
 }

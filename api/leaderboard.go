@@ -545,52 +545,54 @@ func (app *App) TotalMembers(ctx context.Context, in *api.TotalMembersRequest) (
 	return &api.TotalMembersResponse{Success: true, Count: int32(count)}, nil
 }
 
-// GetTopMembersHandler retrieves onePage of member score and rank
-func GetTopMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetTopMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+// GetTopMembers retrieves onePage of member score and rank
+func (app *App) GetTopMembers(ctx context.Context, in *api.GetTopMembersRequest) (*api.MemberListResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetTopMembers"),
+		zap.String("leaderboard", in.LeaderboardId),
+	)
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		pageNumber, err := GetIntRouteParam(app, c, "pageNumber", 1)
-		if err != nil {
-			app.AddError()
-			return FailWith(400, err.Error(), c)
-		}
-
-		pageSize, err := GetPageSize(app, c, defaultPageSize)
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var members leaderboard.Members
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting top members.")
-			members, err = app.Leaderboards.GetLeaders(c.StdContext(), leaderboardID, pageSize, pageNumber, order)
-
-			if err != nil {
-				lg.Error("Getting top members failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Getting top members succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
+	if in.PageNumber == 0 {
+		in.PageNumber = 1
 	}
+
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
+	}
+
+	pageSize := app.getPageSize(int(in.PageSize))
+	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+		msg := fmt.Sprintf(
+			"Max pageSize allowed: %d. pageSize requested: %d",
+			app.Config.GetInt("api.maxReturnedMembers"),
+			pageSize,
+		)
+		return nil, status.New(codes.InvalidArgument, msg).Err()
+	}
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting top members.")
+		members, err = app.Leaderboards.GetLeaders(ctx, in.LeaderboardId, pageSize, int(in.PageNumber), order)
+
+		if err != nil {
+			lg.Error("Getting top members failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting top members succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MemberListResponse{
+		Success: true,
+		Members: newMemberResponseList(members),
+	}, nil
 }
 
 // GetTopPercentageHandler retrieves top x % members in the leaderboard

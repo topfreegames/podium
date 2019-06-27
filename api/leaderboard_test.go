@@ -1761,7 +1761,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Top Members Handler", func() {
-		It("Should get one page of top members from redis if leaderboard exists", func() {
+		It("Should get one page of top members from redis if leaderboard exists (http)", func() {
 			for i := 1; i <= 100; i++ {
 				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
 				Expect(err).NotTo(HaveOccurred())
@@ -1786,6 +1786,35 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(dbMember.Score).To(Equal(int64(member["score"].(float64))))
 				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
 			}
+		})
+
+		It("Should get one page of top members from redis if leaderboard exists (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				for i := 1; i <= 100; i++ {
+					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				req := &pb.GetTopMembersRequest{
+					LeaderboardId: testLeaderboardID,
+					PageNumber:    1,
+				}
+				resp, err := cli.GetTopMembers(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.Success).To(BeTrue())
+				Expect(len(resp.Members)).To(Equal(20))
+				for i, member := range resp.Members {
+					Expect(int(member.Rank)).To(Equal(i + 1))
+					Expect(member.PublicID).To(Equal(fmt.Sprintf("member_%d", i+1)))
+					Expect(int(member.Score)).To(Equal(100 - i))
+
+					dbMember, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, member.PublicID, "desc", false)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(dbMember.Rank).To(Equal(int(member.Rank)))
+					Expect(dbMember.Score).To(Equal(int64(member.Score)))
+					Expect(dbMember.PublicID).To(Equal(member.PublicID))
+				}
+			})
 		})
 
 		It("Should get one page of top members in reverse order from redis if leaderboard exists", func() {
@@ -1912,7 +1941,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("Failed to process route param pageNumber: notint"))
+			Expect(result["reason"]).To(ContainSubstring("invalid syntax"))
 		})
 
 		It("Should fail with 400 if bad pageSize provided", func() {
@@ -1921,7 +1950,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("Failed to process param pageSize: notint"))
+			Expect(result["reason"]).To(ContainSubstring("invalid syntax"))
 		})
 
 		It("Should fail with 400 if pageSize provided if bigger than maxPageSizeAllowed", func() {
