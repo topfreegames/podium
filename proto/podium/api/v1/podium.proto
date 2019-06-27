@@ -75,6 +75,12 @@ service PodiumAPI {
             get: "/l/{leaderboard_id}/top-percent/{percentage}"
         };
     }
+    rpc UpsertScoreAllLeaderboards (UpsertScoreAllRequest) returns (UpsertScoreAllResponse) {
+        option (google.api.http) = {
+            put: "/m/{member_public_id}/scores"
+            body: "score_multi_change"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -229,4 +235,33 @@ message GetTopPercentageRequest {
     string leaderboard_id = 1;
     int32 percentage = 2;
     string order = 3;
+}
+
+message UpsertScoreAllRequest {
+    string member_public_id = 1;
+    int32 scoreTTL = 2;
+    bool prev_rank = 3;
+
+    message ScoreMultiChange {
+        int64 score = 1;
+        repeated string leaderboards = 2;
+    }
+
+    ScoreMultiChange score_multi_change = 4;
+}
+
+message UpsertScoreAllResponse {
+    bool success = 1;
+
+    message Member {
+        string publicID = 1;
+        double score = 2; //implemented as double because int64 is exported as string through grpc-gateway
+        int64 int_score = 3; //the full int64 score received from Redis
+        int32 rank = 4;
+        int32 previous_rank = 5;
+        int32 expire_at = 6;
+        string leaderboardID = 8;
+    }
+
+    repeated Member scores = 2;
 }

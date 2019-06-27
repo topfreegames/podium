@@ -19,7 +19,6 @@ import (
 
 	"google.golang.org/grpc/status"
 
-	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/leaderboard"
 	"go.uber.org/zap"
@@ -598,7 +597,7 @@ func (app *App) GetTopMembers(ctx context.Context, in *api.GetTopMembersRequest)
 // GetTopPercentage retrieves top x % members in the leaderboard
 func (app *App) GetTopPercentage(ctx context.Context, in *api.GetTopPercentageRequest) (*api.MemberListResponse, error) {
 	lg := app.Logger.With(
-		zap.String("handler", "GetTopPercentageHandler"),
+		zap.String("handler", "GetTopPercentage"),
 		zap.String("leaderboard", in.LeaderboardId),
 	)
 
@@ -718,74 +717,54 @@ func newMemberResponseList(members leaderboard.Members) []*api.MemberResponse {
 	return list
 }
 
-// UpsertMemberLeaderboardsScoreHandler sets the member score for all leaderboards
-func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "UpsertMemberLeaderboardsScoreHandler"),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		scoreTTL := c.QueryParam("scoreTTL")
-
-		var payload setScoresPayload
-
-		prevRank := false
-		prevRankStr := c.QueryParam("prevRank")
-		if prevRankStr != "" && prevRankStr == "true" {
-			prevRank = true
-		}
-
-		err := WithSegment("Payload", c, func() error {
-			b, err := GetRequestBody(c)
-			if err != nil {
-				app.AddError()
-				return err
-			}
-			if _, err := jsonparser.GetInt(b, "score"); err != nil {
-				app.AddError()
-				return fmt.Errorf("score is required")
-			}
-			if err := LoadJSONPayload(&payload, c, lg); err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		serializedScores := make([]map[string]interface{}, len(payload.Leaderboards))
-
-		err = WithSegment("Model", c, func() error {
-			for i, leaderboardID := range payload.Leaderboards {
-				lg.Debug("Updating score.",
-					zap.String("leaderboardID", leaderboardID),
-					zap.Int64("score", payload.Score))
-				member, err := app.Leaderboards.SetMemberScore(c.StdContext(), leaderboardID, memberPublicID,
-					payload.Score, prevRank, scoreTTL)
-
-				if err != nil {
-					lg.Error("Update score failed.", zap.Error(err))
-					app.AddError()
-					return err
-				}
-				serializedScore := serializeMember(member, -1, scoreTTL != "")
-				serializedScore["leaderboardID"] = leaderboardID
-				serializedScores[i] = serializedScore
-			}
-			lg.Debug("Update score succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"scores": serializedScores,
-		}, c)
+// UpsertScoreAllLeaderboards sets the member score for all leaderboards
+func (app *App) UpsertScoreAllLeaderboards(ctx context.Context, in *api.UpsertScoreAllRequest) (*api.UpsertScoreAllResponse, error) {
+	if len(in.ScoreMultiChange.Leaderboards) == 0 {
+		return nil, status.New(codes.InvalidArgument, "leaderboards is required").Err()
 	}
+
+	lg := app.Logger.With(
+		zap.String("handler", "UpsertScoreAllLeaderboards"),
+		zap.String("memberPublicID", in.MemberPublicId),
+	)
+
+	serializedScores := make([]*api.UpsertScoreAllResponse_Member, len(in.ScoreMultiChange.Leaderboards))
+
+	err := withSegment("Model", ctx, func() error {
+		for i, leaderboardID := range in.ScoreMultiChange.Leaderboards {
+			lg.Debug("Updating score.",
+				zap.String("leaderboardID", leaderboardID),
+				zap.Int64("score", in.ScoreMultiChange.Score))
+			member, err := app.Leaderboards.SetMemberScore(ctx, leaderboardID, in.MemberPublicId,
+				in.ScoreMultiChange.Score, in.PrevRank, strconv.Itoa(int(in.ScoreTTL)))
+
+			if err != nil {
+				lg.Error("Update score failed.", zap.Error(err))
+				app.AddError()
+				return err
+			}
+			serializedScore := &api.UpsertScoreAllResponse_Member{
+				PublicID:      member.PublicID,
+				Score:         float64(member.Score),
+				IntScore:      member.Score,
+				Rank:          int32(member.Rank),
+				PreviousRank:  int32(member.PreviousRank),
+				ExpireAt:      int32(member.ExpireAt),
+				LeaderboardID: leaderboardID,
+			}
+			serializedScores[i] = serializedScore
+		}
+		lg.Debug("Update score succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.UpsertScoreAllResponse{
+		Success: true,
+		Scores:  serializedScores,
+	}, nil
 }
 
 // RemoveLeaderboard is the handler responsible for removing a leaderboard
