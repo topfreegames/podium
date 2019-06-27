@@ -17,7 +17,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"time"
 
 	"google.golang.org/grpc"
@@ -181,8 +180,8 @@ func doRequest(app *api.App, method, url, body string) (int, string) {
 	return performRequest(req)
 }
 
-func getRoute(ts *httptest.Server, url string) string {
-	return fmt.Sprintf("%s%s", ts.URL, url)
+func getRoute(httpEndPoint string, url string) string {
+	return fmt.Sprintf("http://%s%s", httpEndPoint, url)
 }
 
 func fastGet(url string) (int, []byte, error) {

@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"time"
@@ -397,8 +396,8 @@ var _ = Describe("Leaderboard Handler", func() {
 			payloadJSON, err := json.Marshal(payload)
 			Expect(err).NotTo(HaveOccurred())
 			ctx["payload"] = payloadJSON
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
-			url := getRoute(ts, "/l/testkey/scores")
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
+			url := getRoute(httpEndPoint, "/l/testkey/scores")
 			status, body, err := fastPutTo(url, ctx["payload"].([]byte))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -617,8 +616,8 @@ var _ = Describe("Leaderboard Handler", func() {
 			payloadJSON, err := json.Marshal(payload)
 			Expect(err).NotTo(HaveOccurred())
 			ctx["payload"] = payloadJSON
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
-			url := getRoute(ts, "/l/testkey/members/memberpublicid/score")
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
+			url := getRoute(httpEndPoint, "/l/testkey/members/memberpublicid/score")
 			status, body, err := fastPutTo(url, ctx["payload"].([]byte))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -752,8 +751,8 @@ var _ = Describe("Leaderboard Handler", func() {
 			payloadJSON, err := json.Marshal(payload)
 			Expect(err).NotTo(HaveOccurred())
 			ctx["payload"] = payloadJSON
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
-			url := getRoute(ts, "/l/testkey/members/memberpublicid/score")
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
+			url := getRoute(httpEndPoint, "/l/testkey/members/memberpublicid/score")
 			status, body, err := fastPatchTo(url, ctx["payload"].([]byte))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -870,7 +869,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
-
 		HTTPMeasure("it should remove member score", func(ctx map[string]interface{}) {
 			lbID := uuid.NewV4().String()
 			memberID := uuid.NewV4().String()
@@ -878,14 +876,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 			ctx["lead"] = lbID
 			ctx["memberID"] = memberID
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
 			lead := ctx["lead"].(string)
 			memberID := ctx["memberID"].(string)
-			url := getRoute(ts, fmt.Sprintf("/l/%s/members?ids=%s", lead, memberID))
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/members?ids=%s", lead, memberID))
 			status, body, err := fastDelete(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
 		}, 0.05)
+
 	})
 
 	Describe("Get Member", func() {
@@ -1016,10 +1015,10 @@ var _ = Describe("Leaderboard Handler", func() {
 
 			ctx["lead"] = lbID
 			ctx["memberID"] = memberID
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
 			lead := ctx["lead"].(string)
 			memberID := ctx["memberID"].(string)
-			url := getRoute(ts, fmt.Sprintf("/l/%s/members/%s", lead, memberID))
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/members/%s", lead, memberID))
 			status, body, err := fastGet(url)
 			Expect(status).To(Equal(http.StatusOK), string(body))
 			Expect(err).NotTo(HaveOccurred())
@@ -1118,10 +1117,10 @@ var _ = Describe("Leaderboard Handler", func() {
 
 			ctx["lead"] = lbID
 			ctx["memberID"] = memberID
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
 			lead := ctx["lead"].(string)
 			memberID := ctx["memberID"].(string)
-			url := getRoute(ts, fmt.Sprintf("/l/%s/members/%s/rank", lead, memberID))
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/members/%s/rank", lead, memberID))
 			status, body, err := fastGet(url)
 			Expect(status).To(Equal(http.StatusOK), string(body))
 			Expect(err).NotTo(HaveOccurred())
@@ -1465,10 +1464,10 @@ var _ = Describe("Leaderboard Handler", func() {
 
 			ctx["lead"] = lead
 			ctx["memberID"] = memberID
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
 			lead := ctx["lead"].(string)
 			memberID := ctx["memberID"].(string)
-			url := getRoute(ts, fmt.Sprintf("/l/%s/members/%s/around", lead, memberID))
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/members/%s/around", lead, memberID))
 			status, body, err := fastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -1784,9 +1783,9 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			ctx["lead"] = lead
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
 			lead := ctx["lead"].(string)
-			url := getRoute(ts, fmt.Sprintf("/l/%s/members-count", lead))
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/members-count", lead))
 			status, body, err := fastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -2016,9 +2015,9 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			ctx["lead"] = lead
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
 			lead := ctx["lead"].(string)
-			url := getRoute(ts, fmt.Sprintf("/l/%s/top/10", lead))
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/top/10", lead))
 			status, body, err := fastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -2143,9 +2142,9 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			ctx["lead"] = lead
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
 			lead := ctx["lead"].(string)
-			url := getRoute(ts, fmt.Sprintf("/l/%s/top-percent/10", lead))
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/top-percent/10", lead))
 			status, body, err := fastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -2335,8 +2334,8 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			ctx["payload"] = payloadJSON
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
-			url := getRoute(ts, "/m/memberpublicid/scores")
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
+			url := getRoute(httpEndPoint, "/m/memberpublicid/scores")
 			status, body, err := fastPutTo(url, ctx["payload"].([]byte))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
@@ -2529,8 +2528,8 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			ctx["mIDs"] = strings.Join(memberIDs, ",")
-		}, func(ts *httptest.Server, ctx map[string]interface{}) {
-			url := getRoute(ts, fmt.Sprintf("/l/%s/members?ids=%s", testLeaderboardID, ctx["mIDs"].(string)))
+		}, func(httpEndPoint string, ctx map[string]interface{}) {
+			url := getRoute(httpEndPoint, fmt.Sprintf("/l/%s/members?ids=%s", testLeaderboardID, ctx["mIDs"].(string)))
 			status, body, err := fastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))

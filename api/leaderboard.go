@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/topfreegames/podium/util"
+
 	"google.golang.org/grpc/codes"
 
 	"google.golang.org/grpc/status"
@@ -103,7 +105,11 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 		if err != nil {
 			lg.Error("Setting member scores failed.", zap.Error(err))
 			app.AddError()
-			return err
+			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+				return status.New(codes.InvalidArgument, err.Error()).Err()
+			} else {
+				return err
+			}
 		}
 		lg.Debug("Setting member scores succeeded.")
 		return nil
@@ -147,7 +153,11 @@ func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*a
 		if err != nil {
 			lg.Error("Setting member score failed.", zap.Error(err))
 			app.AddError()
-			return err
+			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+				return status.New(codes.InvalidArgument, err.Error()).Err()
+			} else {
+				return err
+			}
 		}
 		lg.Debug("Setting member score succeeded.")
 		return nil
@@ -182,7 +192,11 @@ func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreReques
 		if err != nil {
 			lg.Error("Member score increment failed.", zap.Error(err))
 			app.AddError()
-			return err
+			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+				return status.New(codes.InvalidArgument, err.Error()).Err()
+			} else {
+				return err
+			}
 		}
 		lg.Debug("Member score increment succeeded.")
 		return nil

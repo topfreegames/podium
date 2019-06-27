@@ -11,8 +11,8 @@ package testing
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
-	"net/http/httptest"
 	"time"
 
 	"github.com/onsi/ginkgo"
@@ -45,7 +45,7 @@ func initializeTestServer(app *api.App) {
 	go func() {
 		_ = app.Start()
 	}()
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(25 * time.Millisecond)
 }
 
 // GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
@@ -54,7 +54,8 @@ func getDefaultTestApp() *api.App {
 		zap.NewJSONEncoder(),
 		zap.FatalLevel,
 	)
-	app, err := api.GetApp("0.0.0.0", 8890, 8900, "../config/test.yaml", false, false, logger)
+	port := 8890 + rand.Intn(1000)
+	app, err := api.GetApp("0.0.0.0", port, port+1, "../config/test.yaml", false, false, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
 	}
@@ -63,21 +64,21 @@ func getDefaultTestApp() *api.App {
 }
 
 //HTTPMeasure runs the specified specs in an http test
-func HTTPMeasure(description string, setup func(map[string]interface{}), f func(*httptest.Server, map[string]interface{}), timeout float64) bool {
+func HTTPMeasure(description string, setup func(map[string]interface{}), f func(string, map[string]interface{}), timeout float64) bool {
 	return measure(description, setup, f, timeout, types.FlagTypeNone)
 }
 
 //FHTTPMeasure runs the specified specs in an http test
-func FHTTPMeasure(description string, setup func(map[string]interface{}), f func(*httptest.Server, map[string]interface{}), timeout float64) bool {
+func FHTTPMeasure(description string, setup func(map[string]interface{}), f func(string, map[string]interface{}), timeout float64) bool {
 	return measure(description, setup, f, timeout, types.FlagTypeFocused)
 }
 
 //XHTTPMeasure runs the specified specs in an http test
-func XHTTPMeasure(description string, setup func(map[string]interface{}), f func(*httptest.Server, map[string]interface{}), timeout float64) bool {
+func XHTTPMeasure(description string, setup func(map[string]interface{}), f func(string, map[string]interface{}), timeout float64) bool {
 	return measure(description, setup, f, timeout, types.FlagTypePending)
 }
 
-func measure(description string, setup func(map[string]interface{}), f func(*httptest.Server, map[string]interface{}), timeout float64, flagType types.FlagType) bool {
+func measure(description string, setup func(map[string]interface{}), f func(string, map[string]interface{}), timeout float64, flagType types.FlagType) bool {
 	app := getDefaultTestApp()
 	d := func(t string, f func()) { ginkgo.Describe(t, f) }
 	if flagType == types.FlagTypeFocused {
@@ -88,7 +89,6 @@ func measure(description string, setup func(map[string]interface{}), f func(*htt
 	}
 
 	d("Measure", func() {
-		var ts *httptest.Server
 		var loops int
 		var ctx map[string]interface{}
 
@@ -102,13 +102,13 @@ func measure(description string, setup func(map[string]interface{}), f func(*htt
 			loops++
 			if loops == 200 {
 				transport.CloseIdleConnections()
-				ts.Close()
+				app.Stop()
 			}
 		})
 
 		ginkgo.Measure(description, func(b ginkgo.Benchmarker) {
 			runtime := b.Time("runtime", func() {
-				f(ts, ctx)
+				f(app.HTTPEndpoint, ctx)
 			})
 			gomega.Expect(runtime.Seconds()).Should(
 				gomega.BeNumerically("<", timeout),
