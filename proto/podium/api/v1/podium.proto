@@ -45,6 +45,16 @@ service PodiumAPI {
             get: "/l/{leaderboard_id}/members"
         };
     }
+    rpc RemoveMember (RemoveMemberRequest) returns (BasicResponse) {
+        option (google.api.http) = {
+            delete: "/l/{leaderboard_id}/members/{member_public_id}"
+        };
+    }
+    rpc RemoveMembers (RemoveMembersRequest) returns (BasicResponse) {
+        option (google.api.http) = {
+            delete: "/l/{leaderboard_id}/members"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -156,4 +166,14 @@ message GetMembersResponse {
     bool success = 1;
     repeated MemberResponse members = 2;
     repeated string notFound = 3;
+}
+
+message RemoveMemberRequest {
+    string leaderboard_id = 1;
+    string member_public_id = 2;
+}
+
+message RemoveMembersRequest {
+    string leaderboard_id = 1;
+    string ids = 2;
 }

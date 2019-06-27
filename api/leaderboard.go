@@ -197,75 +197,69 @@ func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreReques
 }
 
 //RemoveMemberHandler removes a member from a leaderboard
-func RemoveMemberHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "RemoveMemberHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
+func (app *App) RemoveMember(ctx context.Context, in *api.RemoveMemberRequest) (*api.BasicResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "RemoveMember"),
+		zap.String("leaderboard", in.LeaderboardId),
+		zap.String("memberPublicID", in.MemberPublicId),
+	)
 
-		err := WithSegment("Model", c, func() error {
-			lg.Debug("Removing member.")
-			err := app.Leaderboards.RemoveMember(c.StdContext(), leaderboardID, memberPublicID)
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Removing member.")
+		err := app.Leaderboards.RemoveMember(ctx, in.LeaderboardId, in.MemberPublicId)
 
-			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member removal failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Member removal succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
+		if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member removal failed.", zap.Error(err))
+			app.AddError()
+			return err
 		}
-
-		return SucceedWith(map[string]interface{}{}, c)
+		lg.Debug("Member removal succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	return &api.BasicResponse{Success: true}, nil
+
 }
 
-//RemoveMembersHandler removes several members from a leaderboard
-func RemoveMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "RemoveMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+//RemoveMembers removes several members from a leaderboard
+func (app *App) RemoveMembers(ctx context.Context, in *api.RemoveMembersRequest) (*api.BasicResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "RemoveMembers"),
+		zap.String("leaderboard", in.LeaderboardId),
+	)
 
-		ids := c.QueryParam("ids")
-		if ids == "" {
-			app.AddError()
-			return FailWith(400, "Member IDs are required using the 'ids' querystring parameter", c)
-		}
-
-		memberIDs := strings.Split(ids, ",")
-		idsInter := make([]interface{}, len(memberIDs))
-		for i, v := range memberIDs {
-			idsInter[i] = v
-		}
-
-		err := WithSegment("Model", c, func() error {
-			lg.Debug("Removing members.", zap.String("ids", ids))
-			err := app.Leaderboards.RemoveMembers(c.StdContext(), leaderboardID, idsInter)
-
-			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Members removal failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Members removal succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{}, c)
+	if in.Ids == "" {
+		app.AddError()
+		return nil, status.New(codes.InvalidArgument,
+			"Member IDs are required using the 'ids' querystring parameter").Err()
 	}
+
+	memberIDs := strings.Split(in.Ids, ",")
+	idsInter := make([]interface{}, len(memberIDs))
+	for i, v := range memberIDs {
+		idsInter[i] = v
+	}
+
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Removing members.", zap.String("ids", in.Ids))
+		err := app.Leaderboards.RemoveMembers(ctx, in.LeaderboardId, idsInter)
+
+		if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Members removal failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Members removal succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.BasicResponse{Success: true}, nil
 }
 
 // GetMember is the handler responsible for retrieving a member score and rank
