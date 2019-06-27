@@ -12,7 +12,7 @@ service PodiumAPI {
             delete: "/l/{leaderboard_id}"
         };
     }
-    rpc BulkUpsertScores (BulkUpsertScoresRequest) returns (BulkUpsertScoresResponse) {
+    rpc BulkUpsertScores (BulkUpsertScoresRequest) returns (MemberListResponse) {
         option (google.api.http) = {
             put: "/l/{leaderboard_id}/scores"
             body: "score_upserts"
@@ -60,6 +60,11 @@ service PodiumAPI {
             get: "/l/{leaderboard_id}/members/{member_public_id}/rank"
         };
     }
+    rpc GetAroundMember (GetAroundMemberRequest) returns (MemberListResponse) {
+        option (google.api.http) = {
+            get: "/l/{leaderboard_id}/members/{member_public_id}/around"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -100,7 +105,7 @@ message MemberResponse {
     int32 position = 7;
 }
 
-message BulkUpsertScoresResponse {
+message MemberListResponse {
     bool success = 1;
     repeated MemberResponse members = 2;
 }
@@ -193,4 +198,12 @@ message GetRankResponse {
     bool success = 1;
     string publicID = 2;
     int32 rank = 3;
+}
+
+message GetAroundMemberRequest {
+    string leaderboard_id = 1;
+    string member_public_id = 2;
+    string order = 3;
+    bool get_last_if_not_found = 4;
+    int32 page_size = 5;
 }

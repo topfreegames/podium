@@ -83,7 +83,7 @@ func newDefaultMemberResponse(member *leaderboard.Member) *api.DefaultMemberResp
 }
 
 // BulkUpsertMembersScoreHandler is the handler responsible for creating or updating members score
-func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRequest) (*api.BulkUpsertScoresResponse, error) {
+func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRequest) (*api.MemberListResponse, error) {
 	if err := validateBulkUpsertScoresRequest(in); err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 		}
 	}
 
-	return &api.BulkUpsertScoresResponse{Success: true, Members: responses}, nil
+	return &api.MemberListResponse{Success: true, Members: responses}, nil
 }
 
 // UpsertScore is the handler responsible for creating or updating the member score
@@ -403,60 +403,63 @@ func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error
 	}
 }
 
-// GetAroundMemberHandler retrieves a list of member score and rank centered in the given member
-func GetAroundMemberHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetAroundMemberHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
+// GetAroundMember retrieves a list of member score and rank centered in the given member
+func (app *App) GetAroundMember(ctx context.Context, in *api.GetAroundMemberRequest) (*api.MemberListResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetAroundMember"),
+		zap.String("leaderboard", in.LeaderboardId),
+		zap.String("memberPublicID", in.MemberPublicId),
+	)
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-		getLastIfNotFound := false
-		getLastIfNotFoundStr := c.QueryParam("getLastIfNotFound")
-		if getLastIfNotFoundStr == "true" {
-			getLastIfNotFound = true
-		}
-
-		pageSize, err := GetPageSize(app, c, defaultPageSize)
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var members leaderboard.Members
-		status := 404
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting members around player.")
-			members, err = app.Leaderboards.GetAroundMe(c.StdContext(), leaderboardID, pageSize, memberPublicID, order,
-				getLastIfNotFound)
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
-				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
-			} else if err != nil {
-				lg.Error("Getting members around player failed.", zap.Error(err))
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting members around player succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
 	}
+
+	pageSize := app.getPageSize(int(in.PageSize))
+	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+		msg := fmt.Sprintf(
+			"Max pageSize allowed: %d. pageSize requested: %d",
+			app.Config.GetInt("api.maxReturnedMembers"),
+			pageSize,
+		)
+		return nil, status.New(codes.InvalidArgument, msg).Err()
+	}
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting members around player.")
+		members, err = app.Leaderboards.GetAroundMe(ctx, in.LeaderboardId, pageSize, in.MemberPublicId, order,
+			in.GetLastIfNotFound)
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member not found.", zap.Error(err))
+			app.AddError()
+			return status.New(codes.NotFound, "Member not found.").Err()
+		} else if err != nil {
+			lg.Error("Getting members around player failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting members around player succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MemberListResponse{
+		Success: true,
+		Members: newMemberResponseList(members),
+	}, nil
+}
+
+func (app *App) getPageSize(pageSize int) int {
+	if pageSize == 0 {
+		pageSize = defaultPageSize
+	}
+
+	return pageSize
 }
 
 // GetAroundScoreHandler retrieves a list of member scores and ranks centered in a given score
