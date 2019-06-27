@@ -718,7 +718,7 @@ func newMemberResponseList(members leaderboard.Members) []*api.MemberResponse {
 }
 
 // UpsertScoreAllLeaderboards sets the member score for all leaderboards
-func (app *App) UpsertScoreAllLeaderboards(ctx context.Context, in *api.UpsertScoreAllRequest) (*api.UpsertScoreAllResponse, error) {
+func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, in *api.MultiUpsertScoreRequest) (*api.MultiUpsertScoreResponse, error) {
 	if len(in.ScoreMultiChange.Leaderboards) == 0 {
 		return nil, status.New(codes.InvalidArgument, "leaderboards is required").Err()
 	}
@@ -728,7 +728,7 @@ func (app *App) UpsertScoreAllLeaderboards(ctx context.Context, in *api.UpsertSc
 		zap.String("memberPublicID", in.MemberPublicId),
 	)
 
-	serializedScores := make([]*api.UpsertScoreAllResponse_Member, len(in.ScoreMultiChange.Leaderboards))
+	serializedScores := make([]*api.MultiUpsertScoreResponse_Member, len(in.ScoreMultiChange.Leaderboards))
 
 	err := withSegment("Model", ctx, func() error {
 		for i, leaderboardID := range in.ScoreMultiChange.Leaderboards {
@@ -743,7 +743,7 @@ func (app *App) UpsertScoreAllLeaderboards(ctx context.Context, in *api.UpsertSc
 				app.AddError()
 				return err
 			}
-			serializedScore := &api.UpsertScoreAllResponse_Member{
+			serializedScore := &api.MultiUpsertScoreResponse_Member{
 				PublicID:      member.PublicID,
 				Score:         float64(member.Score),
 				IntScore:      member.Score,
@@ -761,7 +761,7 @@ func (app *App) UpsertScoreAllLeaderboards(ctx context.Context, in *api.UpsertSc
 		return nil, err
 	}
 
-	return &api.UpsertScoreAllResponse{
+	return &api.MultiUpsertScoreResponse{
 		Success: true,
 		Scores:  serializedScores,
 	}, nil

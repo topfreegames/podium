@@ -602,11 +602,11 @@ func request_PodiumAPI_GetTopPercentage_0(ctx context.Context, marshaler runtime
 }
 
 var (
-	filter_PodiumAPI_UpsertScoreAllLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_multi_change": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_PodiumAPI_UpsertScoreMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_multi_change": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_UpsertScoreAllLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpsertScoreAllRequest
+func request_PodiumAPI_UpsertScoreMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq MultiUpsertScoreRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -638,11 +638,11 @@ func request_PodiumAPI_UpsertScoreAllLeaderboards_0(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_UpsertScoreAllLeaderboards_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_UpsertScoreMultiLeaderboards_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.UpsertScoreAllLeaderboards(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UpsertScoreMultiLeaderboards(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
@@ -945,7 +945,7 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 
 	})
 
-	mux.Handle("PUT", pattern_PodiumAPI_UpsertScoreAllLeaderboards_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_PodiumAPI_UpsertScoreMultiLeaderboards_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -954,14 +954,14 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_UpsertScoreAllLeaderboards_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_PodiumAPI_UpsertScoreMultiLeaderboards_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_UpsertScoreAllLeaderboards_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_PodiumAPI_UpsertScoreMultiLeaderboards_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -995,7 +995,7 @@ var (
 
 	pattern_PodiumAPI_GetTopPercentage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "top-percent", "percentage"}, ""))
 
-	pattern_PodiumAPI_UpsertScoreAllLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
+	pattern_PodiumAPI_UpsertScoreMultiLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
 )
 
 var (
@@ -1025,5 +1025,5 @@ var (
 
 	forward_PodiumAPI_GetTopPercentage_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_UpsertScoreAllLeaderboards_0 = runtime.ForwardResponseMessage
+	forward_PodiumAPI_UpsertScoreMultiLeaderboards_0 = runtime.ForwardResponseMessage
 )

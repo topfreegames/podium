@@ -75,12 +75,13 @@ service PodiumAPI {
             get: "/l/{leaderboard_id}/top-percent/{percentage}"
         };
     }
-    rpc UpsertScoreAllLeaderboards (UpsertScoreAllRequest) returns (UpsertScoreAllResponse) {
+    rpc UpsertScoreMultiLeaderboards (MultiUpsertScoreRequest) returns (MultiUpsertScoreResponse) {
         option (google.api.http) = {
             put: "/m/{member_public_id}/scores"
             body: "score_multi_change"
         };
     }
+
 }
 
 message HealthCheckResponse {
@@ -237,7 +238,7 @@ message GetTopPercentageRequest {
     string order = 3;
 }
 
-message UpsertScoreAllRequest {
+message MultiUpsertScoreRequest {
     string member_public_id = 1;
     int32 scoreTTL = 2;
     bool prev_rank = 3;
@@ -250,7 +251,7 @@ message UpsertScoreAllRequest {
     ScoreMultiChange score_multi_change = 4;
 }
 
-message UpsertScoreAllResponse {
+message MultiUpsertScoreResponse {
     bool success = 1;
 
     message Member {

@@ -2189,15 +2189,15 @@ var _ = Describe("Leaderboard Handler", func() {
 					"score":        100,
 					"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
 				}
-				req := &pb.UpsertScoreAllRequest{
+				req := &pb.MultiUpsertScoreRequest{
 					MemberPublicId: "memberpublicid",
 					PrevRank:       true,
-					ScoreMultiChange: &pb.UpsertScoreAllRequest_ScoreMultiChange{
+					ScoreMultiChange: &pb.MultiUpsertScoreRequest_ScoreMultiChange{
 						Score:        100,
 						Leaderboards: []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
 					},
 				}
-				resp, err := cli.UpsertScoreAllLeaderboards(context.Background(), req)
+				resp, err := cli.UpsertScoreMultiLeaderboards(context.Background(), req)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(resp.Success).To(BeTrue())
