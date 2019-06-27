@@ -268,50 +268,41 @@ func RemoveMembersHandler(app *App) func(c echo.Context) error {
 	}
 }
 
-// GetMemberHandler is the handler responsible for retrieving a member score and rank
-func GetMemberHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
+// GetMember is the handler responsible for retrieving a member score and rank
+func (app *App) GetMember(ctx context.Context, in *api.GetMemberRequest) (*api.DefaultMemberResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetMember"),
+		zap.String("leaderboard", in.LeaderboardId),
+		zap.String("memberPublicID", in.MemberPublicId),
+	)
 
-		lg := app.Logger.With(
-			zap.String("handler", "GetMemberHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		scoreTTL := c.QueryParam("scoreTTL") == "true"
-		var member *leaderboard.Member
-		status := 404
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting member.")
-			member, err = app.Leaderboards.GetMember(c.StdContext(), leaderboardID, memberPublicID, order, scoreTTL)
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
-				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
-			} else if err != nil {
-				lg.Error("Get member failed.")
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting member succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(serializeMember(member, -1, scoreTTL), c)
+	order := in.Order
+	if order == "" || (order != "asc" && order != "desc") {
+		order = "desc"
 	}
+
+	var member *leaderboard.Member
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting member.")
+		member, err = app.Leaderboards.GetMember(ctx, in.LeaderboardId, in.MemberPublicId, order, in.ScoreTTL)
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member not found.", zap.Error(err))
+			app.AddError()
+			return status.New(codes.NotFound, "Member not found.").Err()
+		} else if err != nil {
+			lg.Error("Get member failed.")
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting member succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return newDefaultMemberResponse(member), nil
 }
 
 // GetMemberRankHandler is the handler responsible for retrieving a member rank

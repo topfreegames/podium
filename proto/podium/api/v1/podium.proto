@@ -35,6 +35,11 @@ service PodiumAPI {
             body: "body"
         };
     }
+    rpc GetMember (GetMemberRequest) returns (DefaultMemberResponse) {
+        option (google.api.http) = {
+            get: "/l/{leaderboard_id}/members/{member_public_id}"
+        };
+    }
 }
 
 message HealthCheckResponse {
@@ -125,4 +130,11 @@ message IncrementScoreRequest {
     }
 
     Body body = 4;
+}
+
+message GetMemberRequest {
+    string leaderboard_id = 1;
+    string member_public_id = 2;
+    string order = 3;
+    bool scoreTTL = 4;
 }

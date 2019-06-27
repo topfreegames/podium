@@ -851,7 +851,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Member", func() {
-		It("Should get member score from redis if score exists", func() {
+		It("Should get member score from redis if score exists (http)", func() {
 			_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -869,6 +869,31 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.Rank).To(Equal(1))
 			Expect(member.Score).To(Equal(int64(100)))
 			Expect(member.PublicID).To(Equal("memberpublicid"))
+		})
+
+		It("Should get member score from redis if score exists (grpc)", func() {
+			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
+				Expect(err).NotTo(HaveOccurred())
+
+				req := &pb.GetMemberRequest{
+					LeaderboardId:  testLeaderboardID,
+					MemberPublicId: "memberpublicid",
+				}
+				resp, err := cli.GetMember(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(resp.Success).To(BeTrue())
+				Expect(resp.PublicID).To(Equal("memberpublicid"))
+				Expect(int64(resp.Score)).To(Equal(int64(100)))
+				Expect(resp.Rank).To(Equal(int32(1)))
+
+				member, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(member.Rank).To(Equal(1))
+				Expect(member.Score).To(Equal(int64(100)))
+				Expect(member.PublicID).To(Equal("memberpublicid"))
+			})
 		})
 
 		It("Should get member score from redis if greater than int", func() {
