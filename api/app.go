@@ -388,8 +388,8 @@ func (app *App) startGRPCServer(errch chan<- error) {
 
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
 		grpc_middleware.ChainUnaryServer(
-			grpc.UnaryServerInterceptor(app.newLoggerMiddleware),
-			grpc.UnaryServerInterceptor(app.newRelicMiddleware),
+			grpc.UnaryServerInterceptor(app.serveNewLoggerMiddleware),
+			grpc.UnaryServerInterceptor(app.serveNewRelicMiddleware),
 		),
 	))
 	api.RegisterPodiumAPIServer(app.grpcServer, app)

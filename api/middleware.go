@@ -244,7 +244,7 @@ type newRelicContextKey struct {
 	key string
 }
 
-func (app *App) newLoggerMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (app *App) serveNewLoggerMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	l := app.Logger.With(
 		zap.String("source", "request"),
 	)
@@ -292,7 +292,7 @@ func (app *App) newLoggerMiddleware(ctx context.Context, req interface{}, info *
 	return h, err
 }
 
-func (app *App) newRelicMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (app *App) serveNewRelicMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	txn := app.NewRelic.StartTransaction(info.FullMethod, nil, nil)
 	newCtx := context.WithValue(ctx, newRelicContextKey{"txn"}, txn)
 	defer func() {
