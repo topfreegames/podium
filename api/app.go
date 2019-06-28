@@ -37,7 +37,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/echo"
-	extechomiddleware "github.com/topfreegames/extensions/echo/middleware"
 	"github.com/topfreegames/extensions/jaeger"
 	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	"github.com/topfreegames/podium/log"
@@ -312,12 +311,6 @@ func (app *App) configureApplication() error {
 		}))
 	}
 
-	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
-	a.Use(extechomiddleware.NewResponseTimeMetricsMiddleware(app.DDStatsD).Serve)
-	a.Use(NewVersionMiddleware().Serve)
-	a.Use(NewSentryMiddleware(app).Serve)
-	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
-
 	app.Errors = metrics.NewEWMA15()
 
 	go func() {
@@ -402,8 +395,11 @@ func (app *App) Start() error {
 func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
 		grpc_middleware.ChainUnaryServer(
-			grpc.UnaryServerInterceptor(app.serveNewLoggerMiddleware),
-			grpc.UnaryServerInterceptor(app.serveNewRelicMiddleware),
+			grpc.UnaryServerInterceptor(app.loggerMiddleware),
+			grpc.UnaryServerInterceptor(app.recoveryMiddleware),
+			grpc.UnaryServerInterceptor(app.responseTimeMetricsMiddleware),
+			grpc.UnaryServerInterceptor(app.sentryMiddleware),
+			grpc.UnaryServerInterceptor(app.newRelicMiddleware),
 		),
 	))
 	api.RegisterPodiumAPIServer(app.grpcServer, app)
@@ -423,9 +419,9 @@ func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", removeTrailingSlashMiddleware{gatewayMux})
-	mux.HandleFunc("/healthcheck", app.healthCheckHandler)
-	mux.HandleFunc("/status", app.statusHandler)
+	mux.Handle("/", removeTrailingSlashMiddleware{addVersionMiddleware{gatewayMux}})
+	mux.HandleFunc("/healthcheck", addVersionHandlerFunc(app.healthCheckHandler))
+	mux.HandleFunc("/status", addVersionHandlerFunc(app.statusHandler))
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
