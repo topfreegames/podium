@@ -49,18 +49,6 @@ func serializeMember(member *leaderboard.Member, position int, includeTTL bool) 
 	return memberData
 }
 
-func serializeMembers(members leaderboard.Members, includePosition bool, includeTTL bool) []map[string]interface{} {
-	serializedMembers := make([]map[string]interface{}, len(members))
-	for i, member := range members {
-		if includePosition {
-			serializedMembers[i] = serializeMember(member, i, includeTTL)
-		} else {
-			serializedMembers[i] = serializeMember(member, -1, includeTTL)
-		}
-	}
-	return serializedMembers
-}
-
 func validateBulkUpsertScoresRequest(in *api.BulkUpsertScoresRequest) error {
 	for _, m := range in.ScoreUpserts.Members {
 		if m.PublicID == "" {
@@ -100,7 +88,7 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 		for i, ms := range in.ScoreUpserts.Members {
 			members[i] = &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID}
 		}
-		err := app.Leaderboards.SetMembersScore(ctx, in.LeaderboardId, members, in.PrevRank, in.ScoreTTL)
+		err := app.Leaderboards.SetMembersScore(ctx, in.LeaderboardId, members, in.PrevRank, getScoreTTL(in.ScoreTTL))
 
 		if err != nil {
 			lg.Error("Setting member scores failed.", zap.Error(err))
@@ -134,6 +122,14 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 	return &api.MemberListResponse{Success: true, Members: responses}, nil
 }
 
+func getScoreTTL(scoreTTL int32) string {
+	if scoreTTL == 0 {
+		return ""
+	} else {
+		return strconv.Itoa(int(scoreTTL))
+	}
+}
+
 // UpsertScore is the handler responsible for creating or updating the member score
 func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*api.DefaultMemberResponse, error) {
 	lg := app.Logger.With(
@@ -148,7 +144,7 @@ func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*a
 
 		var err error
 		member, err = app.Leaderboards.SetMemberScore(ctx, in.LeaderboardId, in.MemberPublicId, in.ScoreChange.Score,
-			in.PrevRank, strconv.Itoa(int(in.ScoreTTL)))
+			in.PrevRank, getScoreTTL(in.ScoreTTL))
 
 		if err != nil {
 			lg.Error("Setting member score failed.", zap.Error(err))
@@ -187,7 +183,7 @@ func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreReques
 		var err error
 		lg.Debug("Incrementing member score.", zap.Int64("increment", in.Body.Increment))
 		member, err = app.Leaderboards.IncrementMemberScore(context.Background(), in.LeaderboardId, in.MemberPublicId,
-			int(in.Body.Increment), strconv.Itoa(int(in.ScoreTTL)))
+			int(in.Body.Increment), getScoreTTL(in.ScoreTTL))
 
 		if err != nil {
 			lg.Error("Member score increment failed.", zap.Error(err))
@@ -738,7 +734,7 @@ func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, in *api.MultiU
 				zap.String("leaderboardID", leaderboardID),
 				zap.Int64("score", in.ScoreMultiChange.Score))
 			member, err := app.Leaderboards.SetMemberScore(ctx, leaderboardID, in.MemberPublicId,
-				in.ScoreMultiChange.Score, in.PrevRank, strconv.Itoa(int(in.ScoreTTL)))
+				in.ScoreMultiChange.Score, in.PrevRank, getScoreTTL(in.ScoreTTL))
 
 			if err != nil {
 				lg.Error("Update score failed.", zap.Error(err))

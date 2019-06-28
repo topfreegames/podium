@@ -117,7 +117,7 @@ message ScoreUpserts {
 message BulkUpsertScoresRequest {
     string leaderboard_id = 1;
     bool prev_rank = 2;
-    string scoreTTL = 3;
+    int32 scoreTTL = 3;
     ScoreUpserts score_upserts = 4;
 }
 
