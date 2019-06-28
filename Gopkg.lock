@@ -42,13 +42,6 @@
   version = "v6.0.0"
 
 [[projects]]
-  digest = "1:9592eb82806d8c561d7ccdf1236b52a5d1db3ea31b3606c3eae0a44d5dd0e2c2"
-  name = "github.com/buger/jsonparser"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "f04e003e4115787c6272636780bc206e5ffad6c4"
-
-[[projects]]
   digest = "1:d21a704218a1599b56b2c02d2c0cce601cca6125b00588f1046be56029cfcd0e"
   name = "github.com/certifi/gocertifi"
   packages = ["."]
@@ -766,7 +759,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/buger/jsonparser",
     "github.com/getsentry/raven-go",
     "github.com/go-redis/redis",
     "github.com/golang/mock/gomock",

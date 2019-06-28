@@ -405,7 +405,7 @@ func (app *App) startHTTPServer(errch chan<- error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", gatewayMux)
+	mux.Handle("/", removeTrailingSlashMiddleware{gatewayMux})
 	mux.HandleFunc("/healthcheck", app.healthCheckHandler)
 	mux.HandleFunc("/status", app.statusHandler)
 

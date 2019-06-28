@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"runtime/debug"
 	"time"
 
@@ -258,4 +259,18 @@ func (app *App) newRelicMiddleware(
 		txn.NoticeError(err)
 	}
 	return h, err
+}
+
+type removeTrailingSlashMiddleware struct {
+	Handler http.Handler
+}
+
+func (m removeTrailingSlashMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	l := len(path) - 1
+	if l > 0 && path != "/" && path[l] == '/' {
+		path = path[:l]
+		r.URL.Path = path
+	}
+	m.Handler.ServeHTTP(w, r)
 }
