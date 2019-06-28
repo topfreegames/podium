@@ -30,6 +30,10 @@
   name = "golang.org/x/text"
   version = "0.3.2"
 
+[[override]]
+  name = "golang.org/x/sys"
+  revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
+
 [[constraint]]
   name = "google.golang.org/grpc"
   version = "1.20.1"
