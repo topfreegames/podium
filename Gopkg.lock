@@ -58,14 +58,6 @@
   revision = "3a0bb77429bd3a61596f5e8a3172445844342120"
 
 [[projects]]
-  digest = "1:217f778e19b8d206112c21d21a7cc72ca3cb493b67631680a2324bc50335d432"
-  name = "github.com/dgrijalva/jwt-go"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
-
-[[projects]]
   digest = "1:bfc7cf935fa1bd2e6532b8a9da9b8edfb04e8ce66e66df43a44e12afa1d9af79"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -176,9 +168,13 @@
   revision = "a9f819bfc744fe70043abcc5a6cd0137a678e3d8"
 
 [[projects]]
-  digest = "1:1168584a5881d371e96cb0e66ef6db71d7cef0856cc7f311490bc856627f8328"
+  digest = "1:a93a4de7b00fb9cc952bc0483e9a32cd273adbbd7f3282bfe89656b2f88fb08c"
   name = "github.com/grpc-ecosystem/go-grpc-middleware"
-  packages = ["."]
+  packages = [
+    ".",
+    "auth",
+    "util/metautils",
+  ]
   pruneopts = "UT"
   revision = "c250d6563d4d4c20252cd865923440e829844f4e"
   version = "v1.0.0"
@@ -265,29 +261,24 @@
   revision = "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 
 [[projects]]
-  digest = "1:5316e2fc5d849026f1840b32d02776dfbcbc36113279d7053cd26abbd48eefd1"
+  digest = "1:a4a28de9cb13ef225bbb11610754fd48d8f36bcd8fbef010de34f0ae07316ee1"
   name = "github.com/labstack/echo"
   packages = [
     ".",
     "context",
     "engine",
-    "engine/fasthttp",
-    "engine/standard",
     "log",
-    "middleware",
   ]
   pruneopts = "UT"
   revision = "e08070379af60f5b9c0fb5bb2d1527ba9624fe43"
   version = "v2.2.0"
 
 [[projects]]
-  digest = "1:4785fe710c106d60599d3b40d78d855046c8fa5ee225f61bc94e2b8c94983c82"
+  digest = "1:aa2d1855b48a68e122c06a635f08048fc9542125c60b2be548345792361072fa"
   name = "github.com/labstack/gommon"
   packages = [
-    "bytes",
     "color",
     "log",
-    "random",
   ]
   pruneopts = "UT"
   revision = "431777a5117c8de4352a400dad1e2a55f484b189"
@@ -499,12 +490,10 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:d1a108dd49227e7d4d48fdf20dca8d6b322129fafbfe66a76a930d73f5e6025a"
+  digest = "1:c38b03093ea7de485f97aeadbaec0be5bd518699c96c0bc10f7f2414e372a446"
   name = "github.com/topfreegames/extensions"
   packages = [
     "dogstatsd",
-    "echo",
-    "echo/middleware",
     "http",
     "jaeger",
     "middleware",
@@ -513,7 +502,6 @@
     "redis",
     "redis/interfaces",
     "tracing",
-    "tracing/echo",
     "tracing/http",
     "tracing/redis",
   ]
@@ -767,14 +755,11 @@
     "github.com/gosuri/uiprogress",
     "github.com/gosuri/uiprogress/util/strutil",
     "github.com/grpc-ecosystem/go-grpc-middleware",
+    "github.com/grpc-ecosystem/go-grpc-middleware/auth",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
     "github.com/labstack/echo",
     "github.com/labstack/echo/context",
-    "github.com/labstack/echo/engine",
-    "github.com/labstack/echo/engine/fasthttp",
-    "github.com/labstack/echo/engine/standard",
-    "github.com/labstack/echo/middleware",
     "github.com/mailru/easyjson",
     "github.com/mailru/easyjson/gen",
     "github.com/mailru/easyjson/jlexer",
@@ -788,8 +773,6 @@
     "github.com/satori/go.uuid",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
-    "github.com/topfreegames/extensions/echo",
-    "github.com/topfreegames/extensions/echo/middleware",
     "github.com/topfreegames/extensions/http",
     "github.com/topfreegames/extensions/jaeger",
     "github.com/topfreegames/extensions/middleware",

@@ -11,6 +11,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
@@ -19,6 +20,10 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"google.golang.org/grpc/codes"
+
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
@@ -29,14 +34,9 @@ import (
 	"github.com/topfreegames/podium/leaderboard"
 
 	"github.com/getsentry/raven-go"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/engine/fasthttp"
-	"github.com/labstack/echo/engine/standard"
-	"github.com/labstack/echo/middleware"
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/extensions/echo"
 	"github.com/topfreegames/extensions/jaeger"
 	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	"github.com/topfreegames/podium/log"
@@ -59,8 +59,6 @@ type App struct {
 	Host         string
 	ConfigPath   string
 	Errors       metrics.EWMA
-	App          *echo.Echo
-	Engine       engine.Server
 	grpcServer   *grpc.Server
 	httpServer   *http.Server
 	Config       *viper.Viper
@@ -289,28 +287,6 @@ func (app *App) configureApplication() error {
 		zap.String("operation", "configureApplication"),
 	)
 
-	app.Engine = standard.New(fmt.Sprintf("%s:%d", app.Host, app.HTTPPort))
-	if app.Fast {
-		rb := app.Config.GetInt("api.maxReadBufferSize")
-		engine := fasthttp.New(fmt.Sprintf("%s:%d", app.Host, app.HTTPPort))
-		engine.ReadBufferSize = rb
-		app.Engine = engine
-	}
-	app.App = echo.New()
-	a := app.App
-
-	_, w, _ := os.Pipe()
-	a.SetLogOutput(w)
-
-	basicAuthUser := app.Config.GetString("basicauth.username")
-	if basicAuthUser != "" {
-		basicAuthPass := app.Config.GetString("basicauth.password")
-
-		a.Use(middleware.BasicAuth(func(username, password string) bool {
-			return username == basicAuthUser && password == basicAuthPass
-		}))
-	}
-
 	app.Errors = metrics.NewEWMA15()
 
 	go func() {
@@ -393,8 +369,30 @@ func (app *App) Start() error {
 }
 
 func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
+	var basicAuthInterceptor grpc.UnaryServerInterceptor
+	basicAuthUser := app.Config.GetString("basicauth.username")
+	if basicAuthUser != "" {
+		basicAuthPass := app.Config.GetString("basicauth.password")
+		auth := basicAuthUser + ":" + basicAuthPass
+
+		basicAuthInterceptor = grpc_auth.UnaryServerInterceptor(func(ctx context.Context) (context.Context, error) {
+			token, err := grpc_auth.AuthFromMD(ctx, "basic")
+			if err != nil {
+				return nil, err
+			}
+
+			if token != base64.StdEncoding.EncodeToString([]byte(auth)) {
+				return nil, status.Errorf(codes.Unauthenticated, "invalid auth token")
+			}
+			return ctx, nil
+		})
+	} else {
+		basicAuthInterceptor = grpc.UnaryServerInterceptor(app.noAuthMiddleware)
+	}
+
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
 		grpc_middleware.ChainUnaryServer(
+			basicAuthInterceptor,
 			grpc.UnaryServerInterceptor(app.loggerMiddleware),
 			grpc.UnaryServerInterceptor(app.recoveryMiddleware),
 			grpc.UnaryServerInterceptor(app.responseTimeMetricsMiddleware),

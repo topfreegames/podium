@@ -225,6 +225,10 @@ type newRelicContextKey struct {
 	key string
 }
 
+func (app *App) noAuthMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return handler(ctx, req)
+}
+
 func (app *App) loggerMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	l := app.Logger.With(
 		zap.String("source", "request"),
