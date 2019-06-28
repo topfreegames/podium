@@ -244,11 +244,55 @@ type newRelicContextKey struct {
 	key string
 }
 
-func (app *App) newRelicMiddleware(
-	ctx context.Context,
-	req interface{},
-	info *grpc.UnaryServerInfo,
-	handler grpc.UnaryHandler) (interface{}, error) {
+func (app *App) newLoggerMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	l := app.Logger.With(
+		zap.String("source", "request"),
+	)
+
+	//all except latency to string
+	var statusCode int
+	var latency time.Duration
+	var startTime, endTime time.Time
+
+	startTime = time.Now()
+
+	h, err := handler(ctx, req)
+
+	//no time.Since in order to format it well after
+	endTime = time.Now()
+	latency = endTime.Sub(startTime)
+
+	_, statusCode = app.getStatusCodeFromError(err)
+
+	route := fmt.Sprintf("%T", req)
+	reqLog := l.With(
+		zap.String("route", route),
+		zap.Time("endTime", endTime),
+		zap.Int("statusCode", statusCode),
+		zap.Duration("latency", latency),
+	)
+
+	//request failed
+	if statusCode > 399 && statusCode < 500 {
+		log.D(reqLog, "Request failed.")
+		return h, err
+	}
+
+	//request is ok, but server failed
+	if statusCode > 499 {
+		log.D(reqLog, "Response failed.")
+		return h, err
+	}
+
+	//Everything went ok
+	if cm := reqLog.Check(zap.DebugLevel, "Request successful."); cm.OK() {
+		cm.Write()
+	}
+
+	return h, err
+}
+
+func (app *App) newRelicMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	txn := app.NewRelic.StartTransaction(info.FullMethod, nil, nil)
 	newCtx := context.WithValue(ctx, newRelicContextKey{"txn"}, txn)
 	defer func() {

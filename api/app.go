@@ -91,6 +91,17 @@ func GetApp(host string, httpPort, grpcPort int, configPath string, debug, fast 
 	return app, nil
 }
 
+func (app *App) getStatusCodeFromError(err error) (*status.Status, int) {
+	var statusCode int
+	st, ok := status.FromError(err)
+	if !ok {
+		statusCode = http.StatusInternalServerError
+	} else {
+		statusCode = runtime.HTTPStatusFromCode(st.Code())
+	}
+	return st, statusCode
+}
+
 // Configure instantiates the required dependencies for podium Application
 func (app *App) Configure() error {
 	app.setConfigurationDefaults()
@@ -124,12 +135,7 @@ func (app *App) Configure() error {
 		w.Header().Set("Content-Type", marshaler.ContentType())
 		var s int
 
-		st, ok := status.FromError(err)
-		if !ok {
-			s = http.StatusInternalServerError
-		} else {
-			s = runtime.HTTPStatusFromCode(st.Code())
-		}
+		st, s := app.getStatusCodeFromError(err)
 
 		w.WriteHeader(s)
 
@@ -298,8 +304,6 @@ func (app *App) configureApplication() error {
 		}))
 	}
 
-	a.Pre(middleware.RemoveTrailingSlash())
-	a.Use(NewLoggerMiddleware(app.Logger).Serve)
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
 	a.Use(extechomiddleware.NewResponseTimeMetricsMiddleware(app.DDStatsD).Serve)
 	a.Use(NewVersionMiddleware().Serve)
@@ -384,6 +388,7 @@ func (app *App) startGRPCServer(errch chan<- error) {
 
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
 		grpc_middleware.ChainUnaryServer(
+			grpc.UnaryServerInterceptor(app.newLoggerMiddleware),
 			grpc.UnaryServerInterceptor(app.newRelicMiddleware),
 		),
 	))
