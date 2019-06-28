@@ -1,8 +1,4 @@
 [[constraint]]
-  name = "github.com/labstack/echo"
-  version = "2.0.2"
-
-[[constraint]]
   name = "github.com/newrelic/go-agent"
   version = "1.10.0"
 

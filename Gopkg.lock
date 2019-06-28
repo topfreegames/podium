@@ -261,27 +261,12 @@
   revision = "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 
 [[projects]]
-  digest = "1:a4a28de9cb13ef225bbb11610754fd48d8f36bcd8fbef010de34f0ae07316ee1"
+  digest = "1:ccfacbf75c5ea91cae9b712964fc826be5b5cc6b5da3e2a5d855205a89becb31"
   name = "github.com/labstack/echo"
-  packages = [
-    ".",
-    "context",
-    "engine",
-    "log",
-  ]
+  packages = ["context"]
   pruneopts = "UT"
   revision = "e08070379af60f5b9c0fb5bb2d1527ba9624fe43"
   version = "v2.2.0"
-
-[[projects]]
-  digest = "1:aa2d1855b48a68e122c06a635f08048fc9542125c60b2be548345792361072fa"
-  name = "github.com/labstack/gommon"
-  packages = [
-    "color",
-    "log",
-  ]
-  pruneopts = "UT"
-  revision = "431777a5117c8de4352a400dad1e2a55f484b189"
 
 [[projects]]
   digest = "1:ad64e297f65e4e80644e3010363f555644d22966db06e3634c6ceb2a856589cb"
@@ -303,13 +288,6 @@
   ]
   pruneopts = "UT"
   revision = "4a8a4c12c4d1b0c0a7de630426ce6dcb07141b17"
-
-[[projects]]
-  digest = "1:c623e7c8744fcc88dca8be72758c6f5dfb99e664d00ca9c1a2e406bd064c051d"
-  name = "github.com/mattn/go-colorable"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "6c903ff4aa50920ca86087a280590b36b3152b9c"
 
 [[projects]]
   digest = "1:3dce9780102fd9dfd8b864b18b84b1f94868f992d455af69a4604fae5d3b24f1"
@@ -566,13 +544,6 @@
   revision = "07f692d02d618489bb3e3d7984caaa82af91b133"
 
 [[projects]]
-  digest = "1:9afe305ba8eb834434a11043d1629785ed7c3dc7bf4c1bf8219b945556c31344"
-  name = "github.com/valyala/fasttemplate"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "3b874956e03f1636d171bda64b130f9135f42cff"
-
-[[projects]]
   digest = "1:6f1a54cc83e0f44f61106f68aa940aece341bdfd137b1cfbad406609bc15f030"
   name = "go.uber.org/zap"
   packages = ["."]
@@ -758,7 +729,6 @@
     "github.com/grpc-ecosystem/go-grpc-middleware/auth",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
-    "github.com/labstack/echo",
     "github.com/labstack/echo/context",
     "github.com/mailru/easyjson",
     "github.com/mailru/easyjson/gen",
