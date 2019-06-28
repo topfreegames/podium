@@ -58,10 +58,10 @@ func NewEmptyCtx() context.Context {
 	return context.Background()
 }
 
-// GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
+// GetDefaultTestApp returns a new podium API Application bound to random ports for test
 func GetDefaultTestApp() *api.App {
 	logger := testing.NewMockLogger()
-	app, err := api.GetApp("0.0.0.0", 8890, 8900, "../config/test.yaml", false, false, logger)
+	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, false, logger)
 	Expect(err).NotTo(HaveOccurred())
 	return app
 }
@@ -152,7 +152,7 @@ func getRequest(app *api.App, method, url, body string) *http.Request {
 	if body != "" {
 		bodyBuff = bytes.NewBuffer([]byte(body))
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("http://%s%s", app.HTTPEndpoint, url), bodyBuff)
+	req, err := http.NewRequest(method, fmt.Sprintf("http://%s%s", app.HTTPEndPoint(), url), bodyBuff)
 	req.Header.Set("Connection", "close")
 	req.Close = true
 	Expect(err).NotTo(HaveOccurred())
@@ -234,7 +234,7 @@ func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
 	time.Sleep(25 * time.Millisecond)
 	defer app.Stop()
 
-	conn, err := grpc.Dial(app.GRPCEndpoint, grpc.WithInsecure())
+	conn, err := grpc.Dial(app.GRPCEndPoint(), grpc.WithInsecure())
 	Expect(err).NotTo(HaveOccurred())
 	defer conn.Close()
 

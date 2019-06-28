@@ -11,7 +11,6 @@ package testing
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -54,8 +53,7 @@ func getDefaultTestApp() *api.App {
 		zap.NewJSONEncoder(),
 		zap.FatalLevel,
 	)
-	port := 8890 + rand.Intn(1000)
-	app, err := api.GetApp("0.0.0.0", port, port+1, "../config/test.yaml", false, false, logger)
+	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, false, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
 	}
@@ -108,7 +106,7 @@ func measure(description string, setup func(map[string]interface{}), f func(stri
 
 		ginkgo.Measure(description, func(b ginkgo.Benchmarker) {
 			runtime := b.Time("runtime", func() {
-				f(app.HTTPEndpoint, ctx)
+				f(app.HTTPEndPoint(), ctx)
 			})
 			gomega.Expect(runtime.Seconds()).Should(
 				gomega.BeNumerically("<", timeout),

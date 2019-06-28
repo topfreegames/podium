@@ -55,8 +55,8 @@ type App struct {
 	Fast         bool
 	HTTPPort     int
 	GRPCPort     int
-	HTTPEndpoint string
-	GRPCEndpoint string
+	httpEndpoint string
+	grpcEndpoint string
 	Host         string
 	ConfigPath   string
 	Errors       metrics.EWMA
@@ -77,8 +77,8 @@ func GetApp(host string, httpPort, grpcPort int, configPath string, debug, fast 
 		Host:         host,
 		HTTPPort:     httpPort,
 		GRPCPort:     grpcPort,
-		HTTPEndpoint: fmt.Sprintf("localhost:%d", httpPort),
-		GRPCEndpoint: fmt.Sprintf("localhost:%d", grpcPort),
+		httpEndpoint: fmt.Sprintf("localhost:%d", httpPort),
+		grpcEndpoint: fmt.Sprintf("localhost:%d", grpcPort),
 		ConfigPath:   configPath,
 		Config:       viper.New(),
 		Debug:        debug,
@@ -89,6 +89,14 @@ func GetApp(host string, httpPort, grpcPort int, configPath string, debug, fast 
 		return nil, err
 	}
 	return app, nil
+}
+
+func (app *App) HTTPEndPoint() string {
+	return app.httpEndpoint
+}
+
+func (app *App) GRPCEndPoint() string {
+	return app.grpcEndpoint
 }
 
 func (app *App) getStatusCodeFromError(err error) (*status.Status, int) {
@@ -353,11 +361,23 @@ func (app *App) Start() error {
 		zap.Int("port", app.HTTPPort),
 	)
 
+	grpcLis, err := net.Listen("tcp", app.grpcEndpoint)
+	if err != nil {
+		return fmt.Errorf("error trying to listen for connections: %v", err)
+	}
+	app.grpcEndpoint = grpcLis.Addr().String()
+
+	httpLis, err := net.Listen("tcp", app.httpEndpoint)
+	if err != nil {
+		return fmt.Errorf("error listening on HTTPEndpoint: %v", err)
+	}
+	app.httpEndpoint = httpLis.Addr().String()
+
 	//errch is the channel for retrieving errors from server goroutines.
 	errch := make(chan error, 2)
 
-	go app.startGRPCServer(errch)
-	go app.startHTTPServer(errch)
+	go app.startGRPCServer(grpcLis, errch)
+	go app.startHTTPServer(httpLis, errch)
 
 	log.I(l, "app started")
 	sg := make(chan os.Signal)
@@ -379,13 +399,7 @@ func (app *App) Start() error {
 	return nil
 }
 
-func (app *App) startGRPCServer(errch chan<- error) {
-	lis, err := net.Listen("tcp", app.GRPCEndpoint)
-	if err != nil {
-		errch <- fmt.Errorf("error trying to listen for connections: %v", err)
-		return
-	}
-
+func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
 		grpc_middleware.ChainUnaryServer(
 			grpc.UnaryServerInterceptor(app.serveNewLoggerMiddleware),
@@ -399,13 +413,12 @@ func (app *App) startGRPCServer(errch chan<- error) {
 	}
 }
 
-func (app *App) startHTTPServer(errch chan<- error) {
+func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
 	gatewayMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard,
 		&runtime.JSONPb{EmitDefaults: true}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	endpoint := fmt.Sprintf("localhost:%d", app.GRPCPort)
 
-	if err := api.RegisterPodiumAPIHandlerFromEndpoint(context.Background(), gatewayMux, endpoint, opts); err != nil {
+	if err := api.RegisterPodiumAPIHandlerFromEndpoint(context.Background(), gatewayMux, app.GRPCEndPoint(), opts); err != nil {
 		errch <- fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
 	}
 
@@ -414,22 +427,16 @@ func (app *App) startHTTPServer(errch chan<- error) {
 	mux.HandleFunc("/healthcheck", app.healthCheckHandler)
 	mux.HandleFunc("/status", app.statusHandler)
 
-	app.httpServer = &http.Server{
-		Addr:    app.HTTPEndpoint,
-		Handler: mux,
-	}
-
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	list, err := net.Listen("tcp", app.HTTPEndpoint)
-	if err != nil {
-		errch <- fmt.Errorf("error listening on HTTPEndpoint: %v", err)
-		return
+	app.httpServer = &http.Server{
+		Addr:    app.httpEndpoint,
+		Handler: mux,
 	}
 
-	if err := app.httpServer.Serve(list); err != http.ErrServerClosed {
+	if err := app.httpServer.Serve(lis); err != http.ErrServerClosed {
 		errch <- fmt.Errorf("error listening and serving http requests: %v", err)
 	}
 }
