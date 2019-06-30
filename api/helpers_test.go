@@ -139,8 +139,8 @@ func initializeTestServer(app *api.App) {
 	go func() {
 		_ = app.Start()
 	}()
-	//wait for server to start
-	time.Sleep(25 * time.Millisecond)
+	err := app.WaitForReady(1 * time.Second)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func shutdownTestServer(app *api.App) {
@@ -152,7 +152,7 @@ func getRequest(app *api.App, method, url, body string) *http.Request {
 	if body != "" {
 		bodyBuff = bytes.NewBuffer([]byte(body))
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("http://%s%s", app.HTTPEndPoint(), url), bodyBuff)
+	req, err := http.NewRequest(method, fmt.Sprintf("http://%s%s", app.HTTPEndpoint, url), bodyBuff)
 	req.Header.Set("Connection", "close")
 	req.Close = true
 	Expect(err).NotTo(HaveOccurred())
@@ -231,12 +231,15 @@ func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
 	go func() {
 		_ = app.Start()
 	}()
-	time.Sleep(25 * time.Millisecond)
+	err := app.WaitForReady(1 * time.Second)
+	Expect(err).NotTo(HaveOccurred())
 	defer app.Stop()
 
-	conn, err := grpc.Dial(app.GRPCEndPoint(), grpc.WithInsecure())
+	conn, err := grpc.Dial(app.GRPCEndpoint, grpc.WithInsecure())
 	Expect(err).NotTo(HaveOccurred())
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	cli := pb.NewPodiumAPIClient(conn)
 

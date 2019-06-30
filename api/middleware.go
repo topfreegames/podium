@@ -11,10 +11,15 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/getsentry/raven-go"
 	"github.com/topfreegames/podium/log"
@@ -28,6 +33,20 @@ type newRelicContextKey struct {
 
 func (app *App) noAuthMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	return handler(ctx, req)
+}
+
+func (app *App) basicAuthMiddleware(ctx context.Context) (context.Context, error) {
+	token, err := grpc_auth.AuthFromMD(ctx, "basic")
+	if err != nil {
+		return nil, err
+	}
+
+	auth := app.Config.GetString("basicauth.username") + ":" + app.Config.GetString("basicauth.password")
+
+	if token != base64.StdEncoding.EncodeToString([]byte(auth)) {
+		return nil, status.Errorf(codes.Unauthenticated, "invalid auth token")
+	}
+	return ctx, nil
 }
 
 func (app *App) loggerMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {

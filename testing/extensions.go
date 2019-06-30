@@ -106,7 +106,7 @@ func measure(description string, setup func(map[string]interface{}), f func(stri
 
 		ginkgo.Measure(description, func(b ginkgo.Benchmarker) {
 			runtime := b.Time("runtime", func() {
-				f(app.HTTPEndPoint(), ctx)
+				f(app.HTTPEndpoint, ctx)
 			})
 			gomega.Expect(runtime.Seconds()).Should(
 				gomega.BeNumerically("<", timeout),

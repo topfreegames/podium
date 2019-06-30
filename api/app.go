@@ -11,17 +11,15 @@ package api
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
-
-	"google.golang.org/grpc/codes"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 
@@ -50,50 +48,43 @@ type JSON map[string]interface{}
 
 // App is a struct that represents a podium Application
 type App struct {
-	Debug        bool
-	Fast         bool
-	HTTPPort     int
-	GRPCPort     int
-	httpEndpoint string
-	grpcEndpoint string
-	Host         string
-	ConfigPath   string
-	Errors       metrics.EWMA
-	grpcServer   *grpc.Server
-	httpServer   *http.Server
-	Config       *viper.Viper
-	Logger       zap.Logger
-	Leaderboards *leaderboard.Client
-	NewRelic     newrelic.Application
-	DDStatsD     *extnethttpmiddleware.DogStatsD
+	Debug                bool
+	Fast                 bool
+	HTTPPort             int
+	GRPCPort             int
+	HTTPEndpoint         string
+	GRPCEndpoint         string
+	httpReady, grpcReady chan bool
+	Host                 string
+	ConfigPath           string
+	Errors               metrics.EWMA
+	grpcServer           *grpc.Server
+	httpServer           *http.Server
+	Config               *viper.Viper
+	Logger               zap.Logger
+	Leaderboards         *leaderboard.Client
+	NewRelic             newrelic.Application
+	DDStatsD             *extnethttpmiddleware.DogStatsD
 }
 
 // GetApp returns a new podium Application
 func GetApp(host string, httpPort, grpcPort int, configPath string, debug, fast bool, logger zap.Logger) (*App, error) {
 	app := &App{
-		Host:         host,
-		HTTPPort:     httpPort,
-		GRPCPort:     grpcPort,
-		httpEndpoint: fmt.Sprintf("localhost:%d", httpPort),
-		grpcEndpoint: fmt.Sprintf("localhost:%d", grpcPort),
-		ConfigPath:   configPath,
-		Config:       viper.New(),
-		Debug:        debug,
-		Logger:       logger,
+		Host:       host,
+		HTTPPort:   httpPort,
+		GRPCPort:   grpcPort,
+		httpReady:  make(chan bool, 1),
+		grpcReady:  make(chan bool, 1),
+		ConfigPath: configPath,
+		Config:     viper.New(),
+		Debug:      debug,
+		Logger:     logger,
 	}
 	err := app.Configure()
 	if err != nil {
 		return nil, err
 	}
 	return app, nil
-}
-
-func (app *App) HTTPEndPoint() string {
-	return app.httpEndpoint
-}
-
-func (app *App) GRPCEndPoint() string {
-	return app.grpcEndpoint
 }
 
 func (app *App) getStatusCodeFromError(err error) (*status.Status, int) {
@@ -321,6 +312,14 @@ func (app *App) AddError() {
 	app.Errors.Update(1)
 }
 
+func buildAddress(port int) string {
+	if port == 0 {
+		return "localhost:"
+	} else {
+		return fmt.Sprintf("localhost:%d", port)
+	}
+}
+
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() error {
 	l := app.Logger.With(
@@ -330,23 +329,37 @@ func (app *App) Start() error {
 		zap.Int("port", app.HTTPPort),
 	)
 
-	grpcLis, err := net.Listen("tcp", app.grpcEndpoint)
+	grpcLis, err := net.Listen("tcp", buildAddress(app.GRPCPort))
 	if err != nil {
 		return fmt.Errorf("error trying to listen for connections: %v", err)
 	}
-	app.grpcEndpoint = grpcLis.Addr().String()
+	app.GRPCEndpoint = grpcLis.Addr().String()
 
-	httpLis, err := net.Listen("tcp", app.httpEndpoint)
+	httpLis, err := net.Listen("tcp", buildAddress(app.HTTPPort))
 	if err != nil {
 		return fmt.Errorf("error listening on HTTPEndpoint: %v", err)
 	}
-	app.httpEndpoint = httpLis.Addr().String()
+	app.HTTPEndpoint = httpLis.Addr().String()
 
 	//errch is the channel for retrieving errors from server goroutines.
 	errch := make(chan error, 2)
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	go app.startGRPCServer(grpcLis, errch)
-	go app.startHTTPServer(httpLis, errch)
+	go func() {
+		app.startGRPCServer(grpcLis, errch)
+		wg.Done()
+	}()
+	go func() {
+		app.startHTTPServer(httpLis, errch)
+		wg.Done()
+	}()
+
+	stopped := make(chan bool, 1)
+	go func() {
+		wg.Wait()
+		stopped <- true
+	}()
 
 	log.I(l, "app started")
 	sg := make(chan os.Signal)
@@ -363,6 +376,7 @@ func (app *App) Start() error {
 		time.Sleep(time.Duration(graceperiod) * time.Millisecond)
 	case err := <-errch:
 		return err
+	case <-stopped:
 	}
 	log.I(l, "app stopped")
 	return nil
@@ -370,24 +384,12 @@ func (app *App) Start() error {
 
 func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
 	var basicAuthInterceptor grpc.UnaryServerInterceptor
+
 	basicAuthUser := app.Config.GetString("basicauth.username")
-	if basicAuthUser != "" {
-		basicAuthPass := app.Config.GetString("basicauth.password")
-		auth := basicAuthUser + ":" + basicAuthPass
-
-		basicAuthInterceptor = grpc_auth.UnaryServerInterceptor(func(ctx context.Context) (context.Context, error) {
-			token, err := grpc_auth.AuthFromMD(ctx, "basic")
-			if err != nil {
-				return nil, err
-			}
-
-			if token != base64.StdEncoding.EncodeToString([]byte(auth)) {
-				return nil, status.Errorf(codes.Unauthenticated, "invalid auth token")
-			}
-			return ctx, nil
-		})
-	} else {
+	if basicAuthUser == "" {
 		basicAuthInterceptor = grpc.UnaryServerInterceptor(app.noAuthMiddleware)
+	} else {
+		basicAuthInterceptor = grpc_auth.UnaryServerInterceptor(app.basicAuthMiddleware)
 	}
 
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
@@ -402,6 +404,7 @@ func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
 	))
 	api.RegisterPodiumAPIServer(app.grpcServer, app)
 
+	app.grpcReady <- true
 	if err := app.grpcServer.Serve(lis); err != nil {
 		errch <- fmt.Errorf("error trying to serve with grpc server: %v", err)
 	}
@@ -412,7 +415,11 @@ func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
 		&runtime.JSONPb{EmitDefaults: true}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 
-	if err := api.RegisterPodiumAPIHandlerFromEndpoint(context.Background(), gatewayMux, app.GRPCEndPoint(), opts); err != nil {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	if err := api.RegisterPodiumAPIHandlerFromEndpoint(ctx, gatewayMux, app.GRPCEndpoint, opts); err != nil {
 		errch <- fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
 	}
 
@@ -421,18 +428,31 @@ func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
 	mux.HandleFunc("/healthcheck", addVersionHandlerFunc(app.healthCheckHandler))
 	mux.HandleFunc("/status", addVersionHandlerFunc(app.statusHandler))
 
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	app.httpServer = &http.Server{
-		Addr:    app.httpEndpoint,
+		Addr:    app.HTTPEndpoint,
 		Handler: mux,
 	}
 
+	app.httpReady <- true
 	if err := app.httpServer.Serve(lis); err != http.ErrServerClosed {
 		errch <- fmt.Errorf("error listening and serving http requests: %v", err)
 	}
+}
+
+func (app *App) WaitForReady(d time.Duration) error {
+	isReady := func(c chan bool) bool {
+		select {
+		case <-c:
+			return true
+		case <-time.After(d):
+			return false
+		}
+	}
+
+	if isReady(app.grpcReady) && isReady(app.httpReady) {
+		return nil
+	}
+	return fmt.Errorf("timed out waiting for endpoints")
 }
 
 func (app *App) Stop() {
