@@ -53,7 +53,7 @@ func getDefaultTestApp() *api.App {
 		zap.NewJSONEncoder(),
 		zap.FatalLevel,
 	)
-	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, false, logger)
+	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
 	}

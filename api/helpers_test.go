@@ -61,7 +61,7 @@ func NewEmptyCtx() context.Context {
 // GetDefaultTestApp returns a new podium API Application bound to random ports for test
 func GetDefaultTestApp() *api.App {
 	logger := testing.NewMockLogger()
-	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, false, logger)
+	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, logger)
 	Expect(err).NotTo(HaveOccurred())
 	return app
 }
