@@ -143,6 +143,7 @@ func (m *RemoveLeaderboardRequest) GetLeaderboardId() string {
 	return ""
 }
 
+// ScoreUpsert allow to provide score information about a single member.
 type ScoreUpsert struct {
 	PublicID             string   `protobuf:"bytes,1,opt,name=publicID,proto3" json:"publicID,omitempty"`
 	Score                int64    `protobuf:"varint,2,opt,name=score,proto3" json:"score,omitempty"`
@@ -190,6 +191,7 @@ func (m *ScoreUpsert) GetScore() int64 {
 	return 0
 }
 
+// ScoreUpserts represent multiple score submissions.
 type ScoreUpserts struct {
 	Members              []*ScoreUpsert `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
@@ -292,9 +294,12 @@ func (m *BulkUpsertScoresRequest) GetScoreUpserts() *ScoreUpserts {
 	return nil
 }
 
+// MemberResponse represents the full leaderboard information about a member.
 type MemberResponse struct {
-	PublicID             string   `protobuf:"bytes,1,opt,name=publicID,proto3" json:"publicID,omitempty"`
-	Score                float64  `protobuf:"fixed64,2,opt,name=score,proto3" json:"score,omitempty"`
+	PublicID string `protobuf:"bytes,1,opt,name=publicID,proto3" json:"publicID,omitempty"`
+	//implemented as double because int64 is exported as string through grpc-gateway
+	Score float64 `protobuf:"fixed64,2,opt,name=score,proto3" json:"score,omitempty"`
+	//the full int64 score received from Redis
 	IntScore             int64    `protobuf:"varint,3,opt,name=int_score,json=intScore,proto3" json:"int_score,omitempty"`
 	Rank                 int32    `protobuf:"varint,4,opt,name=rank,proto3" json:"rank,omitempty"`
 	PreviousRank         int32    `protobuf:"varint,5,opt,name=previous_rank,json=previousRank,proto3" json:"previous_rank,omitempty"`
@@ -379,53 +384,7 @@ func (m *MemberResponse) GetPosition() int32 {
 	return 0
 }
 
-type MemberListResponse struct {
-	Success              bool              `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Members              []*MemberResponse `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
-}
-
-func (m *MemberListResponse) Reset()         { *m = MemberListResponse{} }
-func (m *MemberListResponse) String() string { return proto.CompactTextString(m) }
-func (*MemberListResponse) ProtoMessage()    {}
-func (*MemberListResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{7}
-}
-
-func (m *MemberListResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MemberListResponse.Unmarshal(m, b)
-}
-func (m *MemberListResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MemberListResponse.Marshal(b, m, deterministic)
-}
-func (m *MemberListResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MemberListResponse.Merge(m, src)
-}
-func (m *MemberListResponse) XXX_Size() int {
-	return xxx_messageInfo_MemberListResponse.Size(m)
-}
-func (m *MemberListResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MemberListResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MemberListResponse proto.InternalMessageInfo
-
-func (m *MemberListResponse) GetSuccess() bool {
-	if m != nil {
-		return m.Success
-	}
-	return false
-}
-
-func (m *MemberListResponse) GetMembers() []*MemberResponse {
-	if m != nil {
-		return m.Members
-	}
-	return nil
-}
-
+// ScoreChange is the score payload when upserting a score.
 type ScoreChange struct {
 	Score                int64    `protobuf:"varint,1,opt,name=score,proto3" json:"score,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -437,7 +396,7 @@ func (m *ScoreChange) Reset()         { *m = ScoreChange{} }
 func (m *ScoreChange) String() string { return proto.CompactTextString(m) }
 func (*ScoreChange) ProtoMessage()    {}
 func (*ScoreChange) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{8}
+	return fileDescriptor_d33144d47ebf9898, []int{7}
 }
 
 func (m *ScoreChange) XXX_Unmarshal(b []byte) error {
@@ -480,7 +439,7 @@ func (m *UpsertScoreRequest) Reset()         { *m = UpsertScoreRequest{} }
 func (m *UpsertScoreRequest) String() string { return proto.CompactTextString(m) }
 func (*UpsertScoreRequest) ProtoMessage()    {}
 func (*UpsertScoreRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{9}
+	return fileDescriptor_d33144d47ebf9898, []int{8}
 }
 
 func (m *UpsertScoreRequest) XXX_Unmarshal(b []byte) error {
@@ -536,10 +495,264 @@ func (m *UpsertScoreRequest) GetScoreChange() *ScoreChange {
 	return nil
 }
 
-type DefaultMemberResponse struct {
+type TotalMembersRequest struct {
+	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *TotalMembersRequest) Reset()         { *m = TotalMembersRequest{} }
+func (m *TotalMembersRequest) String() string { return proto.CompactTextString(m) }
+func (*TotalMembersRequest) ProtoMessage()    {}
+func (*TotalMembersRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{9}
+}
+
+func (m *TotalMembersRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TotalMembersRequest.Unmarshal(m, b)
+}
+func (m *TotalMembersRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TotalMembersRequest.Marshal(b, m, deterministic)
+}
+func (m *TotalMembersRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TotalMembersRequest.Merge(m, src)
+}
+func (m *TotalMembersRequest) XXX_Size() int {
+	return xxx_messageInfo_TotalMembersRequest.Size(m)
+}
+func (m *TotalMembersRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_TotalMembersRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TotalMembersRequest proto.InternalMessageInfo
+
+func (m *TotalMembersRequest) GetLeaderboardId() string {
+	if m != nil {
+		return m.LeaderboardId
+	}
+	return ""
+}
+
+type TotalMembersResponse struct {
 	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	PublicID             string   `protobuf:"bytes,2,opt,name=publicID,proto3" json:"publicID,omitempty"`
-	Score                float64  `protobuf:"fixed64,3,opt,name=score,proto3" json:"score,omitempty"`
+	Count                int32    `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *TotalMembersResponse) Reset()         { *m = TotalMembersResponse{} }
+func (m *TotalMembersResponse) String() string { return proto.CompactTextString(m) }
+func (*TotalMembersResponse) ProtoMessage()    {}
+func (*TotalMembersResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{10}
+}
+
+func (m *TotalMembersResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TotalMembersResponse.Unmarshal(m, b)
+}
+func (m *TotalMembersResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TotalMembersResponse.Marshal(b, m, deterministic)
+}
+func (m *TotalMembersResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TotalMembersResponse.Merge(m, src)
+}
+func (m *TotalMembersResponse) XXX_Size() int {
+	return xxx_messageInfo_TotalMembersResponse.Size(m)
+}
+func (m *TotalMembersResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_TotalMembersResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TotalMembersResponse proto.InternalMessageInfo
+
+func (m *TotalMembersResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
+func (m *TotalMembersResponse) GetCount() int32 {
+	if m != nil {
+		return m.Count
+	}
+	return 0
+}
+
+type IncrementScoreRequest struct {
+	LeaderboardId        string                      `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
+	MemberPublicId       string                      `protobuf:"bytes,2,opt,name=member_public_id,json=memberPublicId,proto3" json:"member_public_id,omitempty"`
+	ScoreTTL             int32                       `protobuf:"varint,3,opt,name=scoreTTL,proto3" json:"scoreTTL,omitempty"`
+	Body                 *IncrementScoreRequest_Body `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
+	XXX_unrecognized     []byte                      `json:"-"`
+	XXX_sizecache        int32                       `json:"-"`
+}
+
+func (m *IncrementScoreRequest) Reset()         { *m = IncrementScoreRequest{} }
+func (m *IncrementScoreRequest) String() string { return proto.CompactTextString(m) }
+func (*IncrementScoreRequest) ProtoMessage()    {}
+func (*IncrementScoreRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{11}
+}
+
+func (m *IncrementScoreRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_IncrementScoreRequest.Unmarshal(m, b)
+}
+func (m *IncrementScoreRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_IncrementScoreRequest.Marshal(b, m, deterministic)
+}
+func (m *IncrementScoreRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IncrementScoreRequest.Merge(m, src)
+}
+func (m *IncrementScoreRequest) XXX_Size() int {
+	return xxx_messageInfo_IncrementScoreRequest.Size(m)
+}
+func (m *IncrementScoreRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_IncrementScoreRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IncrementScoreRequest proto.InternalMessageInfo
+
+func (m *IncrementScoreRequest) GetLeaderboardId() string {
+	if m != nil {
+		return m.LeaderboardId
+	}
+	return ""
+}
+
+func (m *IncrementScoreRequest) GetMemberPublicId() string {
+	if m != nil {
+		return m.MemberPublicId
+	}
+	return ""
+}
+
+func (m *IncrementScoreRequest) GetScoreTTL() int32 {
+	if m != nil {
+		return m.ScoreTTL
+	}
+	return 0
+}
+
+func (m *IncrementScoreRequest) GetBody() *IncrementScoreRequest_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+// Body represents the increment payload.
+type IncrementScoreRequest_Body struct {
+	Increment            int64    `protobuf:"varint,1,opt,name=increment,proto3" json:"increment,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *IncrementScoreRequest_Body) Reset()         { *m = IncrementScoreRequest_Body{} }
+func (m *IncrementScoreRequest_Body) String() string { return proto.CompactTextString(m) }
+func (*IncrementScoreRequest_Body) ProtoMessage()    {}
+func (*IncrementScoreRequest_Body) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{11, 0}
+}
+
+func (m *IncrementScoreRequest_Body) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_IncrementScoreRequest_Body.Unmarshal(m, b)
+}
+func (m *IncrementScoreRequest_Body) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_IncrementScoreRequest_Body.Marshal(b, m, deterministic)
+}
+func (m *IncrementScoreRequest_Body) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IncrementScoreRequest_Body.Merge(m, src)
+}
+func (m *IncrementScoreRequest_Body) XXX_Size() int {
+	return xxx_messageInfo_IncrementScoreRequest_Body.Size(m)
+}
+func (m *IncrementScoreRequest_Body) XXX_DiscardUnknown() {
+	xxx_messageInfo_IncrementScoreRequest_Body.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IncrementScoreRequest_Body proto.InternalMessageInfo
+
+func (m *IncrementScoreRequest_Body) GetIncrement() int64 {
+	if m != nil {
+		return m.Increment
+	}
+	return 0
+}
+
+type GetMemberRequest struct {
+	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
+	MemberPublicId       string   `protobuf:"bytes,2,opt,name=member_public_id,json=memberPublicId,proto3" json:"member_public_id,omitempty"`
+	Order                string   `protobuf:"bytes,3,opt,name=order,proto3" json:"order,omitempty"`
+	ScoreTTL             bool     `protobuf:"varint,4,opt,name=scoreTTL,proto3" json:"scoreTTL,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetMemberRequest) Reset()         { *m = GetMemberRequest{} }
+func (m *GetMemberRequest) String() string { return proto.CompactTextString(m) }
+func (*GetMemberRequest) ProtoMessage()    {}
+func (*GetMemberRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{12}
+}
+
+func (m *GetMemberRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetMemberRequest.Unmarshal(m, b)
+}
+func (m *GetMemberRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetMemberRequest.Marshal(b, m, deterministic)
+}
+func (m *GetMemberRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetMemberRequest.Merge(m, src)
+}
+func (m *GetMemberRequest) XXX_Size() int {
+	return xxx_messageInfo_GetMemberRequest.Size(m)
+}
+func (m *GetMemberRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetMemberRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetMemberRequest proto.InternalMessageInfo
+
+func (m *GetMemberRequest) GetLeaderboardId() string {
+	if m != nil {
+		return m.LeaderboardId
+	}
+	return ""
+}
+
+func (m *GetMemberRequest) GetMemberPublicId() string {
+	if m != nil {
+		return m.MemberPublicId
+	}
+	return ""
+}
+
+func (m *GetMemberRequest) GetOrder() string {
+	if m != nil {
+		return m.Order
+	}
+	return ""
+}
+
+func (m *GetMemberRequest) GetScoreTTL() bool {
+	if m != nil {
+		return m.ScoreTTL
+	}
+	return false
+}
+
+type DefaultMemberResponse struct {
+	Success  bool   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	PublicID string `protobuf:"bytes,2,opt,name=publicID,proto3" json:"publicID,omitempty"`
+	//implemented as double because int64 is exported as string through grpc-gateway
+	Score float64 `protobuf:"fixed64,3,opt,name=score,proto3" json:"score,omitempty"`
+	//the full int64 score received from Redis
 	IntScore             int64    `protobuf:"varint,4,opt,name=int_score,json=intScore,proto3" json:"int_score,omitempty"`
 	Rank                 int32    `protobuf:"varint,5,opt,name=rank,proto3" json:"rank,omitempty"`
 	PreviousRank         int32    `protobuf:"varint,6,opt,name=previous_rank,json=previousRank,proto3" json:"previous_rank,omitempty"`
@@ -553,7 +766,7 @@ func (m *DefaultMemberResponse) Reset()         { *m = DefaultMemberResponse{} }
 func (m *DefaultMemberResponse) String() string { return proto.CompactTextString(m) }
 func (*DefaultMemberResponse) ProtoMessage()    {}
 func (*DefaultMemberResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{10}
+	return fileDescriptor_d33144d47ebf9898, []int{13}
 }
 
 func (m *DefaultMemberResponse) XXX_Unmarshal(b []byte) error {
@@ -623,304 +836,6 @@ func (m *DefaultMemberResponse) GetExpireAt() int32 {
 	return 0
 }
 
-type BasicResponse struct {
-	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Reason               string   `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *BasicResponse) Reset()         { *m = BasicResponse{} }
-func (m *BasicResponse) String() string { return proto.CompactTextString(m) }
-func (*BasicResponse) ProtoMessage()    {}
-func (*BasicResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{11}
-}
-
-func (m *BasicResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_BasicResponse.Unmarshal(m, b)
-}
-func (m *BasicResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_BasicResponse.Marshal(b, m, deterministic)
-}
-func (m *BasicResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BasicResponse.Merge(m, src)
-}
-func (m *BasicResponse) XXX_Size() int {
-	return xxx_messageInfo_BasicResponse.Size(m)
-}
-func (m *BasicResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_BasicResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_BasicResponse proto.InternalMessageInfo
-
-func (m *BasicResponse) GetSuccess() bool {
-	if m != nil {
-		return m.Success
-	}
-	return false
-}
-
-func (m *BasicResponse) GetReason() string {
-	if m != nil {
-		return m.Reason
-	}
-	return ""
-}
-
-type TotalMembersRequest struct {
-	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TotalMembersRequest) Reset()         { *m = TotalMembersRequest{} }
-func (m *TotalMembersRequest) String() string { return proto.CompactTextString(m) }
-func (*TotalMembersRequest) ProtoMessage()    {}
-func (*TotalMembersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{12}
-}
-
-func (m *TotalMembersRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TotalMembersRequest.Unmarshal(m, b)
-}
-func (m *TotalMembersRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TotalMembersRequest.Marshal(b, m, deterministic)
-}
-func (m *TotalMembersRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TotalMembersRequest.Merge(m, src)
-}
-func (m *TotalMembersRequest) XXX_Size() int {
-	return xxx_messageInfo_TotalMembersRequest.Size(m)
-}
-func (m *TotalMembersRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_TotalMembersRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TotalMembersRequest proto.InternalMessageInfo
-
-func (m *TotalMembersRequest) GetLeaderboardId() string {
-	if m != nil {
-		return m.LeaderboardId
-	}
-	return ""
-}
-
-type TotalMembersResponse struct {
-	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Count                int32    `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TotalMembersResponse) Reset()         { *m = TotalMembersResponse{} }
-func (m *TotalMembersResponse) String() string { return proto.CompactTextString(m) }
-func (*TotalMembersResponse) ProtoMessage()    {}
-func (*TotalMembersResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{13}
-}
-
-func (m *TotalMembersResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TotalMembersResponse.Unmarshal(m, b)
-}
-func (m *TotalMembersResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TotalMembersResponse.Marshal(b, m, deterministic)
-}
-func (m *TotalMembersResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TotalMembersResponse.Merge(m, src)
-}
-func (m *TotalMembersResponse) XXX_Size() int {
-	return xxx_messageInfo_TotalMembersResponse.Size(m)
-}
-func (m *TotalMembersResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_TotalMembersResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TotalMembersResponse proto.InternalMessageInfo
-
-func (m *TotalMembersResponse) GetSuccess() bool {
-	if m != nil {
-		return m.Success
-	}
-	return false
-}
-
-func (m *TotalMembersResponse) GetCount() int32 {
-	if m != nil {
-		return m.Count
-	}
-	return 0
-}
-
-type IncrementScoreRequest struct {
-	LeaderboardId        string                      `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
-	MemberPublicId       string                      `protobuf:"bytes,2,opt,name=member_public_id,json=memberPublicId,proto3" json:"member_public_id,omitempty"`
-	ScoreTTL             int32                       `protobuf:"varint,3,opt,name=scoreTTL,proto3" json:"scoreTTL,omitempty"`
-	Body                 *IncrementScoreRequest_Body `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
-	XXX_unrecognized     []byte                      `json:"-"`
-	XXX_sizecache        int32                       `json:"-"`
-}
-
-func (m *IncrementScoreRequest) Reset()         { *m = IncrementScoreRequest{} }
-func (m *IncrementScoreRequest) String() string { return proto.CompactTextString(m) }
-func (*IncrementScoreRequest) ProtoMessage()    {}
-func (*IncrementScoreRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{14}
-}
-
-func (m *IncrementScoreRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_IncrementScoreRequest.Unmarshal(m, b)
-}
-func (m *IncrementScoreRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_IncrementScoreRequest.Marshal(b, m, deterministic)
-}
-func (m *IncrementScoreRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IncrementScoreRequest.Merge(m, src)
-}
-func (m *IncrementScoreRequest) XXX_Size() int {
-	return xxx_messageInfo_IncrementScoreRequest.Size(m)
-}
-func (m *IncrementScoreRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_IncrementScoreRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_IncrementScoreRequest proto.InternalMessageInfo
-
-func (m *IncrementScoreRequest) GetLeaderboardId() string {
-	if m != nil {
-		return m.LeaderboardId
-	}
-	return ""
-}
-
-func (m *IncrementScoreRequest) GetMemberPublicId() string {
-	if m != nil {
-		return m.MemberPublicId
-	}
-	return ""
-}
-
-func (m *IncrementScoreRequest) GetScoreTTL() int32 {
-	if m != nil {
-		return m.ScoreTTL
-	}
-	return 0
-}
-
-func (m *IncrementScoreRequest) GetBody() *IncrementScoreRequest_Body {
-	if m != nil {
-		return m.Body
-	}
-	return nil
-}
-
-type IncrementScoreRequest_Body struct {
-	Increment            int64    `protobuf:"varint,1,opt,name=increment,proto3" json:"increment,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *IncrementScoreRequest_Body) Reset()         { *m = IncrementScoreRequest_Body{} }
-func (m *IncrementScoreRequest_Body) String() string { return proto.CompactTextString(m) }
-func (*IncrementScoreRequest_Body) ProtoMessage()    {}
-func (*IncrementScoreRequest_Body) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{14, 0}
-}
-
-func (m *IncrementScoreRequest_Body) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_IncrementScoreRequest_Body.Unmarshal(m, b)
-}
-func (m *IncrementScoreRequest_Body) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_IncrementScoreRequest_Body.Marshal(b, m, deterministic)
-}
-func (m *IncrementScoreRequest_Body) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IncrementScoreRequest_Body.Merge(m, src)
-}
-func (m *IncrementScoreRequest_Body) XXX_Size() int {
-	return xxx_messageInfo_IncrementScoreRequest_Body.Size(m)
-}
-func (m *IncrementScoreRequest_Body) XXX_DiscardUnknown() {
-	xxx_messageInfo_IncrementScoreRequest_Body.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_IncrementScoreRequest_Body proto.InternalMessageInfo
-
-func (m *IncrementScoreRequest_Body) GetIncrement() int64 {
-	if m != nil {
-		return m.Increment
-	}
-	return 0
-}
-
-type GetMemberRequest struct {
-	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
-	MemberPublicId       string   `protobuf:"bytes,2,opt,name=member_public_id,json=memberPublicId,proto3" json:"member_public_id,omitempty"`
-	Order                string   `protobuf:"bytes,3,opt,name=order,proto3" json:"order,omitempty"`
-	ScoreTTL             bool     `protobuf:"varint,4,opt,name=scoreTTL,proto3" json:"scoreTTL,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *GetMemberRequest) Reset()         { *m = GetMemberRequest{} }
-func (m *GetMemberRequest) String() string { return proto.CompactTextString(m) }
-func (*GetMemberRequest) ProtoMessage()    {}
-func (*GetMemberRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{15}
-}
-
-func (m *GetMemberRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GetMemberRequest.Unmarshal(m, b)
-}
-func (m *GetMemberRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GetMemberRequest.Marshal(b, m, deterministic)
-}
-func (m *GetMemberRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetMemberRequest.Merge(m, src)
-}
-func (m *GetMemberRequest) XXX_Size() int {
-	return xxx_messageInfo_GetMemberRequest.Size(m)
-}
-func (m *GetMemberRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetMemberRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_GetMemberRequest proto.InternalMessageInfo
-
-func (m *GetMemberRequest) GetLeaderboardId() string {
-	if m != nil {
-		return m.LeaderboardId
-	}
-	return ""
-}
-
-func (m *GetMemberRequest) GetMemberPublicId() string {
-	if m != nil {
-		return m.MemberPublicId
-	}
-	return ""
-}
-
-func (m *GetMemberRequest) GetOrder() string {
-	if m != nil {
-		return m.Order
-	}
-	return ""
-}
-
-func (m *GetMemberRequest) GetScoreTTL() bool {
-	if m != nil {
-		return m.ScoreTTL
-	}
-	return false
-}
-
 type GetMembersRequest struct {
 	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
 	Order                string   `protobuf:"bytes,2,opt,name=order,proto3" json:"order,omitempty"`
@@ -935,7 +850,7 @@ func (m *GetMembersRequest) Reset()         { *m = GetMembersRequest{} }
 func (m *GetMembersRequest) String() string { return proto.CompactTextString(m) }
 func (*GetMembersRequest) ProtoMessage()    {}
 func (*GetMembersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{16}
+	return fileDescriptor_d33144d47ebf9898, []int{14}
 }
 
 func (m *GetMembersRequest) XXX_Unmarshal(b []byte) error {
@@ -997,7 +912,7 @@ func (m *GetMembersResponse) Reset()         { *m = GetMembersResponse{} }
 func (m *GetMembersResponse) String() string { return proto.CompactTextString(m) }
 func (*GetMembersResponse) ProtoMessage()    {}
 func (*GetMembersResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{17}
+	return fileDescriptor_d33144d47ebf9898, []int{15}
 }
 
 func (m *GetMembersResponse) XXX_Unmarshal(b []byte) error {
@@ -1051,7 +966,7 @@ func (m *RemoveMemberRequest) Reset()         { *m = RemoveMemberRequest{} }
 func (m *RemoveMemberRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveMemberRequest) ProtoMessage()    {}
 func (*RemoveMemberRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{18}
+	return fileDescriptor_d33144d47ebf9898, []int{16}
 }
 
 func (m *RemoveMemberRequest) XXX_Unmarshal(b []byte) error {
@@ -1098,7 +1013,7 @@ func (m *RemoveMembersRequest) Reset()         { *m = RemoveMembersRequest{} }
 func (m *RemoveMembersRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveMembersRequest) ProtoMessage()    {}
 func (*RemoveMembersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{19}
+	return fileDescriptor_d33144d47ebf9898, []int{17}
 }
 
 func (m *RemoveMembersRequest) XXX_Unmarshal(b []byte) error {
@@ -1133,6 +1048,53 @@ func (m *RemoveMembersRequest) GetIds() string {
 	return ""
 }
 
+type BasicResponse struct {
+	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Reason               string   `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *BasicResponse) Reset()         { *m = BasicResponse{} }
+func (m *BasicResponse) String() string { return proto.CompactTextString(m) }
+func (*BasicResponse) ProtoMessage()    {}
+func (*BasicResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{18}
+}
+
+func (m *BasicResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_BasicResponse.Unmarshal(m, b)
+}
+func (m *BasicResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_BasicResponse.Marshal(b, m, deterministic)
+}
+func (m *BasicResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BasicResponse.Merge(m, src)
+}
+func (m *BasicResponse) XXX_Size() int {
+	return xxx_messageInfo_BasicResponse.Size(m)
+}
+func (m *BasicResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_BasicResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BasicResponse proto.InternalMessageInfo
+
+func (m *BasicResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
+func (m *BasicResponse) GetReason() string {
+	if m != nil {
+		return m.Reason
+	}
+	return ""
+}
+
 type GetRankRequest struct {
 	LeaderboardId        string   `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
 	MemberPublicId       string   `protobuf:"bytes,2,opt,name=member_public_id,json=memberPublicId,proto3" json:"member_public_id,omitempty"`
@@ -1146,7 +1108,7 @@ func (m *GetRankRequest) Reset()         { *m = GetRankRequest{} }
 func (m *GetRankRequest) String() string { return proto.CompactTextString(m) }
 func (*GetRankRequest) ProtoMessage()    {}
 func (*GetRankRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{20}
+	return fileDescriptor_d33144d47ebf9898, []int{19}
 }
 
 func (m *GetRankRequest) XXX_Unmarshal(b []byte) error {
@@ -1201,7 +1163,7 @@ func (m *GetRankResponse) Reset()         { *m = GetRankResponse{} }
 func (m *GetRankResponse) String() string { return proto.CompactTextString(m) }
 func (*GetRankResponse) ProtoMessage()    {}
 func (*GetRankResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{21}
+	return fileDescriptor_d33144d47ebf9898, []int{20}
 }
 
 func (m *GetRankResponse) XXX_Unmarshal(b []byte) error {
@@ -1258,7 +1220,7 @@ func (m *GetAroundMemberRequest) Reset()         { *m = GetAroundMemberRequest{}
 func (m *GetAroundMemberRequest) String() string { return proto.CompactTextString(m) }
 func (*GetAroundMemberRequest) ProtoMessage()    {}
 func (*GetAroundMemberRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{22}
+	return fileDescriptor_d33144d47ebf9898, []int{21}
 }
 
 func (m *GetAroundMemberRequest) XXX_Unmarshal(b []byte) error {
@@ -1328,7 +1290,7 @@ func (m *GetTopMembersRequest) Reset()         { *m = GetTopMembersRequest{} }
 func (m *GetTopMembersRequest) String() string { return proto.CompactTextString(m) }
 func (*GetTopMembersRequest) ProtoMessage()    {}
 func (*GetTopMembersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{23}
+	return fileDescriptor_d33144d47ebf9898, []int{22}
 }
 
 func (m *GetTopMembersRequest) XXX_Unmarshal(b []byte) error {
@@ -1390,7 +1352,7 @@ func (m *GetTopPercentageRequest) Reset()         { *m = GetTopPercentageRequest
 func (m *GetTopPercentageRequest) String() string { return proto.CompactTextString(m) }
 func (*GetTopPercentageRequest) ProtoMessage()    {}
 func (*GetTopPercentageRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{24}
+	return fileDescriptor_d33144d47ebf9898, []int{23}
 }
 
 func (m *GetTopPercentageRequest) XXX_Unmarshal(b []byte) error {
@@ -1446,7 +1408,7 @@ func (m *MultiUpsertScoreRequest) Reset()         { *m = MultiUpsertScoreRequest
 func (m *MultiUpsertScoreRequest) String() string { return proto.CompactTextString(m) }
 func (*MultiUpsertScoreRequest) ProtoMessage()    {}
 func (*MultiUpsertScoreRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{25}
+	return fileDescriptor_d33144d47ebf9898, []int{24}
 }
 
 func (m *MultiUpsertScoreRequest) XXX_Unmarshal(b []byte) error {
@@ -1495,6 +1457,7 @@ func (m *MultiUpsertScoreRequest) GetScoreMultiChange() *MultiUpsertScoreRequest
 	return nil
 }
 
+// ScoreMultiChange is the payload to update the score of a member on multiple leaderboards.
 type MultiUpsertScoreRequest_ScoreMultiChange struct {
 	Score                int64    `protobuf:"varint,1,opt,name=score,proto3" json:"score,omitempty"`
 	Leaderboards         []string `protobuf:"bytes,2,rep,name=leaderboards,proto3" json:"leaderboards,omitempty"`
@@ -1509,7 +1472,7 @@ func (m *MultiUpsertScoreRequest_ScoreMultiChange) Reset() {
 func (m *MultiUpsertScoreRequest_ScoreMultiChange) String() string { return proto.CompactTextString(m) }
 func (*MultiUpsertScoreRequest_ScoreMultiChange) ProtoMessage()    {}
 func (*MultiUpsertScoreRequest_ScoreMultiChange) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{25, 0}
+	return fileDescriptor_d33144d47ebf9898, []int{24, 0}
 }
 
 func (m *MultiUpsertScoreRequest_ScoreMultiChange) XXX_Unmarshal(b []byte) error {
@@ -1556,7 +1519,7 @@ func (m *MultiUpsertScoreResponse) Reset()         { *m = MultiUpsertScoreRespon
 func (m *MultiUpsertScoreResponse) String() string { return proto.CompactTextString(m) }
 func (*MultiUpsertScoreResponse) ProtoMessage()    {}
 func (*MultiUpsertScoreResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{26}
+	return fileDescriptor_d33144d47ebf9898, []int{25}
 }
 
 func (m *MultiUpsertScoreResponse) XXX_Unmarshal(b []byte) error {
@@ -1591,9 +1554,12 @@ func (m *MultiUpsertScoreResponse) GetScores() []*MultiUpsertScoreResponse_Membe
 	return nil
 }
 
+// Member represents the information regarding a single member in response to a multi upsert score.
 type MultiUpsertScoreResponse_Member struct {
-	PublicID             string   `protobuf:"bytes,1,opt,name=publicID,proto3" json:"publicID,omitempty"`
-	Score                float64  `protobuf:"fixed64,2,opt,name=score,proto3" json:"score,omitempty"`
+	PublicID string `protobuf:"bytes,1,opt,name=publicID,proto3" json:"publicID,omitempty"`
+	//implemented as double because int64 is exported as string through grpc-gateway
+	Score float64 `protobuf:"fixed64,2,opt,name=score,proto3" json:"score,omitempty"`
+	//the full int64 score received from Redis
 	IntScore             int64    `protobuf:"varint,3,opt,name=int_score,json=intScore,proto3" json:"int_score,omitempty"`
 	Rank                 int32    `protobuf:"varint,4,opt,name=rank,proto3" json:"rank,omitempty"`
 	PreviousRank         int32    `protobuf:"varint,5,opt,name=previous_rank,json=previousRank,proto3" json:"previous_rank,omitempty"`
@@ -1608,7 +1574,7 @@ func (m *MultiUpsertScoreResponse_Member) Reset()         { *m = MultiUpsertScor
 func (m *MultiUpsertScoreResponse_Member) String() string { return proto.CompactTextString(m) }
 func (*MultiUpsertScoreResponse_Member) ProtoMessage()    {}
 func (*MultiUpsertScoreResponse_Member) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{26, 0}
+	return fileDescriptor_d33144d47ebf9898, []int{25, 0}
 }
 
 func (m *MultiUpsertScoreResponse_Member) XXX_Unmarshal(b []byte) error {
@@ -1692,7 +1658,7 @@ func (m *MultiGetRankRequest) Reset()         { *m = MultiGetRankRequest{} }
 func (m *MultiGetRankRequest) String() string { return proto.CompactTextString(m) }
 func (*MultiGetRankRequest) ProtoMessage()    {}
 func (*MultiGetRankRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{27}
+	return fileDescriptor_d33144d47ebf9898, []int{26}
 }
 
 func (m *MultiGetRankRequest) XXX_Unmarshal(b []byte) error {
@@ -1753,7 +1719,7 @@ func (m *MultiGetRankResponse) Reset()         { *m = MultiGetRankResponse{} }
 func (m *MultiGetRankResponse) String() string { return proto.CompactTextString(m) }
 func (*MultiGetRankResponse) ProtoMessage()    {}
 func (*MultiGetRankResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{28}
+	return fileDescriptor_d33144d47ebf9898, []int{27}
 }
 
 func (m *MultiGetRankResponse) XXX_Unmarshal(b []byte) error {
@@ -1788,6 +1754,7 @@ func (m *MultiGetRankResponse) GetScores() []*MultiGetRankResponse_Member {
 	return nil
 }
 
+// Member represents member information retrieved from one the leaderboards during MultiGetRankResponse operation.
 type MultiGetRankResponse_Member struct {
 	LeaderboardID        string   `protobuf:"bytes,1,opt,name=leaderboardID,proto3" json:"leaderboardID,omitempty"`
 	Rank                 int32    `protobuf:"varint,2,opt,name=rank,proto3" json:"rank,omitempty"`
@@ -1803,7 +1770,7 @@ func (m *MultiGetRankResponse_Member) Reset()         { *m = MultiGetRankRespons
 func (m *MultiGetRankResponse_Member) String() string { return proto.CompactTextString(m) }
 func (*MultiGetRankResponse_Member) ProtoMessage()    {}
 func (*MultiGetRankResponse_Member) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{28, 0}
+	return fileDescriptor_d33144d47ebf9898, []int{27, 0}
 }
 
 func (m *MultiGetRankResponse_Member) XXX_Unmarshal(b []byte) error {
@@ -1873,7 +1840,7 @@ func (m *GetAroundScoreRequest) Reset()         { *m = GetAroundScoreRequest{} }
 func (m *GetAroundScoreRequest) String() string { return proto.CompactTextString(m) }
 func (*GetAroundScoreRequest) ProtoMessage()    {}
 func (*GetAroundScoreRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d33144d47ebf9898, []int{29}
+	return fileDescriptor_d33144d47ebf9898, []int{28}
 }
 
 func (m *GetAroundScoreRequest) XXX_Unmarshal(b []byte) error {
@@ -1922,6 +1889,53 @@ func (m *GetAroundScoreRequest) GetPageSize() int32 {
 	return 0
 }
 
+type MemberListResponse struct {
+	Success              bool              `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Members              []*MemberResponse `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *MemberListResponse) Reset()         { *m = MemberListResponse{} }
+func (m *MemberListResponse) String() string { return proto.CompactTextString(m) }
+func (*MemberListResponse) ProtoMessage()    {}
+func (*MemberListResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d33144d47ebf9898, []int{29}
+}
+
+func (m *MemberListResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_MemberListResponse.Unmarshal(m, b)
+}
+func (m *MemberListResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_MemberListResponse.Marshal(b, m, deterministic)
+}
+func (m *MemberListResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MemberListResponse.Merge(m, src)
+}
+func (m *MemberListResponse) XXX_Size() int {
+	return xxx_messageInfo_MemberListResponse.Size(m)
+}
+func (m *MemberListResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MemberListResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MemberListResponse proto.InternalMessageInfo
+
+func (m *MemberListResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
+func (m *MemberListResponse) GetMembers() []*MemberResponse {
+	if m != nil {
+		return m.Members
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*HealthCheckResponse)(nil), "podium.api.v1.HealthCheckResponse")
 	proto.RegisterType((*StatusResponse)(nil), "podium.api.v1.StatusResponse")
@@ -1930,20 +1944,19 @@ func init() {
 	proto.RegisterType((*ScoreUpserts)(nil), "podium.api.v1.ScoreUpserts")
 	proto.RegisterType((*BulkUpsertScoresRequest)(nil), "podium.api.v1.BulkUpsertScoresRequest")
 	proto.RegisterType((*MemberResponse)(nil), "podium.api.v1.MemberResponse")
-	proto.RegisterType((*MemberListResponse)(nil), "podium.api.v1.MemberListResponse")
 	proto.RegisterType((*ScoreChange)(nil), "podium.api.v1.ScoreChange")
 	proto.RegisterType((*UpsertScoreRequest)(nil), "podium.api.v1.UpsertScoreRequest")
-	proto.RegisterType((*DefaultMemberResponse)(nil), "podium.api.v1.DefaultMemberResponse")
-	proto.RegisterType((*BasicResponse)(nil), "podium.api.v1.BasicResponse")
 	proto.RegisterType((*TotalMembersRequest)(nil), "podium.api.v1.TotalMembersRequest")
 	proto.RegisterType((*TotalMembersResponse)(nil), "podium.api.v1.TotalMembersResponse")
 	proto.RegisterType((*IncrementScoreRequest)(nil), "podium.api.v1.IncrementScoreRequest")
 	proto.RegisterType((*IncrementScoreRequest_Body)(nil), "podium.api.v1.IncrementScoreRequest.Body")
 	proto.RegisterType((*GetMemberRequest)(nil), "podium.api.v1.GetMemberRequest")
+	proto.RegisterType((*DefaultMemberResponse)(nil), "podium.api.v1.DefaultMemberResponse")
 	proto.RegisterType((*GetMembersRequest)(nil), "podium.api.v1.GetMembersRequest")
 	proto.RegisterType((*GetMembersResponse)(nil), "podium.api.v1.GetMembersResponse")
 	proto.RegisterType((*RemoveMemberRequest)(nil), "podium.api.v1.RemoveMemberRequest")
 	proto.RegisterType((*RemoveMembersRequest)(nil), "podium.api.v1.RemoveMembersRequest")
+	proto.RegisterType((*BasicResponse)(nil), "podium.api.v1.BasicResponse")
 	proto.RegisterType((*GetRankRequest)(nil), "podium.api.v1.GetRankRequest")
 	proto.RegisterType((*GetRankResponse)(nil), "podium.api.v1.GetRankResponse")
 	proto.RegisterType((*GetAroundMemberRequest)(nil), "podium.api.v1.GetAroundMemberRequest")
@@ -1957,119 +1970,123 @@ func init() {
 	proto.RegisterType((*MultiGetRankResponse)(nil), "podium.api.v1.MultiGetRankResponse")
 	proto.RegisterType((*MultiGetRankResponse_Member)(nil), "podium.api.v1.MultiGetRankResponse.Member")
 	proto.RegisterType((*GetAroundScoreRequest)(nil), "podium.api.v1.GetAroundScoreRequest")
+	proto.RegisterType((*MemberListResponse)(nil), "podium.api.v1.MemberListResponse")
 }
 
 func init() { proto.RegisterFile("proto/podium/api/v1/podium.proto", fileDescriptor_d33144d47ebf9898) }
 
 var fileDescriptor_d33144d47ebf9898 = []byte{
-	// 1700 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0x4b, 0x6f, 0x1b, 0xd5,
-	0x17, 0xd7, 0xf5, 0x23, 0xb1, 0x4f, 0x1e, 0x4d, 0x6f, 0x92, 0xd6, 0x9a, 0x24, 0xad, 0x7b, 0x93,
-	0xfe, 0x93, 0xe6, 0x4f, 0xed, 0x36, 0x6d, 0x29, 0x2a, 0xad, 0x4a, 0xd2, 0xd0, 0x10, 0x94, 0x96,
-	0x68, 0x12, 0x56, 0x2c, 0xac, 0x89, 0x7d, 0xe3, 0x8e, 0x62, 0xcf, 0x98, 0xb9, 0xd7, 0x09, 0x69,
-	0x54, 0x16, 0xe5, 0x59, 0xc4, 0x02, 0xa8, 0xd8, 0x74, 0x85, 0xd8, 0xb1, 0x64, 0xcd, 0x77, 0x40,
-	0x82, 0x4a, 0xec, 0xd8, 0xb1, 0xe1, 0x5b, 0xa0, 0xb9, 0x77, 0x3c, 0x9e, 0xa7, 0x1f, 0x41, 0x01,
-	0xb1, 0xb2, 0xef, 0x99, 0x3b, 0x73, 0x7e, 0xe7, 0x9c, 0xdf, 0x3d, 0x8f, 0x0b, 0xf9, 0x86, 0x65,
-	0x72, 0xb3, 0xd8, 0x30, 0x2b, 0x7a, 0xb3, 0x5e, 0xd4, 0x1a, 0x7a, 0x71, 0xff, 0xaa, 0xb3, 0x2a,
-	0x88, 0x47, 0x78, 0xc4, 0x59, 0x69, 0x0d, 0xbd, 0xb0, 0x7f, 0x55, 0x99, 0xae, 0x9a, 0x66, 0xb5,
-	0x46, 0xc5, 0x56, 0xcd, 0x30, 0x4c, 0xae, 0x71, 0xdd, 0x34, 0x98, 0xdc, 0xac, 0x4c, 0x39, 0x4f,
-	0xc5, 0x6a, 0xa7, 0xb9, 0x5b, 0xa4, 0xf5, 0x06, 0x3f, 0x94, 0x0f, 0xc9, 0x6d, 0x18, 0x7f, 0x8b,
-	0x6a, 0x35, 0xfe, 0xe8, 0xde, 0x23, 0x5a, 0xde, 0x53, 0x29, 0x6b, 0x98, 0x06, 0xa3, 0xf8, 0x22,
-	0x8c, 0x1e, 0x98, 0xd6, 0x9e, 0x6e, 0x54, 0x4b, 0x8c, 0x5b, 0xba, 0x51, 0xcd, 0xa1, 0x3c, 0x5a,
-	0xc8, 0xaa, 0x23, 0x8e, 0x74, 0x4b, 0x08, 0x49, 0x11, 0x46, 0xb7, 0xb8, 0xc6, 0x9b, 0xcc, 0x7d,
-	0x71, 0x06, 0x80, 0x5a, 0x96, 0x69, 0x95, 0x2c, 0x8d, 0x53, 0xf1, 0x12, 0x52, 0xb3, 0x42, 0xa2,
-	0x6a, 0x9c, 0x92, 0x65, 0xc8, 0xa9, 0xb4, 0x6e, 0xee, 0xd3, 0x0d, 0xaa, 0x55, 0xa8, 0xb5, 0x63,
-	0x6a, 0x56, 0x45, 0xa5, 0xef, 0x37, 0x29, 0xe3, 0xb6, 0xce, 0x5a, 0x5b, 0x5a, 0xd2, 0x2b, 0x2d,
-	0x9d, 0x1e, 0xe9, 0x7a, 0x85, 0xdc, 0x85, 0xa1, 0xad, 0xb2, 0x69, 0xd1, 0x77, 0x1b, 0x8c, 0x5a,
-	0x1c, 0x2b, 0x90, 0x69, 0x34, 0x77, 0x6a, 0x7a, 0x79, 0x7d, 0xd5, 0xd9, 0xef, 0xae, 0xf1, 0x04,
-	0xa4, 0x99, 0xbd, 0x35, 0x97, 0xc8, 0xa3, 0x85, 0xa4, 0x2a, 0x17, 0x64, 0x15, 0x86, 0x3d, 0x1f,
-	0x60, 0xf8, 0x3a, 0x0c, 0xd6, 0x69, 0x7d, 0x87, 0x5a, 0x2c, 0x87, 0xf2, 0xc9, 0x85, 0xa1, 0x25,
-	0xa5, 0xe0, 0x73, 0x6f, 0xc1, 0xb3, 0x5b, 0x6d, 0x6d, 0x25, 0x3f, 0x21, 0x38, 0xbb, 0xd2, 0xac,
-	0xed, 0x49, 0xb9, 0xd8, 0xc2, 0xfa, 0xb3, 0x04, 0x4f, 0x41, 0xb6, 0x61, 0xd1, 0xfd, 0x92, 0xa5,
-	0x19, 0x7b, 0x02, 0x62, 0x46, 0xcd, 0xd8, 0x02, 0x55, 0x33, 0xf6, 0x6c, 0xbb, 0x04, 0xdc, 0xed,
-	0xed, 0x8d, 0x5c, 0x32, 0x8f, 0x16, 0xd2, 0xaa, 0xbb, 0xc6, 0x6f, 0xc0, 0x88, 0xf8, 0x5f, 0x6a,
-	0x4a, 0x13, 0x72, 0xa9, 0x3c, 0x5a, 0x18, 0x5a, 0x9a, 0x8a, 0xc7, 0xcd, 0xd4, 0x61, 0xe6, 0x59,
-	0x91, 0x5f, 0x10, 0x8c, 0x3e, 0x10, 0x96, 0xb8, 0x91, 0xeb, 0xd9, 0x91, 0xc8, 0x71, 0xa4, 0x8d,
-	0x5f, 0x37, 0x78, 0x49, 0x3e, 0x49, 0x0a, 0x17, 0x67, 0x74, 0x43, 0xfa, 0x02, 0x63, 0x48, 0x09,
-	0xbb, 0x52, 0x02, 0xbb, 0xf8, 0x8f, 0x67, 0x61, 0xc4, 0xb6, 0x4f, 0x37, 0x9b, 0x4c, 0x1a, 0x9d,
-	0x16, 0x0f, 0x87, 0x5b, 0x42, 0x61, 0xf8, 0x14, 0x64, 0xe9, 0x07, 0x0d, 0xdd, 0xa2, 0x25, 0x8d,
-	0xe7, 0x06, 0xa4, 0xe5, 0x52, 0xb0, 0x2c, 0xa3, 0x6d, 0x32, 0xdd, 0xa6, 0x77, 0x6e, 0x50, 0x3e,
-	0x6b, 0xad, 0x49, 0x15, 0xb0, 0x34, 0x69, 0x43, 0x67, 0xdc, 0x35, 0x2b, 0x07, 0x83, 0xac, 0x59,
-	0x2e, 0x53, 0xc6, 0x84, 0x55, 0x19, 0xb5, 0xb5, 0xc4, 0x37, 0xdb, 0x71, 0x4f, 0x88, 0xb8, 0xcf,
-	0x04, 0xfc, 0xe7, 0x77, 0x50, 0x3b, 0xf4, 0xb3, 0x0e, 0x03, 0xef, 0x3d, 0xd2, 0x8c, 0x2a, 0x6d,
-	0x3b, 0x07, 0x79, 0x59, 0xf6, 0x3b, 0x02, 0xec, 0xe1, 0x46, 0x9f, 0xd4, 0x58, 0x80, 0x31, 0xa9,
-	0xad, 0x24, 0x63, 0x60, 0x6f, 0x4c, 0x88, 0x8d, 0xa3, 0x52, 0xbe, 0x29, 0x43, 0x13, 0x20, 0x51,
-	0xb2, 0x03, 0x89, 0x52, 0x01, 0x12, 0xdd, 0x01, 0x49, 0x89, 0x52, 0x59, 0x98, 0x21, 0x62, 0x11,
-	0xc3, 0x7d, 0x69, 0xa8, 0x3a, 0xc4, 0xda, 0x0b, 0xf2, 0x1b, 0x82, 0xc9, 0x55, 0xba, 0xab, 0x35,
-	0x6b, 0x3c, 0x40, 0xa4, 0x78, 0x8f, 0x7b, 0x29, 0x96, 0x88, 0xa3, 0x58, 0x32, 0x96, 0x62, 0xa9,
-	0x18, 0x8a, 0xa5, 0x3b, 0x51, 0x6c, 0xa0, 0x1b, 0xc5, 0x06, 0xfd, 0x14, 0x23, 0xcb, 0x30, 0xb2,
-	0xa2, 0x31, 0xbd, 0xdc, 0x83, 0x3d, 0x67, 0x60, 0xc0, 0xa2, 0x1a, 0x33, 0x0d, 0xc7, 0x1a, 0x67,
-	0x65, 0x27, 0xd5, 0x6d, 0x93, 0x6b, 0x35, 0xe9, 0x98, 0x3e, 0xd3, 0x02, 0xb9, 0x0f, 0x13, 0xfe,
-	0xb7, 0xbb, 0xe2, 0x98, 0x80, 0x74, 0xd9, 0x6c, 0x1a, 0x5c, 0xc0, 0x48, 0xab, 0x72, 0x41, 0xfe,
-	0x44, 0x30, 0xb9, 0x6e, 0x94, 0x2d, 0x5a, 0xa7, 0xc6, 0x09, 0x93, 0xb0, 0x53, 0xb2, 0xba, 0x03,
-	0xa9, 0x1d, 0xb3, 0x72, 0xe8, 0xe4, 0xa8, 0x4b, 0x01, 0x7e, 0x45, 0x02, 0x2c, 0xac, 0x98, 0x95,
-	0x43, 0x55, 0xbc, 0xa6, 0xcc, 0x41, 0xca, 0x5e, 0xe1, 0x69, 0x9b, 0x09, 0xce, 0x5e, 0xe7, 0xa4,
-	0xb5, 0x05, 0xe4, 0x5b, 0x04, 0x63, 0x6b, 0xd4, 0x65, 0xe2, 0x09, 0x99, 0x39, 0x01, 0x69, 0xd3,
-	0xaa, 0x50, 0x4b, 0xd8, 0x98, 0x55, 0xe5, 0x22, 0x74, 0xc8, 0x32, 0x6d, 0xe3, 0xc9, 0x87, 0x70,
-	0xda, 0x85, 0xd5, 0x6f, 0x79, 0x70, 0xb5, 0x25, 0xe2, 0xb4, 0x25, 0xfd, 0xda, 0xf0, 0x18, 0x24,
-	0xf5, 0x8a, 0xac, 0x06, 0x59, 0xd5, 0xfe, 0x4b, 0x3e, 0x42, 0x80, 0xbd, 0x00, 0x4e, 0x2c, 0x29,
-	0xda, 0xb8, 0x0c, 0x93, 0xdf, 0x37, 0x9b, 0x46, 0x25, 0x97, 0xcc, 0x27, 0xed, 0xb3, 0xdd, 0x5a,
-	0x93, 0x5d, 0x18, 0x97, 0x55, 0xff, 0x64, 0xe3, 0x43, 0xde, 0x81, 0x09, 0xaf, 0x9e, 0x7e, 0x1d,
-	0xee, 0xb8, 0x2f, 0xd1, 0x76, 0xdf, 0x01, 0x8c, 0xae, 0x51, 0x6e, 0xe7, 0x8c, 0x7f, 0x96, 0x53,
-	0xe4, 0x3d, 0x38, 0xe5, 0x2a, 0xfe, 0x5b, 0x69, 0xb5, 0x95, 0x23, 0x93, 0xed, 0x1c, 0x49, 0x7e,
-	0x46, 0x70, 0x66, 0x8d, 0xf2, 0x65, 0xcb, 0x0e, 0xce, 0xbf, 0x72, 0x64, 0xae, 0xc0, 0x64, 0x95,
-	0xf2, 0x52, 0x4d, 0x63, 0xbc, 0xa4, 0xef, 0x96, 0x0c, 0x93, 0x97, 0x76, 0x05, 0x73, 0xe4, 0xf9,
-	0x39, 0x5d, 0xa5, 0x7c, 0x43, 0x63, 0x7c, 0x7d, 0xf7, 0xa1, 0x43, 0x21, 0x51, 0xe6, 0xb4, 0x2a,
-	0x2d, 0x31, 0xfd, 0x31, 0x75, 0x12, 0x7e, 0xc6, 0x16, 0x6c, 0xe9, 0x8f, 0x29, 0xf9, 0x1a, 0xc1,
-	0xc4, 0x1a, 0xe5, 0xdb, 0x66, 0xe3, 0x78, 0x81, 0x3f, 0x0f, 0x43, 0xe2, 0xe3, 0x46, 0xd3, 0x7e,
-	0xdb, 0xc9, 0xa2, 0x60, 0x8b, 0x1e, 0x0a, 0x49, 0x8c, 0x15, 0x1d, 0x31, 0xed, 0xc3, 0x59, 0x09,
-	0x69, 0x93, 0x5a, 0x65, 0x6a, 0x70, 0xad, 0xda, 0x6f, 0xfa, 0x3d, 0x07, 0xd0, 0x70, 0xdf, 0x75,
-	0x41, 0xb9, 0x92, 0x18, 0xe6, 0xfc, 0x98, 0x80, 0xb3, 0x0f, 0x9a, 0x35, 0xae, 0x47, 0x34, 0x1f,
-	0x51, 0x61, 0x43, 0x5d, 0x13, 0x7a, 0x22, 0x90, 0xd0, 0x3b, 0x76, 0x1c, 0x14, 0xb0, 0xec, 0x2a,
-	0xea, 0x36, 0x86, 0x56, 0x6f, 0x21, 0x73, 0xff, 0xcd, 0x60, 0x2a, 0x89, 0x86, 0x29, 0x7b, 0x0e,
-	0xf1, 0xd0, 0x69, 0x3c, 0xc6, 0x58, 0x40, 0xa2, 0x6c, 0xc0, 0x58, 0x70, 0x57, 0x74, 0x1f, 0x86,
-	0x09, 0x0c, 0x7b, 0xdc, 0x2a, 0xb3, 0x5a, 0x56, 0xf5, 0xc9, 0xc8, 0xaf, 0x09, 0xc8, 0x85, 0xc1,
-	0x74, 0x3d, 0x77, 0xf7, 0x61, 0x40, 0xe8, 0x68, 0xa5, 0xca, 0x42, 0x57, 0xfb, 0xe4, 0x27, 0x5b,
-	0x39, 0xd4, 0x79, 0x5b, 0x79, 0x89, 0x60, 0x40, 0x8a, 0xfe, 0x1b, 0x4d, 0xf8, 0x1c, 0xf8, 0x98,
-	0xba, 0x9a, 0xcb, 0x84, 0xe9, 0xbb, 0x4a, 0x5e, 0x20, 0x18, 0x17, 0x1e, 0x08, 0x64, 0xd0, 0xde,
-	0x49, 0x38, 0x0f, 0xa7, 0xfc, 0xe7, 0xa4, 0x95, 0x9b, 0x47, 0x7d, 0x07, 0x85, 0x1d, 0xa3, 0x2e,
-	0x3f, 0x4b, 0xc0, 0x84, 0x1f, 0x5c, 0xd7, 0x68, 0xaf, 0x04, 0xa2, 0xbd, 0x18, 0x15, 0xed, 0xc0,
-	0xe7, 0x82, 0x91, 0xfe, 0xa6, 0x1d, 0xe9, 0x90, 0x13, 0x23, 0x72, 0x40, 0x3b, 0x7d, 0x27, 0x3c,
-	0x01, 0x3c, 0x46, 0xa7, 0xec, 0x0b, 0x67, 0x3a, 0xd0, 0xf0, 0x7e, 0x86, 0x60, 0xd2, 0x2d, 0x07,
-	0xc7, 0xe9, 0x13, 0x23, 0xc7, 0xec, 0x5e, 0x72, 0x66, 0xca, 0x9f, 0x33, 0x97, 0x3e, 0x1e, 0x87,
-	0xec, 0xa6, 0x70, 0xea, 0xf2, 0xe6, 0x3a, 0x5e, 0x87, 0x21, 0xcf, 0xd5, 0x04, 0x3e, 0x53, 0x90,
-	0xf7, 0x18, 0x85, 0xd6, 0x3d, 0x46, 0xe1, 0xcd, 0x7a, 0x83, 0x1f, 0x2a, 0x24, 0x10, 0x87, 0xa8,
-	0xeb, 0x8c, 0xbb, 0x30, 0x20, 0xef, 0x29, 0x62, 0xbf, 0x12, 0x6c, 0x73, 0x02, 0xd7, 0x1a, 0x07,
-	0x70, 0x3a, 0x74, 0x6f, 0x81, 0xe7, 0x03, 0xef, 0xc4, 0xdd, 0x6c, 0x28, 0xd3, 0x81, 0x8d, 0xbe,
-	0xf9, 0x82, 0x4c, 0x3d, 0x7d, 0xf9, 0xc7, 0xf3, 0xc4, 0xe4, 0xe2, 0x78, 0xb1, 0x56, 0x3c, 0xf2,
-	0xfb, 0xfb, 0x09, 0xfe, 0x0a, 0xc1, 0x58, 0xf0, 0x9a, 0x01, 0xff, 0x2f, 0xf8, 0xbd, 0xe8, 0x7b,
-	0x08, 0xe5, 0x42, 0x64, 0xef, 0xe6, 0x1d, 0x8f, 0xc9, 0x55, 0xa1, 0xfc, 0xff, 0x8a, 0x12, 0xa1,
-	0xbc, 0x28, 0x59, 0x7b, 0xcb, 0x7f, 0xd9, 0x80, 0xbf, 0x47, 0x30, 0xe4, 0xd1, 0x86, 0x83, 0x5a,
-	0xc2, 0x19, 0x5d, 0x99, 0x0b, 0x6c, 0x89, 0x1c, 0x1c, 0xc9, 0xdb, 0x02, 0xcb, 0xaa, 0x72, 0x3d,
-	0x0a, 0x8b, 0xd3, 0x67, 0x16, 0x8f, 0x82, 0xc9, 0xc3, 0x81, 0x79, 0xcb, 0x37, 0xcd, 0xe2, 0xa7,
-	0x08, 0x86, 0xbd, 0x53, 0x14, 0x0e, 0xd2, 0x24, 0x62, 0x40, 0x53, 0x66, 0x3b, 0xee, 0x71, 0x50,
-	0x5e, 0x12, 0x28, 0x67, 0xf1, 0x85, 0x0e, 0x28, 0x2f, 0x8b, 0x09, 0x0c, 0x7f, 0x87, 0x60, 0xd4,
-	0x3f, 0xe0, 0xe0, 0xb9, 0x5e, 0xe6, 0x9f, 0x1e, 0xfd, 0xb5, 0x22, 0x90, 0xdc, 0x5e, 0x3a, 0x9e,
-	0xbf, 0xc4, 0x78, 0x85, 0xbf, 0x40, 0x90, 0x75, 0x07, 0x04, 0x7c, 0x3e, 0xa0, 0x37, 0x38, 0x52,
-	0xf5, 0x08, 0xec, 0x55, 0x01, 0xec, 0x0a, 0x2e, 0xf4, 0x07, 0x0c, 0xef, 0x03, 0xb4, 0x87, 0x15,
-	0x9c, 0x8f, 0x03, 0x13, 0xcb, 0xef, 0xf0, 0xa4, 0x43, 0x66, 0x05, 0x94, 0x19, 0x3c, 0xd5, 0x01,
-	0x0a, 0xfe, 0x1c, 0xc1, 0xb0, 0x77, 0x70, 0x08, 0x91, 0x25, 0x62, 0x7a, 0xe9, 0x72, 0xa8, 0x1d,
-	0x17, 0x2c, 0xf6, 0xeb, 0x82, 0x03, 0x18, 0xf1, 0x8d, 0x30, 0x78, 0xb6, 0x03, 0x14, 0xd6, 0x1b,
-	0x16, 0xc7, 0x07, 0x8b, 0x1d, 0x7d, 0xf0, 0x09, 0x82, 0x41, 0xa7, 0x7a, 0xe1, 0x99, 0xb0, 0x5f,
-	0x3d, 0x15, 0x5c, 0x39, 0x17, 0xf7, 0xd8, 0xd1, 0xf7, 0xba, 0xd0, 0x77, 0x03, 0x5f, 0xeb, 0x93,
-	0x97, 0xa2, 0xba, 0xbd, 0x40, 0x62, 0xf4, 0xf1, 0x0e, 0x27, 0xf8, 0x62, 0x58, 0x61, 0xc4, 0xf0,
-	0xd2, 0x4b, 0xba, 0xbb, 0x23, 0xa0, 0xdd, 0xc4, 0x37, 0xfa, 0x84, 0xa6, 0x09, 0x75, 0xf8, 0x4b,
-	0x24, 0x06, 0x42, 0x4f, 0xa9, 0x0c, 0x1d, 0xe8, 0xc8, 0x4a, 0xda, 0x47, 0x26, 0xc6, 0x97, 0xe2,
-	0x33, 0x71, 0xf1, 0x48, 0xfc, 0xba, 0x70, 0x3e, 0x45, 0x30, 0xe2, 0x9b, 0x7b, 0x42, 0x6c, 0x89,
-	0x9a, 0x8a, 0x7a, 0x01, 0x73, 0x59, 0x80, 0x99, 0xc7, 0x17, 0xa3, 0xc0, 0x70, 0xb3, 0x51, 0x3c,
-	0xf2, 0x0c, 0x4c, 0x4f, 0xf0, 0x73, 0x79, 0xfd, 0xe2, 0x9b, 0x76, 0x42, 0x55, 0x2a, 0x66, 0x1c,
-	0xea, 0x05, 0xce, 0x75, 0x01, 0xa7, 0x80, 0x5f, 0x89, 0x81, 0x73, 0xd9, 0x19, 0x8b, 0x8a, 0x47,
-	0xed, 0xf9, 0xe8, 0x09, 0xfe, 0x01, 0xc1, 0xb4, 0xa7, 0x18, 0x89, 0x06, 0xcd, 0x53, 0x9d, 0xc3,
-	0x75, 0x34, 0x66, 0x20, 0x51, 0xe6, 0x7b, 0x6c, 0xec, 0xc9, 0x6b, 0x02, 0xe7, 0x92, 0x32, 0x5d,
-	0xac, 0xc7, 0x26, 0x5e, 0x76, 0x2b, 0x62, 0x42, 0xc2, 0xcf, 0x10, 0xe4, 0x9c, 0x73, 0x14, 0xc6,
-	0x49, 0x3a, 0xb6, 0x9a, 0xd1, 0xb5, 0x2b, 0xaa, 0x1d, 0x25, 0x73, 0x02, 0xdf, 0x39, 0xdc, 0x11,
-	0xdf, 0xce, 0x80, 0xe8, 0x8d, 0xae, 0xfd, 0x15, 0x00, 0x00, 0xff, 0xff, 0x67, 0x11, 0x78, 0x6b,
-	0x88, 0x1a, 0x00, 0x00,
+	// 1756 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x59, 0xcf, 0x4f, 0x1b, 0xc7,
+	0x1e, 0xd7, 0xd8, 0x06, 0xec, 0xaf, 0x31, 0x21, 0x03, 0x24, 0xd6, 0x02, 0x89, 0x33, 0xc0, 0x83,
+	0xf0, 0x5e, 0xec, 0x40, 0x92, 0x97, 0xa7, 0xbc, 0x44, 0x29, 0x84, 0x86, 0x52, 0x91, 0x14, 0x2d,
+	0xb4, 0xaa, 0x9a, 0x83, 0xb5, 0xd8, 0x83, 0xb3, 0xc2, 0xde, 0xdd, 0xee, 0x8c, 0xa1, 0x04, 0xa5,
+	0x87, 0xf4, 0x67, 0xaa, 0x1e, 0xda, 0x46, 0xbd, 0xe4, 0x54, 0xe5, 0xd6, 0xde, 0x7a, 0xee, 0xff,
+	0x50, 0xa9, 0x8d, 0xd4, 0x5b, 0x6f, 0xbd, 0xf4, 0xbf, 0xa8, 0x76, 0x66, 0x6d, 0xef, 0xae, 0x77,
+	0x8d, 0x4d, 0x45, 0xab, 0x9e, 0xf0, 0x7c, 0x77, 0x7e, 0x7c, 0xe6, 0xf3, 0xfd, 0x3d, 0x40, 0xce,
+	0xb2, 0x4d, 0x6e, 0x16, 0x2c, 0xb3, 0xac, 0xd7, 0x6b, 0x05, 0xcd, 0xd2, 0x0b, 0x7b, 0x0b, 0xee,
+	0x28, 0x2f, 0x3e, 0xe1, 0x8c, 0x3b, 0xd2, 0x2c, 0x3d, 0xbf, 0xb7, 0xa0, 0x4c, 0x54, 0x4c, 0xb3,
+	0x52, 0xa5, 0x62, 0xaa, 0x66, 0x18, 0x26, 0xd7, 0xb8, 0x6e, 0x1a, 0x4c, 0x4e, 0x56, 0xc6, 0xdd,
+	0xaf, 0x62, 0xb4, 0x5d, 0xdf, 0x29, 0xd0, 0x9a, 0xc5, 0x0f, 0xe4, 0x47, 0x72, 0x13, 0x46, 0x5e,
+	0xa3, 0x5a, 0x95, 0x3f, 0xbc, 0xf3, 0x90, 0x96, 0x76, 0x55, 0xca, 0x2c, 0xd3, 0x60, 0x14, 0xcf,
+	0xc0, 0xd0, 0xbe, 0x69, 0xef, 0xea, 0x46, 0xa5, 0xc8, 0xb8, 0xad, 0x1b, 0x95, 0x2c, 0xca, 0xa1,
+	0xb9, 0x94, 0x9a, 0x71, 0xa5, 0x9b, 0x42, 0x48, 0x0a, 0x30, 0xb4, 0xc9, 0x35, 0x5e, 0x67, 0xcd,
+	0x85, 0x93, 0x00, 0xd4, 0xb6, 0x4d, 0xbb, 0x68, 0x6b, 0x9c, 0x8a, 0x45, 0x48, 0x4d, 0x09, 0x89,
+	0xaa, 0x71, 0x4a, 0x96, 0x20, 0xab, 0xd2, 0x9a, 0xb9, 0x47, 0xd7, 0xa9, 0x56, 0xa6, 0xf6, 0xb6,
+	0xa9, 0xd9, 0x65, 0x95, 0xbe, 0x5b, 0xa7, 0x8c, 0x3b, 0x67, 0x56, 0x5b, 0xd2, 0xa2, 0x5e, 0x6e,
+	0x9c, 0xe9, 0x91, 0xae, 0x95, 0xc9, 0x6d, 0x48, 0x6f, 0x96, 0x4c, 0x9b, 0xbe, 0x69, 0x31, 0x6a,
+	0x73, 0xac, 0x40, 0xd2, 0xaa, 0x6f, 0x57, 0xf5, 0xd2, 0xda, 0x8a, 0x3b, 0xbf, 0x39, 0xc6, 0xa3,
+	0xd0, 0xc7, 0x9c, 0xa9, 0xd9, 0x58, 0x0e, 0xcd, 0xc5, 0x55, 0x39, 0x20, 0x2b, 0x30, 0xe8, 0xd9,
+	0x80, 0xe1, 0xab, 0x30, 0x50, 0xa3, 0xb5, 0x6d, 0x6a, 0xb3, 0x2c, 0xca, 0xc5, 0xe7, 0xd2, 0x8b,
+	0x4a, 0xde, 0x47, 0x6f, 0xde, 0x33, 0x5b, 0x6d, 0x4c, 0x25, 0x3f, 0x20, 0x38, 0xbb, 0x5c, 0xaf,
+	0xee, 0x4a, 0xb9, 0x98, 0xc2, 0x7a, 0xbb, 0x09, 0x1e, 0x87, 0x94, 0x65, 0xd3, 0xbd, 0xa2, 0xad,
+	0x19, 0xbb, 0x02, 0x62, 0x52, 0x4d, 0x3a, 0x02, 0x55, 0x33, 0x76, 0x9d, 0x7b, 0x09, 0xb8, 0x5b,
+	0x5b, 0xeb, 0xd9, 0x78, 0x0e, 0xcd, 0xf5, 0xa9, 0xcd, 0x31, 0x7e, 0x05, 0x32, 0xe2, 0x77, 0xb1,
+	0x2e, 0xaf, 0x90, 0x4d, 0xe4, 0xd0, 0x5c, 0x7a, 0x71, 0x3c, 0x1a, 0x37, 0x53, 0x07, 0x99, 0x67,
+	0x44, 0x7e, 0x42, 0x30, 0x74, 0x4f, 0xdc, 0xa4, 0xa9, 0xb9, 0xae, 0x89, 0x44, 0x2e, 0x91, 0x0e,
+	0x7e, 0xdd, 0xe0, 0x45, 0xf9, 0x25, 0x2e, 0x28, 0x4e, 0xea, 0x86, 0xe4, 0x02, 0x63, 0x48, 0x88,
+	0x7b, 0x25, 0x04, 0x76, 0xf1, 0x1b, 0x4f, 0x41, 0xc6, 0xb9, 0x9f, 0x6e, 0xd6, 0x99, 0xbc, 0x74,
+	0x9f, 0xf8, 0x38, 0xd8, 0x10, 0x8a, 0x8b, 0x8f, 0x43, 0x8a, 0xbe, 0x67, 0xe9, 0x36, 0x2d, 0x6a,
+	0x3c, 0xdb, 0x2f, 0x6f, 0x2e, 0x05, 0x4b, 0x52, 0xdb, 0x26, 0xd3, 0x1d, 0xf3, 0xce, 0x0e, 0xc8,
+	0x6f, 0x8d, 0x31, 0x99, 0x72, 0x0d, 0xe3, 0xce, 0x43, 0xcd, 0xa8, 0xd0, 0x16, 0x66, 0xe4, 0x55,
+	0xfe, 0xaf, 0x08, 0xb0, 0x47, 0x65, 0x3d, 0x6a, 0x6c, 0x0e, 0x86, 0xa5, 0xfe, 0x8b, 0x92, 0x1a,
+	0x67, 0x62, 0x4c, 0x4c, 0x1c, 0x92, 0xf2, 0x0d, 0xc9, 0x58, 0x40, 0xb7, 0xf1, 0x0e, 0xba, 0x4d,
+	0x04, 0x74, 0x7b, 0x0b, 0xa4, 0xa6, 0x8a, 0x25, 0x71, 0x0d, 0x41, 0x51, 0x84, 0x49, 0xca, 0x8b,
+	0xaa, 0x69, 0xd6, 0x1a, 0x38, 0xfe, 0xbc, 0x65, 0x72, 0xad, 0x2a, 0x95, 0xdb, 0xa3, 0x45, 0x92,
+	0xbb, 0x30, 0xea, 0x5f, 0xed, 0xda, 0x46, 0x16, 0x06, 0x58, 0xbd, 0x54, 0xa2, 0x8c, 0x89, 0x75,
+	0x49, 0xb5, 0x31, 0x74, 0x58, 0x2e, 0x99, 0x75, 0x83, 0x0b, 0x1a, 0xfa, 0x54, 0x39, 0x20, 0xbf,
+	0x23, 0x18, 0x5b, 0x33, 0x4a, 0x36, 0xad, 0x51, 0xe3, 0x84, 0x89, 0xee, 0xe4, 0x27, 0xb7, 0x20,
+	0xb1, 0x6d, 0x96, 0x0f, 0x5c, 0xf7, 0xb8, 0x18, 0xe0, 0x30, 0x14, 0x60, 0x7e, 0xd9, 0x2c, 0x1f,
+	0xa8, 0x62, 0x99, 0x32, 0x0d, 0x09, 0x67, 0x84, 0x27, 0x1c, 0x3b, 0x77, 0xe7, 0xba, 0xd6, 0xd4,
+	0x12, 0x90, 0xaf, 0x11, 0x0c, 0xaf, 0x52, 0xde, 0xf0, 0xa6, 0x13, 0xba, 0xe6, 0x28, 0xf4, 0x99,
+	0x76, 0x99, 0xda, 0xe2, 0x8e, 0x29, 0x55, 0x0e, 0xda, 0x0c, 0x29, 0xd9, 0xba, 0x3c, 0xf9, 0x05,
+	0xc1, 0xd8, 0x0a, 0xdd, 0xd1, 0xea, 0x55, 0x1e, 0xf0, 0xf4, 0x68, 0x6d, 0x7a, 0x63, 0x40, 0x2c,
+	0x2a, 0x06, 0xc4, 0x23, 0x63, 0x40, 0x22, 0x22, 0x06, 0xf4, 0x75, 0x8a, 0x01, 0xfd, 0x47, 0xc5,
+	0x80, 0x01, 0x7f, 0x0c, 0x20, 0xef, 0xc3, 0xe9, 0x26, 0xdf, 0xbd, 0x86, 0xdc, 0x26, 0x8d, 0xb1,
+	0x28, 0x1a, 0xe3, 0x7e, 0x1a, 0xf1, 0x30, 0xc4, 0xf5, 0xb2, 0x8c, 0xb0, 0x29, 0xd5, 0xf9, 0x49,
+	0x3e, 0x40, 0x80, 0xbd, 0x00, 0x8e, 0x64, 0xf5, 0x7a, 0x2b, 0xc1, 0xc4, 0x44, 0x82, 0x99, 0x0c,
+	0x58, 0xa2, 0x5f, 0x3f, 0xcd, 0x1c, 0xe3, 0xe0, 0x32, 0x4c, 0x7e, 0xd7, 0xac, 0x1b, 0xe5, 0x6c,
+	0x3c, 0x17, 0x77, 0xd4, 0xd1, 0x18, 0x93, 0x1d, 0x18, 0x91, 0x99, 0xf4, 0x64, 0x0d, 0x8f, 0xbc,
+	0x01, 0xa3, 0xde, 0x73, 0x7a, 0x25, 0xdc, 0xa5, 0x2f, 0xd6, 0xa2, 0x6f, 0x09, 0x32, 0xcb, 0x1a,
+	0xd3, 0x4b, 0x5d, 0x10, 0x77, 0x06, 0xfa, 0x6d, 0xaa, 0x31, 0xd3, 0x70, 0xd7, 0xbb, 0x23, 0xb2,
+	0x0f, 0x43, 0xab, 0x94, 0x3b, 0x96, 0xf2, 0xd7, 0xfa, 0x1b, 0x79, 0x00, 0xa7, 0x9a, 0x07, 0xff,
+	0x29, 0x67, 0x6a, 0x78, 0x46, 0xbc, 0xe5, 0x19, 0xe4, 0x47, 0x04, 0x67, 0x56, 0x29, 0x5f, 0xb2,
+	0x1d, 0xfd, 0xfe, 0x2d, 0xe1, 0xe4, 0x32, 0x8c, 0x55, 0x28, 0x2f, 0x56, 0x35, 0xc6, 0x8b, 0xfa,
+	0x4e, 0xd1, 0x30, 0x79, 0x71, 0x47, 0x18, 0x9f, 0x8c, 0x2d, 0xa7, 0x2b, 0x94, 0xaf, 0x6b, 0x8c,
+	0xaf, 0xed, 0xdc, 0x77, 0xad, 0x50, 0xa4, 0x39, 0xad, 0x42, 0x8b, 0x4c, 0x7f, 0x44, 0x5d, 0x37,
+	0x4f, 0x3a, 0x82, 0x4d, 0xfd, 0x11, 0x25, 0x5f, 0x22, 0x18, 0x5d, 0xa5, 0x7c, 0xcb, 0xb4, 0x8e,
+	0x67, 0x3b, 0xe7, 0x21, 0x2d, 0x36, 0x37, 0xea, 0xce, 0x6a, 0x37, 0xc3, 0x80, 0x23, 0xba, 0x2f,
+	0x24, 0x11, 0xb7, 0xe8, 0x88, 0x69, 0x0f, 0xce, 0x4a, 0x48, 0x1b, 0xd4, 0x2e, 0x51, 0x83, 0x6b,
+	0x95, 0x5e, 0x53, 0xd3, 0x39, 0x00, 0xab, 0xb9, 0xb6, 0x09, 0xaa, 0x29, 0x89, 0xb0, 0x9c, 0xef,
+	0x63, 0x70, 0xf6, 0x5e, 0xbd, 0xca, 0xf5, 0x90, 0xe2, 0x23, 0x4c, 0x6d, 0xe8, 0xc8, 0x64, 0x17,
+	0x0b, 0x24, 0xbb, 0x8e, 0x15, 0x07, 0x05, 0x2c, 0xab, 0x8a, 0x9a, 0x83, 0xa1, 0x51, 0x5b, 0xc8,
+	0xbc, 0x78, 0x3d, 0x18, 0x8d, 0xc2, 0x61, 0xca, 0x9a, 0x43, 0x7c, 0x74, 0x0b, 0x8f, 0x61, 0x16,
+	0x90, 0x28, 0xeb, 0x30, 0x1c, 0x9c, 0x15, 0x5e, 0x87, 0x61, 0x02, 0x83, 0x1e, 0x5a, 0x65, 0x60,
+	0x4c, 0xa9, 0x3e, 0x19, 0xf9, 0x39, 0x06, 0xd9, 0x76, 0x30, 0x47, 0xfa, 0xdd, 0x5d, 0xe8, 0x17,
+	0x67, 0x34, 0xa2, 0x6d, 0xfe, 0xc8, 0xfb, 0xc9, 0x2d, 0x1b, 0x61, 0xd8, 0x5d, 0xad, 0xbc, 0x44,
+	0xd0, 0x2f, 0x45, 0xff, 0x8c, 0xda, 0x78, 0x1a, 0x7c, 0x96, 0xba, 0x92, 0x4d, 0xb6, 0x9b, 0xef,
+	0x0a, 0x79, 0x8e, 0x60, 0x44, 0x30, 0x10, 0x88, 0xa0, 0xdd, 0x1b, 0xe1, 0x2c, 0x9c, 0xf2, 0xfb,
+	0x49, 0x23, 0xbc, 0x0f, 0xf9, 0x1c, 0x85, 0x1d, 0xa3, 0x66, 0x79, 0x1a, 0x83, 0x51, 0x3f, 0xb8,
+	0x23, 0xb5, 0xbd, 0x1c, 0xd0, 0xf6, 0x7c, 0x98, 0xb6, 0x03, 0xdb, 0x05, 0x35, 0xfd, 0x55, 0x4b,
+	0xd3, 0x6d, 0x24, 0x86, 0xc4, 0x80, 0x56, 0xf8, 0x8e, 0x79, 0x14, 0x78, 0x8c, 0xfa, 0xc8, 0xa7,
+	0xce, 0xbe, 0x40, 0x99, 0xf3, 0x09, 0x82, 0xb1, 0x66, 0x3a, 0x38, 0x4e, 0x0d, 0x1d, 0xda, 0xfd,
+	0x76, 0x13, 0x33, 0x13, 0x81, 0x98, 0x59, 0x01, 0x2c, 0xd9, 0x59, 0xd7, 0x19, 0x3f, 0xc1, 0x7a,
+	0x67, 0xf1, 0xc3, 0x11, 0x48, 0x6d, 0x88, 0x99, 0x4b, 0x1b, 0x6b, 0x78, 0x0d, 0xd2, 0x9e, 0xa7,
+	0x09, 0x7c, 0x26, 0x2f, 0xdf, 0x31, 0xf2, 0x8d, 0x77, 0x8c, 0xfc, 0xab, 0x35, 0x8b, 0x1f, 0x28,
+	0x24, 0xb0, 0x79, 0xd8, 0x73, 0xc6, 0x6d, 0xe8, 0x97, 0xef, 0x14, 0x91, 0xbb, 0x04, 0x21, 0x06,
+	0x9e, 0x35, 0xf6, 0xe1, 0x74, 0xdb, 0xbb, 0x05, 0x9e, 0x0d, 0xac, 0x89, 0x7a, 0xd9, 0x50, 0x26,
+	0x02, 0x13, 0x7d, 0xf5, 0x0f, 0x19, 0x7f, 0xf2, 0xf2, 0xb7, 0x67, 0xb1, 0xb1, 0xf9, 0x91, 0x42,
+	0xb5, 0x70, 0xe8, 0x57, 0xec, 0x63, 0xfc, 0x05, 0x82, 0xe1, 0xe0, 0x33, 0x03, 0xfe, 0x57, 0x70,
+	0xbf, 0xf0, 0x77, 0x08, 0xe5, 0x42, 0x28, 0xef, 0x5e, 0x2d, 0x92, 0x05, 0x71, 0xf8, 0xbf, 0x15,
+	0x25, 0xe4, 0xf0, 0x82, 0x74, 0x8f, 0x1b, 0xfe, 0xc7, 0x06, 0xfc, 0x02, 0x41, 0xda, 0x73, 0x1a,
+	0x0e, 0x9e, 0xd2, 0x9e, 0x3a, 0x94, 0xe9, 0xc0, 0x94, 0xd0, 0xbe, 0x84, 0xbc, 0x2e, 0xb0, 0xac,
+	0x28, 0x57, 0xc3, 0xb0, 0xb8, 0x36, 0x52, 0x38, 0x0c, 0x46, 0x29, 0x17, 0xe6, 0x0d, 0x5f, 0xdb,
+	0x8c, 0x9f, 0x20, 0x18, 0xf4, 0xb6, 0xb2, 0x38, 0x68, 0x26, 0x21, 0x5d, 0xb2, 0x32, 0xd5, 0x71,
+	0x8e, 0x8b, 0xf2, 0xa2, 0x40, 0x39, 0x85, 0x2f, 0x74, 0x40, 0x79, 0x49, 0xb4, 0xc1, 0xf8, 0x1b,
+	0x04, 0x43, 0xfe, 0x2e, 0x13, 0x4f, 0x77, 0xd3, 0x84, 0x76, 0xc9, 0xd7, 0xb2, 0x40, 0x72, 0x73,
+	0xf1, 0x78, 0x7c, 0x89, 0x1e, 0x17, 0x7f, 0x86, 0x20, 0xd5, 0x6c, 0x66, 0xf0, 0xf9, 0xc0, 0xb9,
+	0xc1, 0xbe, 0xb6, 0x4b, 0x60, 0xff, 0x15, 0xc0, 0x2e, 0xe3, 0x7c, 0x6f, 0xc0, 0xf0, 0x1e, 0x40,
+	0xab, 0xb1, 0xc2, 0xb9, 0x28, 0x30, 0x91, 0xf6, 0xdd, 0xde, 0x95, 0x91, 0x29, 0x01, 0x65, 0x12,
+	0x8f, 0x77, 0x80, 0x82, 0x3f, 0x45, 0x30, 0xe8, 0x6d, 0x72, 0xda, 0x8c, 0x25, 0xa4, 0xd3, 0x3a,
+	0xc2, 0xa9, 0x5d, 0x0a, 0xe6, 0x7b, 0xa5, 0x60, 0x1f, 0x32, 0xbe, 0x76, 0x0b, 0x4f, 0x75, 0x80,
+	0xc2, 0xba, 0xc3, 0xe2, 0x72, 0x30, 0xdf, 0x91, 0x83, 0x8f, 0x10, 0x0c, 0xb8, 0x69, 0x12, 0x4f,
+	0xb6, 0xf3, 0xea, 0x29, 0x15, 0x94, 0x73, 0x51, 0x9f, 0xdd, 0xf3, 0xfe, 0x2f, 0xce, 0xbb, 0x86,
+	0xaf, 0xf4, 0x68, 0x97, 0x22, 0x8d, 0x3e, 0x47, 0xa2, 0xc7, 0xf2, 0x76, 0x41, 0x78, 0xa6, 0xfd,
+	0xc0, 0x90, 0x2e, 0xa9, 0x9b, 0x70, 0x77, 0x4b, 0x40, 0xbb, 0x8e, 0xaf, 0xf5, 0x08, 0x4d, 0x13,
+	0xc7, 0xe1, 0xcf, 0x91, 0xe8, 0x3c, 0x3d, 0x39, 0xb9, 0xcd, 0xa1, 0x43, 0x53, 0x76, 0x0f, 0x91,
+	0x18, 0x5f, 0x8c, 0x8e, 0xc4, 0x85, 0x43, 0xf1, 0xb7, 0x09, 0xe7, 0x63, 0x04, 0x19, 0x5f, 0x83,
+	0xd5, 0x66, 0x2d, 0x61, 0xed, 0x57, 0x37, 0x60, 0x2e, 0x09, 0x30, 0xb3, 0x78, 0x26, 0x0c, 0x0c,
+	0x37, 0xad, 0xc2, 0xa1, 0xa7, 0x33, 0x7b, 0x8c, 0x9f, 0xc9, 0x37, 0x30, 0x5f, 0x5b, 0xd5, 0x96,
+	0xa5, 0x22, 0xfa, 0xae, 0x6e, 0xe0, 0x5c, 0x15, 0x70, 0xf2, 0xf8, 0x3f, 0x11, 0x70, 0x2e, 0xb9,
+	0xfd, 0x57, 0xe1, 0xb0, 0xd5, 0x88, 0x3d, 0xc6, 0xdf, 0x22, 0x98, 0xf0, 0x24, 0x23, 0x51, 0x09,
+	0x7a, 0xb2, 0x73, 0x7b, 0x1e, 0x8d, 0xe8, 0x7c, 0x94, 0xd9, 0x2e, 0x3b, 0x08, 0xf2, 0x3f, 0x81,
+	0x73, 0x51, 0x99, 0x28, 0xd4, 0x22, 0x03, 0x2f, 0xbb, 0x11, 0xd2, 0x8a, 0xe1, 0xa7, 0x08, 0xb2,
+	0xae, 0x1f, 0xb5, 0xe3, 0x24, 0x1d, 0x6b, 0xda, 0xf0, 0xdc, 0x15, 0x56, 0xf7, 0x92, 0x69, 0x81,
+	0xef, 0x1c, 0xee, 0x88, 0x6f, 0xf9, 0x01, 0xcc, 0x94, 0xcc, 0x5a, 0x9e, 0x9b, 0xd6, 0x8e, 0x4d,
+	0x69, 0x45, 0xab, 0x51, 0xd6, 0xd8, 0xdc, 0x77, 0xc6, 0x72, 0x5a, 0x16, 0x6b, 0x1b, 0x4e, 0x29,
+	0xb5, 0x81, 0xde, 0xf1, 0xff, 0x57, 0xea, 0x45, 0x2c, 0xbe, 0xb1, 0xf4, 0xf6, 0x77, 0xb1, 0x8c,
+	0x9c, 0x94, 0x5f, 0xb2, 0xf4, 0xfc, 0x5b, 0x0b, 0xdb, 0xfd, 0xa2, 0xf0, 0xba, 0xf2, 0x47, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0xdd, 0x80, 0x51, 0x6d, 0xe5, 0x1a, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -2084,23 +2101,42 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type PodiumAPIClient interface {
+	// HealthCheck verifies and returns service health.
 	HealthCheck(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error)
+	// Status allows to clients to know additional information about Podium execution.
+	// Currently only returns error rate of the service.
 	Status(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
+	// RemoveLeaderboard removes a specified leaderboard.
 	RemoveLeaderboard(ctx context.Context, in *RemoveLeaderboardRequest, opts ...grpc.CallOption) (*BasicResponse, error)
+	// BulkUpsertScores allows clients to send multiple scores in a single request.
 	BulkUpsertScores(ctx context.Context, in *BulkUpsertScoresRequest, opts ...grpc.CallOption) (*MemberListResponse, error)
+	// UpsertScore submits a single leaderboard score to Podium.
 	UpsertScore(ctx context.Context, in *UpsertScoreRequest, opts ...grpc.CallOption) (*DefaultMemberResponse, error)
+	// TotalMembers returns the number of members on a leaderboard.
 	TotalMembers(ctx context.Context, in *TotalMembersRequest, opts ...grpc.CallOption) (*TotalMembersResponse, error)
+	// IncrementScore increments a member score.
 	IncrementScore(ctx context.Context, in *IncrementScoreRequest, opts ...grpc.CallOption) (*DefaultMemberResponse, error)
+	// GetMember retrieves leaderboard information from a member.
 	GetMember(ctx context.Context, in *GetMemberRequest, opts ...grpc.CallOption) (*DefaultMemberResponse, error)
+	// GetMembers retrieves information about multiple members of a leaderboard.
 	GetMembers(ctx context.Context, in *GetMembersRequest, opts ...grpc.CallOption) (*GetMembersResponse, error)
+	// RemoveMember removes a member from a leaderboard.
 	RemoveMember(ctx context.Context, in *RemoveMemberRequest, opts ...grpc.CallOption) (*BasicResponse, error)
+	// RemoveMembers allow the removal of multiple members of a leaderboard.
 	RemoveMembers(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*BasicResponse, error)
+	// GetRank retrieves ranking information about a member.
 	GetRank(ctx context.Context, in *GetRankRequest, opts ...grpc.CallOption) (*GetRankResponse, error)
+	// GetAroundMember retrieves the closest members to another member on the leaderboard.
 	GetAroundMember(ctx context.Context, in *GetAroundMemberRequest, opts ...grpc.CallOption) (*MemberListResponse, error)
+	// GetAroundScore retrieves the closest members to a score on the leaderboard.
 	GetAroundScore(ctx context.Context, in *GetAroundScoreRequest, opts ...grpc.CallOption) (*MemberListResponse, error)
+	// GetTopMembers retrieves the top ranking members of a leaderboard.
 	GetTopMembers(ctx context.Context, in *GetTopMembersRequest, opts ...grpc.CallOption) (*MemberListResponse, error)
+	// GetTopPercentage retrieves a percentage of the top members of the leaderboard.
 	GetTopPercentage(ctx context.Context, in *GetTopPercentageRequest, opts ...grpc.CallOption) (*MemberListResponse, error)
+	// UpsertScoreMultiLeaderboards sends a member score to multiple leaderboards.
 	UpsertScoreMultiLeaderboards(ctx context.Context, in *MultiUpsertScoreRequest, opts ...grpc.CallOption) (*MultiUpsertScoreResponse, error)
+	// GetRankMultiLeaderboards retrieves information about a member in multiple leaderboards.
 	GetRankMultiLeaderboards(ctx context.Context, in *MultiGetRankRequest, opts ...grpc.CallOption) (*MultiGetRankResponse, error)
 }
 
@@ -2276,23 +2312,42 @@ func (c *podiumAPIClient) GetRankMultiLeaderboards(ctx context.Context, in *Mult
 
 // PodiumAPIServer is the server API for PodiumAPI service.
 type PodiumAPIServer interface {
+	// HealthCheck verifies and returns service health.
 	HealthCheck(context.Context, *empty.Empty) (*HealthCheckResponse, error)
+	// Status allows to clients to know additional information about Podium execution.
+	// Currently only returns error rate of the service.
 	Status(context.Context, *empty.Empty) (*StatusResponse, error)
+	// RemoveLeaderboard removes a specified leaderboard.
 	RemoveLeaderboard(context.Context, *RemoveLeaderboardRequest) (*BasicResponse, error)
+	// BulkUpsertScores allows clients to send multiple scores in a single request.
 	BulkUpsertScores(context.Context, *BulkUpsertScoresRequest) (*MemberListResponse, error)
+	// UpsertScore submits a single leaderboard score to Podium.
 	UpsertScore(context.Context, *UpsertScoreRequest) (*DefaultMemberResponse, error)
+	// TotalMembers returns the number of members on a leaderboard.
 	TotalMembers(context.Context, *TotalMembersRequest) (*TotalMembersResponse, error)
+	// IncrementScore increments a member score.
 	IncrementScore(context.Context, *IncrementScoreRequest) (*DefaultMemberResponse, error)
+	// GetMember retrieves leaderboard information from a member.
 	GetMember(context.Context, *GetMemberRequest) (*DefaultMemberResponse, error)
+	// GetMembers retrieves information about multiple members of a leaderboard.
 	GetMembers(context.Context, *GetMembersRequest) (*GetMembersResponse, error)
+	// RemoveMember removes a member from a leaderboard.
 	RemoveMember(context.Context, *RemoveMemberRequest) (*BasicResponse, error)
+	// RemoveMembers allow the removal of multiple members of a leaderboard.
 	RemoveMembers(context.Context, *RemoveMembersRequest) (*BasicResponse, error)
+	// GetRank retrieves ranking information about a member.
 	GetRank(context.Context, *GetRankRequest) (*GetRankResponse, error)
+	// GetAroundMember retrieves the closest members to another member on the leaderboard.
 	GetAroundMember(context.Context, *GetAroundMemberRequest) (*MemberListResponse, error)
+	// GetAroundScore retrieves the closest members to a score on the leaderboard.
 	GetAroundScore(context.Context, *GetAroundScoreRequest) (*MemberListResponse, error)
+	// GetTopMembers retrieves the top ranking members of a leaderboard.
 	GetTopMembers(context.Context, *GetTopMembersRequest) (*MemberListResponse, error)
+	// GetTopPercentage retrieves a percentage of the top members of the leaderboard.
 	GetTopPercentage(context.Context, *GetTopPercentageRequest) (*MemberListResponse, error)
+	// UpsertScoreMultiLeaderboards sends a member score to multiple leaderboards.
 	UpsertScoreMultiLeaderboards(context.Context, *MultiUpsertScoreRequest) (*MultiUpsertScoreResponse, error)
+	// GetRankMultiLeaderboards retrieves information about a member in multiple leaderboards.
 	GetRankMultiLeaderboards(context.Context, *MultiGetRankRequest) (*MultiGetRankResponse, error)
 }
 
