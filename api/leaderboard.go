@@ -31,24 +31,6 @@ var notFoundError = "Could not find data for member"
 var noPageSizeProvidedError = "strconv.ParseInt: parsing \"\": invalid syntax"
 var defaultPageSize = 20
 
-func serializeMember(member *leaderboard.Member, position int, includeTTL bool) map[string]interface{} {
-	memberData := map[string]interface{}{
-		"publicID": member.PublicID,
-		"score":    member.Score,
-		"rank":     member.Rank,
-	}
-	if member.PreviousRank != 0 {
-		memberData["previousRank"] = member.PreviousRank
-	}
-	if position >= 0 {
-		memberData["position"] = position
-	}
-	if includeTTL {
-		memberData["expireAt"] = member.ExpireAt
-	}
-	return memberData
-}
-
 func validateBulkUpsertScoresRequest(in *api.BulkUpsertScoresRequest) error {
 	for _, m := range in.ScoreUpserts.Members {
 		if m.PublicID == "" {

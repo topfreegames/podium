@@ -469,13 +469,3 @@ func (app *App) GracefullStop() {
 		}
 	}
 }
-
-func (app *App) closeAll(ctx context.Context) {
-	if app.httpServer != nil {
-		_ = app.httpServer.Shutdown(ctx)
-		_ = app.httpServer.Close()
-	}
-	if app.grpcServer != nil {
-		app.grpcServer.GracefulStop()
-	}
-}
