@@ -144,7 +144,7 @@ func initializeTestServer(app *api.App) {
 }
 
 func shutdownTestServer(app *api.App) {
-	app.Stop()
+	app.GracefullStop()
 }
 
 func getRequest(app *api.App, method, url, body string) *http.Request {
@@ -233,7 +233,7 @@ func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
 	}()
 	err := app.WaitForReady(1 * time.Second)
 	Expect(err).NotTo(HaveOccurred())
-	defer app.Stop()
+	defer app.GracefullStop()
 
 	conn, err := grpc.Dial(app.GRPCEndpoint, grpc.WithInsecure())
 	Expect(err).NotTo(HaveOccurred())

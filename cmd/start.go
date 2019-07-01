@@ -47,7 +47,6 @@ var startCmd = &cobra.Command{
 			grpcPort,
 			ConfigFile,
 			debug,
-			fast,
 			logger,
 		)
 

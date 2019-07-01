@@ -100,7 +100,7 @@ func measure(description string, setup func(map[string]interface{}), f func(stri
 			loops++
 			if loops == 200 {
 				transport.CloseIdleConnections()
-				app.Stop()
+				app.GracefullStop()
 			}
 		})
 

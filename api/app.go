@@ -67,8 +67,9 @@ type App struct {
 	DDStatsD             *extnethttpmiddleware.DogStatsD
 }
 
-// GetApp returns a new podium Application
-func GetApp(host string, httpPort, grpcPort int, configPath string, debug, fast bool, logger zap.Logger) (*App, error) {
+// GetApp returns a new podium Application.
+// If httpPort is sent as zero, a random port will be selected (the same will happen for grpcPort)
+func GetApp(host string, httpPort, grpcPort int, configPath string, debug bool, logger zap.Logger) (*App, error) {
 	app := &App{
 		Host:       host,
 		HTTPPort:   httpPort,
@@ -439,6 +440,8 @@ func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
 	}
 }
 
+// WaitForReady blocks until App is ready to serve requests or the timeout is reached.
+// An error is returned on timeout.
 func (app *App) WaitForReady(d time.Duration) error {
 	isReady := func(c chan bool) bool {
 		select {
@@ -455,7 +458,8 @@ func (app *App) WaitForReady(d time.Duration) error {
 	return fmt.Errorf("timed out waiting for endpoints")
 }
 
-func (app *App) Stop() {
+// GracefulStop attempts to stop the server.
+func (app *App) GracefullStop() {
 	if app.grpcServer != nil {
 		app.grpcServer.GracefulStop()
 	}
