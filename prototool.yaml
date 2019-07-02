@@ -8,7 +8,6 @@ protoc:
   includes:
     - vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
 
-
 lint:
   group: uber2
   java_package_prefix: 'com.topfreegames.podium'

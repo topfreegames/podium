@@ -40,17 +40,6 @@ func validateBulkUpsertScoresRequest(in *api.BulkUpsertScoresRequest) error {
 	return nil
 }
 
-func newDefaultMemberResponse(member *leaderboard.Member) *api.DefaultMemberResponse {
-	return &api.DefaultMemberResponse{
-		Success:      true,
-		PublicID:     member.PublicID,
-		Score:        float64(member.Score),
-		Rank:         int32(member.Rank),
-		PreviousRank: int32(member.PreviousRank),
-		ExpireAt:     int32(member.ExpireAt),
-	}
-}
-
 // BulkUpsertMembersScoreHandler is the handler responsible for creating or updating members score
 func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRequest) (*api.BulkUpsertScoresResponse, error) {
 	if err := validateBulkUpsertScoresRequest(in); err != nil {
@@ -87,10 +76,10 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 		return nil, err
 	}
 
-	responses := make([]*api.MemberResponse, len(in.MemberScores.Members))
+	responses := make([]*api.BulkUpsertScoresResponse_Member, len(in.MemberScores.Members))
 
 	for i, m := range members {
-		responses[i] = &api.MemberResponse{
+		responses[i] = &api.BulkUpsertScoresResponse_Member{
 			PublicID:     m.PublicID,
 			Score:        float64(m.Score),
 			Rank:         int32(m.Rank),
@@ -111,7 +100,7 @@ func getScoreTTL(scoreTTL int32) string {
 }
 
 // UpsertScore is the handler responsible for creating or updating the member score
-func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*api.DefaultMemberResponse, error) {
+func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*api.UpsertScoreResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "UpsertScore"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -143,11 +132,18 @@ func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*a
 		return nil, err
 	}
 
-	return newDefaultMemberResponse(member), nil
+	return &api.UpsertScoreResponse{
+		Success:      true,
+		PublicID:     member.PublicID,
+		Score:        float64(member.Score),
+		Rank:         int32(member.Rank),
+		PreviousRank: int32(member.PreviousRank),
+		ExpireAt:     int32(member.ExpireAt),
+	}, nil
 }
 
 // IncrementMemberScore is the handler responsible for incrementing the member score
-func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreRequest) (*api.DefaultMemberResponse, error) {
+func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreRequest) (*api.IncrementScoreResponse, error) {
 	if in.Body.Increment == 0 {
 		return nil, status.New(codes.InvalidArgument, "increment is required").Err()
 	}
@@ -181,7 +177,14 @@ func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreReques
 		return nil, err
 	}
 
-	return newDefaultMemberResponse(member), nil
+	return &api.IncrementScoreResponse{
+		Success:      true,
+		PublicID:     member.PublicID,
+		Score:        float64(member.Score),
+		Rank:         int32(member.Rank),
+		PreviousRank: int32(member.PreviousRank),
+		ExpireAt:     int32(member.ExpireAt),
+	}, nil
 }
 
 //RemoveMemberHandler removes a member from a leaderboard
@@ -251,7 +254,7 @@ func (app *App) RemoveMembers(ctx context.Context, in *api.RemoveMembersRequest)
 }
 
 // GetMember is the handler responsible for retrieving a member score and rank
-func (app *App) GetMember(ctx context.Context, in *api.GetMemberRequest) (*api.DefaultMemberResponse, error) {
+func (app *App) GetMember(ctx context.Context, in *api.GetMemberRequest) (*api.GetMemberResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "GetMember"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -284,7 +287,14 @@ func (app *App) GetMember(ctx context.Context, in *api.GetMemberRequest) (*api.D
 		return nil, err
 	}
 
-	return newDefaultMemberResponse(member), nil
+	return &api.GetMemberResponse{
+		Success:      true,
+		PublicID:     member.PublicID,
+		Score:        float64(member.Score),
+		Rank:         int32(member.Rank),
+		PreviousRank: int32(member.PreviousRank),
+		ExpireAt:     int32(member.ExpireAt),
+	}, nil
 }
 
 // GetRank is the handler responsible for retrieving a member rank
@@ -430,7 +440,7 @@ func (app *App) GetAroundMember(ctx context.Context, in *api.GetAroundMemberRequ
 
 	return &api.GetAroundMemberResponse{
 		Success: true,
-		Members: newMemberResponseList(members),
+		Members: newMemberRankResponseList(members),
 	}, nil
 }
 
@@ -487,7 +497,7 @@ func (app *App) GetAroundScore(ctx context.Context, in *api.GetAroundScoreReques
 
 	return &api.GetAroundScoreResponse{
 		Success: true,
-		Members: newMemberResponseList(members),
+		Members: newMemberRankResponseList(members),
 	}, nil
 }
 
@@ -567,7 +577,7 @@ func (app *App) GetTopMembers(ctx context.Context, in *api.GetTopMembersRequest)
 
 	return &api.GetTopMembersResponse{
 		Success: true,
-		Members: newMemberResponseList(members),
+		Members: newMemberRankResponseList(members),
 	}, nil
 }
 
@@ -614,8 +624,22 @@ func (app *App) GetTopPercentage(ctx context.Context, in *api.GetTopPercentageRe
 
 	return &api.GetTopPercentageResponse{
 		Success: true,
-		Members: newMemberResponseList(members),
+		Members: newMemberRankResponseList(members),
 	}, nil
+}
+
+func newGetMembersResponseList(members leaderboard.Members) []*api.GetMembersResponse_Member {
+	list := make([]*api.GetMembersResponse_Member, len(members))
+	for i, m := range members {
+		list[i] = &api.GetMembersResponse_Member{
+			PublicID: m.PublicID,
+			Score:    float64(m.Score),
+			Rank:     int32(m.Rank),
+			ExpireAt: int32(m.ExpireAt),
+			Position: int32(i),
+		}
+	}
+	return list
 }
 
 // GetMembers retrieves several members at once
@@ -673,21 +697,18 @@ func (app *App) GetMembers(ctx context.Context, in *api.GetMembersRequest) (*api
 
 	return &api.GetMembersResponse{
 		Success:  true,
-		Members:  newMemberResponseList(members),
+		Members:  newGetMembersResponseList(members),
 		NotFound: notFound,
 	}, nil
 }
 
-func newMemberResponseList(members leaderboard.Members) []*api.MemberResponse {
-	list := make([]*api.MemberResponse, len(members))
+func newMemberRankResponseList(members leaderboard.Members) []*api.Member {
+	list := make([]*api.Member, len(members))
 	for i, m := range members {
-		list[i] = &api.MemberResponse{
-			PublicID:     m.PublicID,
-			Score:        float64(m.Score),
-			Rank:         int32(m.Rank),
-			PreviousRank: int32(m.PreviousRank),
-			ExpireAt:     int32(m.ExpireAt),
-			Position:     int32(i),
+		list[i] = &api.Member{
+			PublicID: m.PublicID,
+			Score:    float64(m.Score),
+			Rank:     int32(m.Rank),
 		}
 	}
 	return list

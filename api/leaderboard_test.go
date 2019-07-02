@@ -175,7 +175,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				req := &pb.BulkUpsertScoresRequest{
 					LeaderboardId: testLeaderboardID,
 					MemberScores: &pb.BulkUpsertScoresRequest_MemberScores{
-						Members: []*pb.MemberScore{
+						Members: []*pb.BulkUpsertScoresRequest_MemberScore{
 							{PublicID: "memberpublicid1", Score: 150},
 							{PublicID: "memberpublicid2", Score: 100},
 						},
@@ -430,7 +430,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				req := &pb.UpsertScoreRequest{
 					LeaderboardId:  testLeaderboardID,
 					MemberPublicId: "memberpublicid",
-					ScoreChange:    &pb.ScoreChange{Score: 100},
+					ScoreChange:    &pb.UpsertScoreRequest_ScoreChange{Score: 100},
 				}
 
 				resp, err := cli.UpsertScore(context.Background(), req)

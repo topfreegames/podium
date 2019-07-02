@@ -9,7 +9,6 @@ option java_outer_classname = "PodiumProto";
 option java_package = "com.topfreegames.podium.api.v1";
 option objc_class_prefix = "PAX";
 
-
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
@@ -40,7 +39,7 @@ service Podium {
   }
 
   // UpsertScore submits a single leaderboard score to Podium.
-  rpc UpsertScore(UpsertScoreRequest) returns (DefaultMemberResponse) {
+  rpc UpsertScore(UpsertScoreRequest) returns (UpsertScoreResponse) {
     option (google.api.http) = {
       put: "/l/{leaderboard_id}/members/{member_public_id}/score"
       body: "score_change"
@@ -55,7 +54,7 @@ service Podium {
   }
 
   // IncrementScore increments a member score.
-  rpc IncrementScore(IncrementScoreRequest) returns (DefaultMemberResponse) {
+  rpc IncrementScore(IncrementScoreRequest) returns (IncrementScoreResponse) {
     option (google.api.http) = {
       patch: "/l/{leaderboard_id}/members/{member_public_id}/score"
       body: "body"
@@ -63,7 +62,7 @@ service Podium {
   }
 
   // GetMember retrieves leaderboard information from a member.
-  rpc GetMember(GetMemberRequest) returns (DefaultMemberResponse) {
+  rpc GetMember(GetMemberRequest) returns (GetMemberResponse) {
     option (google.api.http) = {
       get: "/l/{leaderboard_id}/members/{member_public_id}"
     };
@@ -145,12 +144,12 @@ message HealthCheckRequest {}
 
 message HealthCheckResponse {
 
-  // the string configured on healthcheck.workingText to represent that the service is up
+  // The string configured on healthcheck.workingText to represent that the service is up.
   string working_string = 1;
 }
 
 message StatusResponse {
-  // Rate of errors per second
+  // Rate of errors per second.
   double error_rate = 1;
 }
 
@@ -158,20 +157,28 @@ message RemoveLeaderboardRequest {
   string leaderboard_id = 1;
 }
 
-// MemberScore allow to provide score information about a single member.
-message MemberScore {
-  string publicID = 1;
-
-  // score can store values from -9007199254740992 and 9007199254740992
-  double score = 2;
-}
-
 message BulkUpsertScoresRequest {
+
+  // The leaderboard identification.
   string leaderboard_id = 1;
+
+  // If set to true, it will also return the previous rank of the player in the leaderboard.
+  // -1 if the player didn’t exist in the leaderboard.
   bool prev_rank = 2;
 
-  // time to live of score, defined in number of seconds. A zero value will make the score live forever.
+  // If set to more than zero, the score of the player will be expired from the leaderboard past scoreTTL seconds.
   int32 scoreTTL = 3;
+
+  // MemberScore allow to provide score information about a single member.
+  message MemberScore {
+
+    //TODO: use json_name on variables like this to respect .proto naming format.
+    string publicID = 1;
+
+    // Score can store integer values from -9007199254740992 and 9007199254740992.
+    // Although the score type is double, internally the service converts this number to a int64 format.
+    double score = 2;
+  }
 
   // ScoreUpserts represent multiple score submissions.
   message MemberScores {
@@ -181,26 +188,32 @@ message BulkUpsertScoresRequest {
   MemberScores member_scores = 4;
 }
 
-// MemberResponse represents the full leaderboard information about a member.
-message MemberResponse {
+//TODO: Create a single Member structure and make all requests use the same structure (document parts of the requests that are not returned)
+// Member is a basic payload for a leaderboard member used by some responses.
+message Member {
   string publicID = 1;
   double score = 2;
-  int32 rank = 4;
-  int32 previous_rank = 5;
-  int32 expire_at = 6;
-  int32 position = 7;
-}
-
-// ScoreChange is the score payload when upserting a score.
-message ScoreChange {
-  double score = 1;
+  int32 rank = 3;
 }
 
 message UpsertScoreRequest {
+  // The leaderboard identification.
   string leaderboard_id = 1;
+
+  // The member identification.
   string member_public_id = 2;
+
+  // If set to true, it will also return the previous rank of the player in the leaderboard.
   bool prev_rank = 3;
+
+  // If set to more than zero, the score of the player will be expired from the leaderboard past scoreTTL seconds.
   int32 scoreTTL = 4;
+
+  // ScoreChange is the score payload when upserting a score.
+  message ScoreChange {
+    double score = 1;
+  }
+
   ScoreChange score_change = 5;
 }
 
@@ -214,8 +227,13 @@ message TotalMembersResponse {
 }
 
 message IncrementScoreRequest {
+  // The leaderboard identification.
   string leaderboard_id = 1;
+
+  // The member identification.
   string member_public_id = 2;
+
+  // If set to more than zero, the score of the player will be expired from the leaderboard past scoreTTL seconds.
   int32 scoreTTL = 3;
 
   // Body represents the increment payload.
@@ -232,12 +250,42 @@ message GetMemberRequest {
   bool scoreTTL = 4;
 }
 
-message DefaultMemberResponse {
+message UpsertScoreResponse {
+  bool success = 1;
+  string publicID = 2;
+  double score = 3;
+  int32 rank = 4;
+
+  // The previous rank of the player in the leaderboard, if requested.
+  int32 previous_rank = 5;
+
+  // Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
+  int32 expire_at = 6;
+}
+
+message IncrementScoreResponse {
+  bool success = 1;
+  string publicID = 2;
+  double score = 3;
+  int32 rank = 4;
+
+  // The previous rank of the player in the leaderboard, if requested.
+  int32 previous_rank = 5;
+
+  // Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
+  int32 expire_at = 6;
+}
+
+message GetMemberResponse {
   bool success = 1;
   string publicID = 2;
   double score = 3;
   int32 rank = 5;
+
+  // The previous rank of the player in the leaderboard, if requested.
   int32 previous_rank = 6;
+
+  // Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
   int32 expire_at = 7;
 }
 
@@ -250,8 +298,22 @@ message GetMembersRequest {
 
 message GetMembersResponse {
   bool success = 1;
-  repeated MemberResponse members = 2;
-  repeated string notFound = 3;
+
+  // Member information returned for GetMembers request.
+  message Member {
+    string publicID = 1;
+    double score = 2;
+    int32 rank = 3;
+
+    // Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
+    int32 expire_at = 5;
+
+    // Member rank for all members returned in this request.
+    int32 position = 6;
+  }
+
+  repeated Member members = 2;
+  repeated string not_found = 3;
 }
 
 message RemoveMemberRequest {
@@ -260,29 +322,47 @@ message RemoveMemberRequest {
 }
 
 message RemoveMembersRequest {
+  // The leaderboard identification.
   string leaderboard_id = 1;
+
+  // Comma separated member id list (ex: ids="memberPublicID1,memberPublicID2,...")
   string ids = 2;
 }
 
 message RemoveLeaderboardResponse {
+  // If the request was successfull.
   bool success = 1;
+
+  // If the request failed the reason (as a error message) is written here.
   string reason = 2;
 }
 
 message RemoveMemberResponse {
+  // If the request was successfull.
   bool success = 1;
+
+  // If the request failed the reason (as a error message) is written here.
   string reason = 2;
 }
 
 message RemoveMembersResponse {
+  // If the request was successfull.
   bool success = 1;
+
+  // If the request failed the reason (as a error message) is written here.
   string reason = 2;
 }
 
-//
+// Message to retrieve the rank of a member
 message GetRankRequest {
+
+  // The leaderboard identification.
   string leaderboard_id = 1;
+
+  // The member identification.
   string member_public_id = 2;
+
+  // If set to asc, will treat the ranking with ascending scores (less is best).
   string order = 3;
 }
 
@@ -334,7 +414,11 @@ message UpsertScoreMultiLeaderboardsResponse {
     string publicID = 1;
     double score = 2;
     int32 rank = 4;
+
+    // The previous rank of the player in the leaderboard, if requested.
     int32 previous_rank = 5;
+
+    // Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
     int32 expire_at = 6;
     string leaderboardID = 8;
   }
@@ -370,25 +454,39 @@ message GetAroundScoreRequest {
 
 message BulkUpsertScoresResponse {
   bool success = 1;
-  repeated MemberResponse members = 2;
+
+  // Member information returned for BulkUpsertScores request.
+  message Member {
+    string publicID = 1;
+    double score = 2;
+    int32 rank = 3;
+
+    // The previous rank of the player in the leaderboard, if requested.
+    int32 previous_rank = 4;
+
+    // Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
+    int32 expire_at = 5;
+  }
+
+  repeated Member members = 2;
 }
 
 message GetAroundMemberResponse {
   bool success = 1;
-  repeated MemberResponse members = 2;
+  repeated Member members = 2;
 }
 
 message GetAroundScoreResponse {
   bool success = 1;
-  repeated MemberResponse members = 2;
+  repeated Member members = 2;
 }
 
 message GetTopMembersResponse {
   bool success = 1;
-  repeated MemberResponse members = 2;
+  repeated Member members = 2;
 }
 
 message GetTopPercentageResponse {
   bool success = 1;
-  repeated MemberResponse members = 2;
+  repeated Member members = 2;
 }
