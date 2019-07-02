@@ -170,7 +170,7 @@ message BulkUpsertScoresRequest {
   string leaderboard_id = 1;
   bool prev_rank = 2;
 
-
+  // time to live of score, defined in number of seconds. A zero value will make the score live forever.
   int32 scoreTTL = 3;
 
   // ScoreUpserts represent multiple score submissions.

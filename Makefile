@@ -22,7 +22,6 @@ clear-hooks:
 
 setup: setup-hooks
 	@GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
-	@go get github.com/mailru/easyjson/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
 	@dep ensure
@@ -35,11 +34,11 @@ build:
 	@go build -o ./bin/podium ./main.go
 
 # run app
-run: schema-update redis
+run: redis
 	@go run main.go start
 
 # run app
-run-prod: schema-update redis build
+run-prod: redis build
 	@./bin/podium start -q -f -c ./config/local.yaml
 
 # get a redis instance up (localhost:1212)
@@ -59,7 +58,7 @@ redis-shutdown:
 redis-clear:
 	@redis-cli -p 1212 FLUSHDB
 
-test: schema-update test-redis
+test: test-redis
 	@ginkgo --cover -r .
 	@make test-redis-kill
 
@@ -161,9 +160,6 @@ rtfd:
 	@rm -rf docs/_build
 	@sphinx-build -b html -d ./docs/_build/doctrees ./docs/ docs/_build/html
 	@open docs/_build/html/index.html
-
-schema-update:
-	@go generate ./api/payload.go
 
 mock-lib:
 	@mockgen github.com/topfreegames/podium/lib PodiumInterface | sed 's/mock_lib/mocks/' > lib/mocks/podium.go
