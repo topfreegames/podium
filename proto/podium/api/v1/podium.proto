@@ -1,13 +1,13 @@
 syntax = "proto3";
 
 package podium.api.v1;
+
 option csharp_namespace = "Podium.Api.V1";
 option go_package = "podium.api.v1";
 option java_multiple_files = true;
 option java_outer_classname = "PodiumProto";
-option java_package = "com.topfreegames.podium.podium.api.v1";
+option java_package = "com.topfreegames.podium.api.v1";
 option objc_class_prefix = "PAX";
-
 
 
 import "google/api/annotations.proto";
@@ -15,27 +15,27 @@ import "google/protobuf/empty.proto";
 
 // Podium is a service that provides leaderboard functionality.
 // Games can manage multiple leaderboards with this service.
-service PodiumAPI {
+service Podium {
 
   // HealthCheck verifies and returns service health.
-  rpc HealthCheck(google.protobuf.Empty) returns (HealthCheckResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 
   // Status allows to clients to know additional information about Podium execution.
   // Currently only returns error rate of the service.
   rpc Status(google.protobuf.Empty) returns (StatusResponse);
 
   // RemoveLeaderboard removes a specified leaderboard.
-  rpc RemoveLeaderboard(RemoveLeaderboardRequest) returns (BasicResponse) {
+  rpc RemoveLeaderboard(RemoveLeaderboardRequest) returns (RemoveLeaderboardResponse) {
     option (google.api.http) = {
       delete: "/l/{leaderboard_id}"
     };
   }
 
   // BulkUpsertScores allows clients to send multiple scores in a single request.
-  rpc BulkUpsertScores(BulkUpsertScoresRequest) returns (MemberListResponse) {
+  rpc BulkUpsertScores(BulkUpsertScoresRequest) returns (BulkUpsertScoresResponse) {
     option (google.api.http) = {
       put: "/l/{leaderboard_id}/scores"
-      body: "score_upserts"
+      body: "member_scores"
     };
   }
 
@@ -77,14 +77,14 @@ service PodiumAPI {
   }
 
   // RemoveMember removes a member from a leaderboard.
-  rpc RemoveMember(RemoveMemberRequest) returns (BasicResponse) {
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse) {
     option (google.api.http) = {
       delete: "/l/{leaderboard_id}/members/{member_public_id}"
     };
   }
 
   // RemoveMembers allow the removal of multiple members of a leaderboard.
-  rpc RemoveMembers(RemoveMembersRequest) returns (BasicResponse) {
+  rpc RemoveMembers(RemoveMembersRequest) returns (RemoveMembersResponse) {
     option (google.api.http) = {
       delete: "/l/{leaderboard_id}/members"
     };
@@ -98,35 +98,35 @@ service PodiumAPI {
   }
 
   // GetAroundMember retrieves the closest members to another member on the leaderboard.
-  rpc GetAroundMember(GetAroundMemberRequest) returns (MemberListResponse) {
+  rpc GetAroundMember(GetAroundMemberRequest) returns (GetAroundMemberResponse) {
     option (google.api.http) = {
       get: "/l/{leaderboard_id}/members/{member_public_id}/around"
     };
   }
 
   // GetAroundScore retrieves the closest members to a score on the leaderboard.
-  rpc GetAroundScore(GetAroundScoreRequest) returns (MemberListResponse) {
+  rpc GetAroundScore(GetAroundScoreRequest) returns (GetAroundScoreResponse) {
     option (google.api.http) = {
       get: "/l/{leaderboard_id}/scores/{score}/around"
     };
   }
 
   // GetTopMembers retrieves the top ranking members of a leaderboard.
-  rpc GetTopMembers(GetTopMembersRequest) returns (MemberListResponse) {
+  rpc GetTopMembers(GetTopMembersRequest) returns (GetTopMembersResponse) {
     option (google.api.http) = {
       get: "/l/{leaderboard_id}/top/{page_number}"
     };
   }
 
   // GetTopPercentage retrieves a percentage of the top members of the leaderboard.
-  rpc GetTopPercentage(GetTopPercentageRequest) returns (MemberListResponse) {
+  rpc GetTopPercentage(GetTopPercentageRequest) returns (GetTopPercentageResponse) {
     option (google.api.http) = {
       get: "/l/{leaderboard_id}/top-percent/{percentage}"
     };
   }
 
   // UpsertScoreMultiLeaderboards sends a member score to multiple leaderboards.
-  rpc UpsertScoreMultiLeaderboards(MultiUpsertScoreRequest) returns (MultiUpsertScoreResponse) {
+  rpc UpsertScoreMultiLeaderboards(UpsertScoreMultiLeaderboardsRequest) returns (UpsertScoreMultiLeaderboardsResponse) {
     option (google.api.http) = {
       put: "/m/{member_public_id}/scores"
       body: "score_multi_change"
@@ -134,18 +134,23 @@ service PodiumAPI {
   }
 
   // GetRankMultiLeaderboards retrieves information about a member in multiple leaderboards.
-  rpc GetRankMultiLeaderboards(MultiGetRankRequest) returns (MultiGetRankResponse) {
+  rpc GetRankMultiLeaderboards(GetRankMultiLeaderboardsRequest) returns (GetRankMultiLeaderboardsResponse) {
     option (google.api.http) = {
       get: "/m/{member_public_id}/scores"
     };
   }
 }
 
+message HealthCheckRequest {}
+
 message HealthCheckResponse {
+
+  // the string configured on healthcheck.workingText to represent that the service is up
   string working_string = 1;
 }
 
 message StatusResponse {
+  // Rate of errors per second
   double error_rate = 1;
 }
 
@@ -153,34 +158,33 @@ message RemoveLeaderboardRequest {
   string leaderboard_id = 1;
 }
 
-// ScoreUpsert allow to provide score information about a single member.
-message ScoreUpsert {
+// MemberScore allow to provide score information about a single member.
+message MemberScore {
   string publicID = 1;
-  int64 score = 2;
-}
 
-// ScoreUpserts represent multiple score submissions.
-message ScoreUpserts {
-  repeated ScoreUpsert members = 1;
+  // score can store values from -9007199254740992 and 9007199254740992
+  double score = 2;
 }
 
 message BulkUpsertScoresRequest {
   string leaderboard_id = 1;
   bool prev_rank = 2;
+
+
   int32 scoreTTL = 3;
-  ScoreUpserts score_upserts = 4;
+
+  // ScoreUpserts represent multiple score submissions.
+  message MemberScores {
+    repeated MemberScore members = 1;
+  }
+
+  MemberScores member_scores = 4;
 }
 
 // MemberResponse represents the full leaderboard information about a member.
 message MemberResponse {
   string publicID = 1;
-
-  //implemented as double because int64 is exported as string through grpc-gateway
   double score = 2;
-
-  //the full int64 score received from Redis
-  int64 int_score = 3;
-
   int32 rank = 4;
   int32 previous_rank = 5;
   int32 expire_at = 6;
@@ -189,7 +193,7 @@ message MemberResponse {
 
 // ScoreChange is the score payload when upserting a score.
 message ScoreChange {
-  int64 score = 1;
+  double score = 1;
 }
 
 message UpsertScoreRequest {
@@ -216,7 +220,7 @@ message IncrementScoreRequest {
 
   // Body represents the increment payload.
   message Body {
-    int64 increment = 1;
+    double increment = 1;
   }
   Body body = 4;
 }
@@ -231,12 +235,7 @@ message GetMemberRequest {
 message DefaultMemberResponse {
   bool success = 1;
   string publicID = 2;
-
-  //implemented as double because int64 is exported as string through grpc-gateway
   double score = 3;
-
-  //the full int64 score received from Redis
-  int64 int_score = 4;
   int32 rank = 5;
   int32 previous_rank = 6;
   int32 expire_at = 7;
@@ -265,11 +264,22 @@ message RemoveMembersRequest {
   string ids = 2;
 }
 
-message BasicResponse {
+message RemoveLeaderboardResponse {
   bool success = 1;
   string reason = 2;
 }
 
+message RemoveMemberResponse {
+  bool success = 1;
+  string reason = 2;
+}
+
+message RemoveMembersResponse {
+  bool success = 1;
+  string reason = 2;
+}
+
+//
 message GetRankRequest {
   string leaderboard_id = 1;
   string member_public_id = 2;
@@ -303,32 +313,26 @@ message GetTopPercentageRequest {
   string order = 3;
 }
 
-message MultiUpsertScoreRequest {
+message UpsertScoreMultiLeaderboardsRequest {
   string member_public_id = 1;
   int32 scoreTTL = 2;
   bool prev_rank = 3;
 
   // ScoreMultiChange is the payload to update the score of a member on multiple leaderboards.
   message ScoreMultiChange {
-    int64 score = 1;
+    double score = 1;
     repeated string leaderboards = 2;
   }
   ScoreMultiChange score_multi_change = 4;
 }
 
-message MultiUpsertScoreResponse {
+message UpsertScoreMultiLeaderboardsResponse {
   bool success = 1;
 
   // Member represents the information regarding a single member in response to a multi upsert score.
   message Member {
     string publicID = 1;
-
-    //implemented as double because int64 is exported as string through grpc-gateway
     double score = 2;
-
-    //the full int64 score received from Redis
-    int64 int_score = 3;
-
     int32 rank = 4;
     int32 previous_rank = 5;
     int32 expire_at = 6;
@@ -337,14 +341,14 @@ message MultiUpsertScoreResponse {
   repeated Member scores = 2;
 }
 
-message MultiGetRankRequest {
+message GetRankMultiLeaderboardsRequest {
   string member_public_id = 1;
   string leaderboard_ids = 2;
   string order = 3;
   bool scoreTTL = 4;
 }
 
-message MultiGetRankResponse {
+message GetRankMultiLeaderboardsResponse {
   bool success = 1;
 
   // Member represents member information retrieved from one the leaderboards during MultiGetRankResponse operation.
@@ -352,7 +356,6 @@ message MultiGetRankResponse {
     string leaderboardID = 1;
     int32 rank = 2;
     double score = 3;
-    int64 int_score = 4;
     int32 expire_at = 5;
   }
   repeated Member scores = 2;
@@ -360,12 +363,32 @@ message MultiGetRankResponse {
 
 message GetAroundScoreRequest {
   string leaderboard_id = 1;
-  int64 score = 2;
+  double score = 2;
   string order = 3;
   int32 page_size = 4;
 }
 
-message MemberListResponse {
+message BulkUpsertScoresResponse {
+  bool success = 1;
+  repeated MemberResponse members = 2;
+}
+
+message GetAroundMemberResponse {
+  bool success = 1;
+  repeated MemberResponse members = 2;
+}
+
+message GetAroundScoreResponse {
+  bool success = 1;
+  repeated MemberResponse members = 2;
+}
+
+message GetTopMembersResponse {
+  bool success = 1;
+  repeated MemberResponse members = 2;
+}
+
+message GetTopPercentageResponse {
   bool success = 1;
   repeated MemberResponse members = 2;
 }

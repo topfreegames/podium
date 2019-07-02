@@ -40,7 +40,7 @@ var _ = Describe("Status Handler", func() {
 	It("Should respond with status (grpc)", func() {
 		a := GetDefaultTestApp()
 
-		SetupGRPC(a, func(cli api.PodiumAPIClient) {
+		SetupGRPC(a, func(cli api.PodiumClient) {
 			resp, err := cli.Status(context.Background(), &empty.Empty{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).NotTo(BeNil())

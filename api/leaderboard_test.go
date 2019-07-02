@@ -171,13 +171,13 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should set correct members score in redis and respond with the correct values (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				req := &pb.BulkUpsertScoresRequest{
 					LeaderboardId: testLeaderboardID,
-					ScoreUpserts: &pb.ScoreUpserts{
-						Members: []*pb.ScoreUpsert{
-							{PublicID: "memberpublicid1", Score: int64(150)},
-							{PublicID: "memberpublicid2", Score: int64(100)},
+					MemberScores: &pb.BulkUpsertScoresRequest_MemberScores{
+						Members: []*pb.MemberScore{
+							{PublicID: "memberpublicid1", Score: 150},
+							{PublicID: "memberpublicid2", Score: 100},
 						},
 					},
 				}
@@ -188,8 +188,8 @@ var _ = Describe("Leaderboard Handler", func() {
 
 				for i, m := range resp.Members {
 					Expect(m.Rank).To(Equal(int32(i + 1)))
-					Expect(int64(m.Score)).To(Equal(req.ScoreUpserts.Members[i].Score))
-					Expect(m.PublicID).To(Equal(req.ScoreUpserts.Members[i].PublicID))
+					Expect(m.Score).To(Equal(req.MemberScores.Members[i].Score))
+					Expect(m.PublicID).To(Equal(req.MemberScores.Members[i].PublicID))
 				}
 
 				member1, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid1", "desc", false)
@@ -426,11 +426,11 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should set correct member score in redis and respond with the correct values (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				req := &pb.UpsertScoreRequest{
 					LeaderboardId:  testLeaderboardID,
 					MemberPublicId: "memberpublicid",
-					ScoreChange:    &pb.ScoreChange{Score: int64(100)},
+					ScoreChange:    &pb.ScoreChange{Score: 100},
 				}
 
 				resp, err := cli.UpsertScore(context.Background(), req)
@@ -438,7 +438,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 				Expect(resp.Success).To(BeTrue())
 				Expect(resp.PublicID).To(Equal("memberpublicid"))
-				Expect(int64(resp.Score)).To(Equal(req.ScoreChange.Score))
+				Expect(resp.Score).To(Equal(req.ScoreChange.Score))
 				Expect(resp.Rank).To(Equal(int32(1)))
 
 				member, err := a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
@@ -651,7 +651,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should increment correct member score in redis and respond with the correct values (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				req := &pb.IncrementScoreRequest{
 					LeaderboardId:  testLeaderboardID,
 					MemberPublicId: "memberpublicid",
@@ -776,7 +776,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should delete member score from redis if score exists (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
 				Expect(err).NotTo(HaveOccurred())
 
@@ -792,40 +792,6 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 			})
-		})
-
-		It("Should delete members score from redis if score exists (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
-				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
-				Expect(err).NotTo(HaveOccurred())
-
-				req := &pb.RemoveMembersRequest{
-					LeaderboardId: testLeaderboardID,
-					Ids:           "memberpublicid",
-				}
-				resp, err := cli.RemoveMembers(context.Background(), req)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.Success).To(BeTrue())
-
-				_, err = a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
-			})
-		})
-
-		It("Should delete member score from redis if score exists", func() {
-			_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
-			Expect(err).NotTo(HaveOccurred())
-
-			status, body := Delete(a, "/l/testkey/members/memberpublicid")
-			Expect(status).To(Equal(http.StatusOK), body, body)
-			var result map[string]interface{}
-			json.Unmarshal([]byte(body), &result)
-			Expect(result["success"]).To(BeTrue())
-
-			_, err = a.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, "memberpublicid", "desc", false)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
 
 		It("Should delete many member score from redis if they exists", func() {
@@ -869,6 +835,17 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not find data for member"))
 		})
+
+		It("Should fail if list of member ids to remove is empty", func() {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
+				_, err := cli.RemoveMembers(context.Background(), &pb.RemoveMembersRequest{
+					LeaderboardId: testLeaderboardID,
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Member IDs are required using the 'ids' querystring parameter"))
+			})
+		})
+
 		HTTPMeasure("it should remove member score", func(ctx map[string]interface{}) {
 			lbID := uuid.NewV4().String()
 			memberID := uuid.NewV4().String()
@@ -909,7 +886,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should get member score from redis if score exists (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
 				Expect(err).NotTo(HaveOccurred())
 
@@ -1046,7 +1023,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should get member score from redis if score exists (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "memberpublicid", 100, false, "")
 				Expect(err).NotTo(HaveOccurred())
 
@@ -1158,7 +1135,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should get member score and neighbours from redis if member score exists (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				for i := 1; i <= 100; i++ {
 					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
 					Expect(err).NotTo(HaveOccurred())
@@ -1507,7 +1484,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should get score neighbours from redis if score is sent (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				for i := 1; i <= 100; i++ {
 					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
 					Expect(err).NotTo(HaveOccurred())
@@ -1745,7 +1722,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				resp, err := cli.TotalMembers(context.Background(),
 					&pb.TotalMembersRequest{LeaderboardId: testLeaderboardID})
 
@@ -1821,7 +1798,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should get one page of top members from redis if leaderboard exists (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				for i := 1; i <= 100; i++ {
 					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
 					Expect(err).NotTo(HaveOccurred())
@@ -1967,6 +1944,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 		})
 
+		It("Should not fail is page number 0 is sent", func() {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
+				for i := 1; i <= 100; i++ {
+					_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), 100, false, "")
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				_, err := cli.GetTopMembers(context.Background(), &pb.GetTopMembersRequest{LeaderboardId: testLeaderboardID})
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
 		It("Should fail with 400 if bad pageNumber provided", func() {
 			status, body := Get(a, "/l/testkey/top/notint")
 			Expect(status).To(Equal(http.StatusBadRequest), body)
@@ -2052,7 +2041,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should get top members from redis if leaderboard exists (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				leaderboardID := uuid.NewV4().String()
 
 				for i := 1; i <= 100; i++ {
@@ -2173,11 +2162,11 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should get member score in many leaderboards (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 
-				reqUpdate := &pb.MultiUpsertScoreRequest{
+				reqUpdate := &pb.UpsertScoreMultiLeaderboardsRequest{
 					MemberPublicId: "memberpublicid",
-					ScoreMultiChange: &pb.MultiUpsertScoreRequest_ScoreMultiChange{
+					ScoreMultiChange: &pb.UpsertScoreMultiLeaderboardsRequest_ScoreMultiChange{
 						Score:        100,
 						Leaderboards: []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
 					},
@@ -2185,7 +2174,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				_, err := cli.UpsertScoreMultiLeaderboards(context.Background(), reqUpdate)
 				Expect(err).NotTo(HaveOccurred())
 
-				reqRetrieve := &pb.MultiGetRankRequest{
+				reqRetrieve := &pb.GetRankMultiLeaderboardsRequest{
 					MemberPublicId: "memberpublicid",
 					LeaderboardIds: "testkey1,testkey2,testkey3,testkey4,testkey5",
 				}
@@ -2209,6 +2198,16 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(status).To(Equal(http.StatusOK), body)
 			status, body = Get(a, "/m/memberpublicid/scores?leaderboardIds=testkey1,testkey2,testkey3,testkey4,testkey6")
 			Expect(status).To(Equal(http.StatusNotFound), body)
+		})
+
+		It("Should fail if empty id list is passed", func() {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
+				_, err := cli.GetRankMultiLeaderboards(context.Background(), &pb.GetRankMultiLeaderboardsRequest{
+					MemberPublicId: "memberpublicid",
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Leaderboard IDs are required using the 'leaderboardIds' querystring parameter"))
+			})
 		})
 
 	})
@@ -2244,15 +2243,15 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should set correct member score in redis and respond with the correct values (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				payload := map[string]interface{}{
 					"score":        100,
 					"leaderboards": []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
 				}
-				req := &pb.MultiUpsertScoreRequest{
+				req := &pb.UpsertScoreMultiLeaderboardsRequest{
 					MemberPublicId: "memberpublicid",
 					PrevRank:       true,
-					ScoreMultiChange: &pb.MultiUpsertScoreRequest_ScoreMultiChange{
+					ScoreMultiChange: &pb.UpsertScoreMultiLeaderboardsRequest_ScoreMultiChange{
 						Score:        100,
 						Leaderboards: []string{"testkey1", "testkey2", "testkey3", "testkey4", "testkey5"},
 					},
@@ -2409,7 +2408,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("should get several members from leaderboard (grpc)", func() {
-			SetupGRPC(a, func(cli pb.PodiumAPIClient) {
+			SetupGRPC(a, func(cli pb.PodiumClient) {
 				leaderboardID := uuid.NewV4().String()
 
 				for i := 1; i <= 100; i++ {

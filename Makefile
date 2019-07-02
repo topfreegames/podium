@@ -168,6 +168,7 @@ schema-update:
 mock-lib:
 	@mockgen github.com/topfreegames/podium/lib PodiumInterface | sed 's/mock_lib/mocks/' > lib/mocks/podium.go
 
+# TODO(lucas-machado): Replace protoc with prototool
 grpc-stub:
 	@protoc -I$(GOPATH)/src/github.com/topfreegames/podium \
 	-I$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \

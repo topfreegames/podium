@@ -32,7 +32,7 @@ var noPageSizeProvidedError = "strconv.ParseInt: parsing \"\": invalid syntax"
 var defaultPageSize = 20
 
 func validateBulkUpsertScoresRequest(in *api.BulkUpsertScoresRequest) error {
-	for _, m := range in.ScoreUpserts.Members {
+	for _, m := range in.MemberScores.Members {
 		if m.PublicID == "" {
 			return status.New(codes.InvalidArgument, "publicID is required").Err()
 		}
@@ -45,7 +45,6 @@ func newDefaultMemberResponse(member *leaderboard.Member) *api.DefaultMemberResp
 		Success:      true,
 		PublicID:     member.PublicID,
 		Score:        float64(member.Score),
-		IntScore:     member.Score,
 		Rank:         int32(member.Rank),
 		PreviousRank: int32(member.PreviousRank),
 		ExpireAt:     int32(member.ExpireAt),
@@ -53,7 +52,7 @@ func newDefaultMemberResponse(member *leaderboard.Member) *api.DefaultMemberResp
 }
 
 // BulkUpsertMembersScoreHandler is the handler responsible for creating or updating members score
-func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRequest) (*api.MemberListResponse, error) {
+func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRequest) (*api.BulkUpsertScoresResponse, error) {
 	if err := validateBulkUpsertScoresRequest(in); err != nil {
 		return nil, err
 	}
@@ -63,12 +62,12 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 		zap.String("leaderboard", in.LeaderboardId),
 	)
 
-	members := make(leaderboard.Members, len(in.ScoreUpserts.Members))
+	members := make(leaderboard.Members, len(in.MemberScores.Members))
 
 	err := withSegment("Model", ctx, func() error {
 		lg.Debug("Setting member scores.")
-		for i, ms := range in.ScoreUpserts.Members {
-			members[i] = &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID}
+		for i, ms := range in.MemberScores.Members {
+			members[i] = &leaderboard.Member{Score: int64(ms.Score), PublicID: ms.PublicID}
 		}
 		err := app.Leaderboards.SetMembersScore(ctx, in.LeaderboardId, members, in.PrevRank, getScoreTTL(in.ScoreTTL))
 
@@ -88,20 +87,19 @@ func (app *App) BulkUpsertScores(ctx context.Context, in *api.BulkUpsertScoresRe
 		return nil, err
 	}
 
-	responses := make([]*api.MemberResponse, len(in.ScoreUpserts.Members))
+	responses := make([]*api.MemberResponse, len(in.MemberScores.Members))
 
 	for i, m := range members {
 		responses[i] = &api.MemberResponse{
 			PublicID:     m.PublicID,
 			Score:        float64(m.Score),
-			IntScore:     m.Score,
 			Rank:         int32(m.Rank),
 			PreviousRank: int32(m.PreviousRank),
 			ExpireAt:     int32(m.ExpireAt),
 		}
 	}
 
-	return &api.MemberListResponse{Success: true, Members: responses}, nil
+	return &api.BulkUpsertScoresResponse{Success: true, Members: responses}, nil
 }
 
 func getScoreTTL(scoreTTL int32) string {
@@ -122,10 +120,10 @@ func (app *App) UpsertScore(ctx context.Context, in *api.UpsertScoreRequest) (*a
 
 	var member *leaderboard.Member
 	err := withSegment("Model", ctx, func() error {
-		lg.Debug("Setting member score.", zap.Int64("score", in.ScoreChange.Score))
+		lg.Debug("Setting member score.", zap.Int64("score", int64(in.ScoreChange.Score)))
 
 		var err error
-		member, err = app.Leaderboards.SetMemberScore(ctx, in.LeaderboardId, in.MemberPublicId, in.ScoreChange.Score,
+		member, err = app.Leaderboards.SetMemberScore(ctx, in.LeaderboardId, in.MemberPublicId, int64(in.ScoreChange.Score),
 			in.PrevRank, getScoreTTL(in.ScoreTTL))
 
 		if err != nil {
@@ -163,7 +161,7 @@ func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreReques
 	var member *leaderboard.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
-		lg.Debug("Incrementing member score.", zap.Int64("increment", in.Body.Increment))
+		lg.Debug("Incrementing member score.", zap.Int64("increment", int64(in.Body.Increment)))
 		member, err = app.Leaderboards.IncrementMemberScore(context.Background(), in.LeaderboardId, in.MemberPublicId,
 			int(in.Body.Increment), getScoreTTL(in.ScoreTTL))
 
@@ -187,7 +185,7 @@ func (app *App) IncrementScore(ctx context.Context, in *api.IncrementScoreReques
 }
 
 //RemoveMemberHandler removes a member from a leaderboard
-func (app *App) RemoveMember(ctx context.Context, in *api.RemoveMemberRequest) (*api.BasicResponse, error) {
+func (app *App) RemoveMember(ctx context.Context, in *api.RemoveMemberRequest) (*api.RemoveMemberResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "RemoveMember"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -210,12 +208,12 @@ func (app *App) RemoveMember(ctx context.Context, in *api.RemoveMemberRequest) (
 		return nil, err
 	}
 
-	return &api.BasicResponse{Success: true}, nil
+	return &api.RemoveMemberResponse{Success: true}, nil
 
 }
 
 //RemoveMembers removes several members from a leaderboard
-func (app *App) RemoveMembers(ctx context.Context, in *api.RemoveMembersRequest) (*api.BasicResponse, error) {
+func (app *App) RemoveMembers(ctx context.Context, in *api.RemoveMembersRequest) (*api.RemoveMembersResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "RemoveMembers"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -249,7 +247,7 @@ func (app *App) RemoveMembers(ctx context.Context, in *api.RemoveMembersRequest)
 		return nil, err
 	}
 
-	return &api.BasicResponse{Success: true}, nil
+	return &api.RemoveMembersResponse{Success: true}, nil
 }
 
 // GetMember is the handler responsible for retrieving a member score and rank
@@ -332,7 +330,7 @@ func (app *App) GetRank(ctx context.Context, in *api.GetRankRequest) (*api.GetRa
 }
 
 //GetRankMultiLeaderboards returns the member rank in several leaderboards at once
-func (app *App) GetRankMultiLeaderboards(ctx context.Context, in *api.MultiGetRankRequest) (*api.MultiGetRankResponse, error) {
+func (app *App) GetRankMultiLeaderboards(ctx context.Context, in *api.GetRankMultiLeaderboardsRequest) (*api.GetRankMultiLeaderboardsResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "GetRankMultiLeaderboards"),
 		zap.String("memberPublicID", in.MemberPublicId),
@@ -350,7 +348,7 @@ func (app *App) GetRankMultiLeaderboards(ctx context.Context, in *api.MultiGetRa
 	}
 
 	leaderboardIDs := strings.Split(in.LeaderboardIds, ",")
-	serializedScores := make([]*api.MultiGetRankResponse_Member, len(leaderboardIDs))
+	serializedScores := make([]*api.GetRankMultiLeaderboardsResponse_Member, len(leaderboardIDs))
 
 	err := withSegment("Model", ctx, func() error {
 		for i, leaderboardID := range leaderboardIDs {
@@ -366,11 +364,10 @@ func (app *App) GetRankMultiLeaderboards(ctx context.Context, in *api.MultiGetRa
 				return err
 			}
 			lg.Debug("Getting member rank on leaderboard succeeded.")
-			serializedScores[i] = &api.MultiGetRankResponse_Member{
+			serializedScores[i] = &api.GetRankMultiLeaderboardsResponse_Member{
 				LeaderboardID: leaderboardID,
 				Rank:          int32(member.Rank),
 				Score:         float64(member.Score),
-				IntScore:      member.Score,
 				ExpireAt:      int32(member.ExpireAt),
 			}
 		}
@@ -380,14 +377,14 @@ func (app *App) GetRankMultiLeaderboards(ctx context.Context, in *api.MultiGetRa
 		return nil, err
 	}
 
-	return &api.MultiGetRankResponse{
+	return &api.GetRankMultiLeaderboardsResponse{
 		Success: true,
 		Scores:  serializedScores,
 	}, nil
 }
 
 // GetAroundMember retrieves a list of member score and rank centered in the given member
-func (app *App) GetAroundMember(ctx context.Context, in *api.GetAroundMemberRequest) (*api.MemberListResponse, error) {
+func (app *App) GetAroundMember(ctx context.Context, in *api.GetAroundMemberRequest) (*api.GetAroundMemberResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "GetAroundMember"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -431,7 +428,7 @@ func (app *App) GetAroundMember(ctx context.Context, in *api.GetAroundMemberRequ
 		return nil, err
 	}
 
-	return &api.MemberListResponse{
+	return &api.GetAroundMemberResponse{
 		Success: true,
 		Members: newMemberResponseList(members),
 	}, nil
@@ -446,7 +443,7 @@ func (app *App) getPageSize(pageSize int) int {
 }
 
 // GetAroundScore retrieves a list of member scores and ranks centered in a given score
-func (app *App) GetAroundScore(ctx context.Context, in *api.GetAroundScoreRequest) (*api.MemberListResponse, error) {
+func (app *App) GetAroundScore(ctx context.Context, in *api.GetAroundScoreRequest) (*api.GetAroundScoreResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "GetAroundScoreHandler"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -470,8 +467,8 @@ func (app *App) GetAroundScore(ctx context.Context, in *api.GetAroundScoreReques
 	var members leaderboard.Members
 	err := withSegment("Model", ctx, func() error {
 		var err error
-		lg.Debug("Getting players around score.", zap.Int64("score", in.Score))
-		members, err = app.Leaderboards.GetAroundScore(ctx, in.LeaderboardId, pageSize, in.Score, order)
+		lg.Debug("Getting players around score.", zap.Int64("score", int64(in.Score)))
+		members, err = app.Leaderboards.GetAroundScore(ctx, in.LeaderboardId, pageSize, int64(in.Score), order)
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 			lg.Error("Member not found.", zap.Error(err))
 			app.AddError()
@@ -488,7 +485,7 @@ func (app *App) GetAroundScore(ctx context.Context, in *api.GetAroundScoreReques
 		return nil, err
 	}
 
-	return &api.MemberListResponse{
+	return &api.GetAroundScoreResponse{
 		Success: true,
 		Members: newMemberResponseList(members),
 	}, nil
@@ -525,7 +522,7 @@ func (app *App) TotalMembers(ctx context.Context, in *api.TotalMembersRequest) (
 }
 
 // GetTopMembers retrieves onePage of member score and rank
-func (app *App) GetTopMembers(ctx context.Context, in *api.GetTopMembersRequest) (*api.MemberListResponse, error) {
+func (app *App) GetTopMembers(ctx context.Context, in *api.GetTopMembersRequest) (*api.GetTopMembersResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "GetTopMembers"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -568,14 +565,14 @@ func (app *App) GetTopMembers(ctx context.Context, in *api.GetTopMembersRequest)
 		return nil, err
 	}
 
-	return &api.MemberListResponse{
+	return &api.GetTopMembersResponse{
 		Success: true,
 		Members: newMemberResponseList(members),
 	}, nil
 }
 
 // GetTopPercentage retrieves top x % members in the leaderboard
-func (app *App) GetTopPercentage(ctx context.Context, in *api.GetTopPercentageRequest) (*api.MemberListResponse, error) {
+func (app *App) GetTopPercentage(ctx context.Context, in *api.GetTopPercentageRequest) (*api.GetTopPercentageResponse, error) {
 	lg := app.Logger.With(
 		zap.String("handler", "GetTopPercentage"),
 		zap.String("leaderboard", in.LeaderboardId),
@@ -615,7 +612,7 @@ func (app *App) GetTopPercentage(ctx context.Context, in *api.GetTopPercentageRe
 		return nil, err
 	}
 
-	return &api.MemberListResponse{
+	return &api.GetTopPercentageResponse{
 		Success: true,
 		Members: newMemberResponseList(members),
 	}, nil
@@ -687,7 +684,6 @@ func newMemberResponseList(members leaderboard.Members) []*api.MemberResponse {
 		list[i] = &api.MemberResponse{
 			PublicID:     m.PublicID,
 			Score:        float64(m.Score),
-			IntScore:     m.Score,
 			Rank:         int32(m.Rank),
 			PreviousRank: int32(m.PreviousRank),
 			ExpireAt:     int32(m.ExpireAt),
@@ -698,7 +694,7 @@ func newMemberResponseList(members leaderboard.Members) []*api.MemberResponse {
 }
 
 // UpsertScoreAllLeaderboards sets the member score for all leaderboards
-func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, in *api.MultiUpsertScoreRequest) (*api.MultiUpsertScoreResponse, error) {
+func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, in *api.UpsertScoreMultiLeaderboardsRequest) (*api.UpsertScoreMultiLeaderboardsResponse, error) {
 	if len(in.ScoreMultiChange.Leaderboards) == 0 {
 		return nil, status.New(codes.InvalidArgument, "leaderboards is required").Err()
 	}
@@ -708,25 +704,24 @@ func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, in *api.MultiU
 		zap.String("memberPublicID", in.MemberPublicId),
 	)
 
-	serializedScores := make([]*api.MultiUpsertScoreResponse_Member, len(in.ScoreMultiChange.Leaderboards))
+	serializedScores := make([]*api.UpsertScoreMultiLeaderboardsResponse_Member, len(in.ScoreMultiChange.Leaderboards))
 
 	err := withSegment("Model", ctx, func() error {
 		for i, leaderboardID := range in.ScoreMultiChange.Leaderboards {
 			lg.Debug("Updating score.",
 				zap.String("leaderboardID", leaderboardID),
-				zap.Int64("score", in.ScoreMultiChange.Score))
+				zap.Int64("score", int64(in.ScoreMultiChange.Score)))
 			member, err := app.Leaderboards.SetMemberScore(ctx, leaderboardID, in.MemberPublicId,
-				in.ScoreMultiChange.Score, in.PrevRank, getScoreTTL(in.ScoreTTL))
+				int64(in.ScoreMultiChange.Score), in.PrevRank, getScoreTTL(in.ScoreTTL))
 
 			if err != nil {
 				lg.Error("Update score failed.", zap.Error(err))
 				app.AddError()
 				return err
 			}
-			serializedScore := &api.MultiUpsertScoreResponse_Member{
+			serializedScore := &api.UpsertScoreMultiLeaderboardsResponse_Member{
 				PublicID:      member.PublicID,
 				Score:         float64(member.Score),
-				IntScore:      member.Score,
 				Rank:          int32(member.Rank),
 				PreviousRank:  int32(member.PreviousRank),
 				ExpireAt:      int32(member.ExpireAt),
@@ -741,14 +736,14 @@ func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, in *api.MultiU
 		return nil, err
 	}
 
-	return &api.MultiUpsertScoreResponse{
+	return &api.UpsertScoreMultiLeaderboardsResponse{
 		Success: true,
 		Scores:  serializedScores,
 	}, nil
 }
 
 // RemoveLeaderboard is the handler responsible for removing a leaderboard
-func (app *App) RemoveLeaderboard(ctx context.Context, in *api.RemoveLeaderboardRequest) (*api.BasicResponse, error) {
+func (app *App) RemoveLeaderboard(ctx context.Context, in *api.RemoveLeaderboardRequest) (*api.RemoveLeaderboardResponse, error) {
 	leaderboardID := in.LeaderboardId
 	lg := app.Logger.With(
 		zap.String("handler", "RemoveLeaderboard"),
@@ -771,5 +766,5 @@ func (app *App) RemoveLeaderboard(ctx context.Context, in *api.RemoveLeaderboard
 		return nil, err
 	}
 
-	return &api.BasicResponse{Success: true}, nil
+	return &api.RemoveLeaderboardResponse{Success: true}, nil
 }

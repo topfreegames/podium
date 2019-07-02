@@ -28,7 +28,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
-func request_PodiumAPI_RemoveLeaderboard_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_RemoveLeaderboard_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq RemoveLeaderboardRequest
 	var metadata runtime.ServerMetadata
 
@@ -56,10 +56,10 @@ func request_PodiumAPI_RemoveLeaderboard_0(ctx context.Context, marshaler runtim
 }
 
 var (
-	filter_PodiumAPI_BulkUpsertScores_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_upserts": 0, "leaderboard_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_BulkUpsertScores_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_scores": 0, "leaderboard_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_BulkUpsertScores_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_BulkUpsertScores_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq BulkUpsertScoresRequest
 	var metadata runtime.ServerMetadata
 
@@ -67,7 +67,7 @@ func request_PodiumAPI_BulkUpsertScores_0(ctx context.Context, marshaler runtime
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.ScoreUpserts); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.MemberScores); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -92,7 +92,7 @@ func request_PodiumAPI_BulkUpsertScores_0(ctx context.Context, marshaler runtime
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_BulkUpsertScores_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_BulkUpsertScores_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -102,10 +102,10 @@ func request_PodiumAPI_BulkUpsertScores_0(ctx context.Context, marshaler runtime
 }
 
 var (
-	filter_PodiumAPI_UpsertScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_change": 0, "leaderboard_id": 1, "member_public_id": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+	filter_Podium_UpsertScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_change": 0, "leaderboard_id": 1, "member_public_id": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
 )
 
-func request_PodiumAPI_UpsertScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_UpsertScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UpsertScoreRequest
 	var metadata runtime.ServerMetadata
 
@@ -149,7 +149,7 @@ func request_PodiumAPI_UpsertScore_0(ctx context.Context, marshaler runtime.Mars
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_UpsertScore_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_UpsertScore_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -158,7 +158,7 @@ func request_PodiumAPI_UpsertScore_0(ctx context.Context, marshaler runtime.Mars
 
 }
 
-func request_PodiumAPI_TotalMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_TotalMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TotalMembersRequest
 	var metadata runtime.ServerMetadata
 
@@ -186,10 +186,10 @@ func request_PodiumAPI_TotalMembers_0(ctx context.Context, marshaler runtime.Mar
 }
 
 var (
-	filter_PodiumAPI_IncrementScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"body": 0, "leaderboard_id": 1, "member_public_id": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+	filter_Podium_IncrementScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"body": 0, "leaderboard_id": 1, "member_public_id": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
 )
 
-func request_PodiumAPI_IncrementScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_IncrementScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq IncrementScoreRequest
 	var metadata runtime.ServerMetadata
 
@@ -233,7 +233,7 @@ func request_PodiumAPI_IncrementScore_0(ctx context.Context, marshaler runtime.M
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_IncrementScore_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_IncrementScore_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -243,10 +243,10 @@ func request_PodiumAPI_IncrementScore_0(ctx context.Context, marshaler runtime.M
 }
 
 var (
-	filter_PodiumAPI_GetMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_GetMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_GetMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetMemberRequest
 	var metadata runtime.ServerMetadata
 
@@ -282,7 +282,7 @@ func request_PodiumAPI_GetMember_0(ctx context.Context, marshaler runtime.Marsha
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetMember_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetMember_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -292,10 +292,10 @@ func request_PodiumAPI_GetMember_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 var (
-	filter_PodiumAPI_GetMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_Podium_GetMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
-func request_PodiumAPI_GetMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_GetMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetMembersRequest
 	var metadata runtime.ServerMetadata
 
@@ -320,7 +320,7 @@ func request_PodiumAPI_GetMembers_0(ctx context.Context, marshaler runtime.Marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetMembers_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetMembers_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -329,7 +329,7 @@ func request_PodiumAPI_GetMembers_0(ctx context.Context, marshaler runtime.Marsh
 
 }
 
-func request_PodiumAPI_RemoveMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_RemoveMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq RemoveMemberRequest
 	var metadata runtime.ServerMetadata
 
@@ -368,10 +368,10 @@ func request_PodiumAPI_RemoveMember_0(ctx context.Context, marshaler runtime.Mar
 }
 
 var (
-	filter_PodiumAPI_RemoveMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_Podium_RemoveMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
-func request_PodiumAPI_RemoveMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_RemoveMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq RemoveMembersRequest
 	var metadata runtime.ServerMetadata
 
@@ -396,7 +396,7 @@ func request_PodiumAPI_RemoveMembers_0(ctx context.Context, marshaler runtime.Ma
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_RemoveMembers_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_RemoveMembers_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -406,10 +406,10 @@ func request_PodiumAPI_RemoveMembers_0(ctx context.Context, marshaler runtime.Ma
 }
 
 var (
-	filter_PodiumAPI_GetRank_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetRank_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_GetRank_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_GetRank_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRankRequest
 	var metadata runtime.ServerMetadata
 
@@ -445,7 +445,7 @@ func request_PodiumAPI_GetRank_0(ctx context.Context, marshaler runtime.Marshale
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetRank_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetRank_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -455,10 +455,10 @@ func request_PodiumAPI_GetRank_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 var (
-	filter_PodiumAPI_GetAroundMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetAroundMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_GetAroundMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_GetAroundMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetAroundMemberRequest
 	var metadata runtime.ServerMetadata
 
@@ -494,7 +494,7 @@ func request_PodiumAPI_GetAroundMember_0(ctx context.Context, marshaler runtime.
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetAroundMember_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetAroundMember_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -504,10 +504,10 @@ func request_PodiumAPI_GetAroundMember_0(ctx context.Context, marshaler runtime.
 }
 
 var (
-	filter_PodiumAPI_GetAroundScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "score": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetAroundScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "score": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_GetAroundScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_GetAroundScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetAroundScoreRequest
 	var metadata runtime.ServerMetadata
 
@@ -534,7 +534,7 @@ func request_PodiumAPI_GetAroundScore_0(ctx context.Context, marshaler runtime.M
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "score")
 	}
 
-	protoReq.Score, err = runtime.Int64(val)
+	protoReq.Score, err = runtime.Float64(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "score", err)
@@ -543,7 +543,7 @@ func request_PodiumAPI_GetAroundScore_0(ctx context.Context, marshaler runtime.M
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetAroundScore_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetAroundScore_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -553,10 +553,10 @@ func request_PodiumAPI_GetAroundScore_0(ctx context.Context, marshaler runtime.M
 }
 
 var (
-	filter_PodiumAPI_GetTopMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "page_number": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetTopMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "page_number": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_GetTopMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_GetTopMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetTopMembersRequest
 	var metadata runtime.ServerMetadata
 
@@ -592,7 +592,7 @@ func request_PodiumAPI_GetTopMembers_0(ctx context.Context, marshaler runtime.Ma
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetTopMembers_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetTopMembers_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -602,10 +602,10 @@ func request_PodiumAPI_GetTopMembers_0(ctx context.Context, marshaler runtime.Ma
 }
 
 var (
-	filter_PodiumAPI_GetTopPercentage_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "percentage": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetTopPercentage_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "percentage": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_GetTopPercentage_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Podium_GetTopPercentage_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetTopPercentageRequest
 	var metadata runtime.ServerMetadata
 
@@ -641,7 +641,7 @@ func request_PodiumAPI_GetTopPercentage_0(ctx context.Context, marshaler runtime
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetTopPercentage_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetTopPercentage_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -651,11 +651,11 @@ func request_PodiumAPI_GetTopPercentage_0(ctx context.Context, marshaler runtime
 }
 
 var (
-	filter_PodiumAPI_UpsertScoreMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_multi_change": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_UpsertScoreMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_multi_change": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_PodiumAPI_UpsertScoreMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MultiUpsertScoreRequest
+func request_Podium_UpsertScoreMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpsertScoreMultiLeaderboardsRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -687,7 +687,7 @@ func request_PodiumAPI_UpsertScoreMultiLeaderboards_0(ctx context.Context, marsh
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_UpsertScoreMultiLeaderboards_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_UpsertScoreMultiLeaderboards_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -697,11 +697,11 @@ func request_PodiumAPI_UpsertScoreMultiLeaderboards_0(ctx context.Context, marsh
 }
 
 var (
-	filter_PodiumAPI_GetRankMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_public_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_Podium_GetRankMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_public_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
-func request_PodiumAPI_GetRankMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MultiGetRankRequest
+func request_Podium_GetRankMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetRankMultiLeaderboardsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -725,7 +725,7 @@ func request_PodiumAPI_GetRankMultiLeaderboards_0(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PodiumAPI_GetRankMultiLeaderboards_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Podium_GetRankMultiLeaderboards_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -734,9 +734,9 @@ func request_PodiumAPI_GetRankMultiLeaderboards_0(ctx context.Context, marshaler
 
 }
 
-// RegisterPodiumAPIHandlerFromEndpoint is same as RegisterPodiumAPIHandler but
+// RegisterPodiumHandlerFromEndpoint is same as RegisterPodiumHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterPodiumAPIHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterPodiumHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -756,23 +756,23 @@ func RegisterPodiumAPIHandlerFromEndpoint(ctx context.Context, mux *runtime.Serv
 		}()
 	}()
 
-	return RegisterPodiumAPIHandler(ctx, mux, conn)
+	return RegisterPodiumHandler(ctx, mux, conn)
 }
 
-// RegisterPodiumAPIHandler registers the http handlers for service PodiumAPI to "mux".
+// RegisterPodiumHandler registers the http handlers for service Podium to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterPodiumAPIHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterPodiumAPIHandlerClient(ctx, mux, NewPodiumAPIClient(conn))
+func RegisterPodiumHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterPodiumHandlerClient(ctx, mux, NewPodiumClient(conn))
 }
 
-// RegisterPodiumAPIHandlerClient registers the http handlers for service PodiumAPI
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "PodiumAPIClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "PodiumAPIClient"
+// RegisterPodiumHandlerClient registers the http handlers for service Podium
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "PodiumClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "PodiumClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "PodiumAPIClient" to call the correct interceptors.
-func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, client PodiumAPIClient) error {
+// "PodiumClient" to call the correct interceptors.
+func RegisterPodiumHandlerClient(ctx context.Context, mux *runtime.ServeMux, client PodiumClient) error {
 
-	mux.Handle("DELETE", pattern_PodiumAPI_RemoveLeaderboard_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_Podium_RemoveLeaderboard_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -781,18 +781,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_RemoveLeaderboard_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_RemoveLeaderboard_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_RemoveLeaderboard_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_RemoveLeaderboard_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_PodiumAPI_BulkUpsertScores_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_Podium_BulkUpsertScores_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -801,18 +801,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_BulkUpsertScores_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_BulkUpsertScores_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_BulkUpsertScores_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_BulkUpsertScores_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_PodiumAPI_UpsertScore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_Podium_UpsertScore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -821,18 +821,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_UpsertScore_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_UpsertScore_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_UpsertScore_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_UpsertScore_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_TotalMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_TotalMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -841,18 +841,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_TotalMembers_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_TotalMembers_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_TotalMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_TotalMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PATCH", pattern_PodiumAPI_IncrementScore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PATCH", pattern_Podium_IncrementScore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -861,18 +861,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_IncrementScore_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_IncrementScore_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_IncrementScore_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_IncrementScore_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -881,18 +881,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetMember_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetMember_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetMember_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetMember_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -901,18 +901,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetMembers_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetMembers_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_PodiumAPI_RemoveMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_Podium_RemoveMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -921,18 +921,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_RemoveMember_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_RemoveMember_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_RemoveMember_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_RemoveMember_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_PodiumAPI_RemoveMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_Podium_RemoveMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -941,18 +941,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_RemoveMembers_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_RemoveMembers_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_RemoveMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_RemoveMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetRank_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetRank_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -961,18 +961,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetRank_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetRank_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetRank_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetRank_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetAroundMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetAroundMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -981,18 +981,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetAroundMember_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetAroundMember_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetAroundMember_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetAroundMember_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetAroundScore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetAroundScore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1001,18 +1001,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetAroundScore_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetAroundScore_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetAroundScore_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetAroundScore_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetTopMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetTopMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1021,18 +1021,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetTopMembers_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetTopMembers_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetTopMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetTopMembers_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetTopPercentage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetTopPercentage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1041,18 +1041,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetTopPercentage_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetTopPercentage_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetTopPercentage_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetTopPercentage_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_PodiumAPI_UpsertScoreMultiLeaderboards_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_Podium_UpsertScoreMultiLeaderboards_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1061,18 +1061,18 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_UpsertScoreMultiLeaderboards_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_UpsertScoreMultiLeaderboards_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_UpsertScoreMultiLeaderboards_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_UpsertScoreMultiLeaderboards_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_PodiumAPI_GetRankMultiLeaderboards_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Podium_GetRankMultiLeaderboards_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1081,14 +1081,14 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PodiumAPI_GetRankMultiLeaderboards_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Podium_GetRankMultiLeaderboards_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PodiumAPI_GetRankMultiLeaderboards_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Podium_GetRankMultiLeaderboards_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1096,69 +1096,69 @@ func RegisterPodiumAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 }
 
 var (
-	pattern_PodiumAPI_RemoveLeaderboard_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"l", "leaderboard_id"}, ""))
+	pattern_Podium_RemoveLeaderboard_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"l", "leaderboard_id"}, ""))
 
-	pattern_PodiumAPI_BulkUpsertScores_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "scores"}, ""))
+	pattern_Podium_BulkUpsertScores_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "scores"}, ""))
 
-	pattern_PodiumAPI_UpsertScore_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "score"}, ""))
+	pattern_Podium_UpsertScore_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "score"}, ""))
 
-	pattern_PodiumAPI_TotalMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "members-count"}, ""))
+	pattern_Podium_TotalMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "members-count"}, ""))
 
-	pattern_PodiumAPI_IncrementScore_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "score"}, ""))
+	pattern_Podium_IncrementScore_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "score"}, ""))
 
-	pattern_PodiumAPI_GetMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "members", "member_public_id"}, ""))
+	pattern_Podium_GetMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "members", "member_public_id"}, ""))
 
-	pattern_PodiumAPI_GetMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "members"}, ""))
+	pattern_Podium_GetMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "members"}, ""))
 
-	pattern_PodiumAPI_RemoveMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "members", "member_public_id"}, ""))
+	pattern_Podium_RemoveMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "members", "member_public_id"}, ""))
 
-	pattern_PodiumAPI_RemoveMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "members"}, ""))
+	pattern_Podium_RemoveMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"l", "leaderboard_id", "members"}, ""))
 
-	pattern_PodiumAPI_GetRank_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "rank"}, ""))
+	pattern_Podium_GetRank_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "rank"}, ""))
 
-	pattern_PodiumAPI_GetAroundMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "around"}, ""))
+	pattern_Podium_GetAroundMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "members", "member_public_id", "around"}, ""))
 
-	pattern_PodiumAPI_GetAroundScore_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "scores", "score", "around"}, ""))
+	pattern_Podium_GetAroundScore_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"l", "leaderboard_id", "scores", "score", "around"}, ""))
 
-	pattern_PodiumAPI_GetTopMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "top", "page_number"}, ""))
+	pattern_Podium_GetTopMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "top", "page_number"}, ""))
 
-	pattern_PodiumAPI_GetTopPercentage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "top-percent", "percentage"}, ""))
+	pattern_Podium_GetTopPercentage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"l", "leaderboard_id", "top-percent", "percentage"}, ""))
 
-	pattern_PodiumAPI_UpsertScoreMultiLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
+	pattern_Podium_UpsertScoreMultiLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
 
-	pattern_PodiumAPI_GetRankMultiLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
+	pattern_Podium_GetRankMultiLeaderboards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"m", "member_public_id", "scores"}, ""))
 )
 
 var (
-	forward_PodiumAPI_RemoveLeaderboard_0 = runtime.ForwardResponseMessage
+	forward_Podium_RemoveLeaderboard_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_BulkUpsertScores_0 = runtime.ForwardResponseMessage
+	forward_Podium_BulkUpsertScores_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_UpsertScore_0 = runtime.ForwardResponseMessage
+	forward_Podium_UpsertScore_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_TotalMembers_0 = runtime.ForwardResponseMessage
+	forward_Podium_TotalMembers_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_IncrementScore_0 = runtime.ForwardResponseMessage
+	forward_Podium_IncrementScore_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetMember_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetMember_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetMembers_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetMembers_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_RemoveMember_0 = runtime.ForwardResponseMessage
+	forward_Podium_RemoveMember_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_RemoveMembers_0 = runtime.ForwardResponseMessage
+	forward_Podium_RemoveMembers_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetRank_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetRank_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetAroundMember_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetAroundMember_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetAroundScore_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetAroundScore_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetTopMembers_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetTopMembers_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetTopPercentage_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetTopPercentage_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_UpsertScoreMultiLeaderboards_0 = runtime.ForwardResponseMessage
+	forward_Podium_UpsertScoreMultiLeaderboards_0 = runtime.ForwardResponseMessage
 
-	forward_PodiumAPI_GetRankMultiLeaderboards_0 = runtime.ForwardResponseMessage
+	forward_Podium_GetRankMultiLeaderboards_0 = runtime.ForwardResponseMessage
 )

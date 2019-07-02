@@ -16,7 +16,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
@@ -32,8 +31,8 @@ var _ = Describe("Healthcheck Handler", func() {
 	It("Should respond with default WORKING string (grpc)", func() {
 		a := GetDefaultTestApp()
 
-		SetupGRPC(a, func(cli api.PodiumAPIClient) {
-			resp, err := cli.HealthCheck(context.Background(), &empty.Empty{})
+		SetupGRPC(a, func(cli api.PodiumClient) {
+			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.WorkingString).To(Equal("WORKING"))
@@ -53,8 +52,8 @@ var _ = Describe("Healthcheck Handler", func() {
 		a := GetDefaultTestApp()
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
 
-		SetupGRPC(a, func(cli api.PodiumAPIClient) {
-			resp, err := cli.HealthCheck(context.Background(), &empty.Empty{})
+		SetupGRPC(a, func(cli api.PodiumClient) {
+			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.WorkingString).To(Equal("OTHERWORKING"))
@@ -73,8 +72,8 @@ var _ = Describe("Healthcheck Handler", func() {
 	It("Should fail if redis failing (grpc)", func() {
 		a := GetDefaultTestAppWithFaultyRedis()
 
-		SetupGRPC(a, func(cli api.PodiumAPIClient) {
-			resp, err := cli.HealthCheck(context.Background(), &empty.Empty{})
+		SetupGRPC(a, func(cli api.PodiumClient) {
+			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("connection refused"))

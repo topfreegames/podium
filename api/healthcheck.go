@@ -17,7 +17,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
@@ -39,7 +38,7 @@ func (app *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *App) HealthCheck(ctx context.Context, in *empty.Empty) (*api.HealthCheckResponse, error) {
+func (app *App) HealthCheck(ctx context.Context, in *api.HealthCheckRequest) (*api.HealthCheckResponse, error) {
 	var res string
 
 	err := withSegment("redis", ctx, func() error {

@@ -403,7 +403,7 @@ func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
 			grpc.UnaryServerInterceptor(app.newRelicMiddleware),
 		),
 	))
-	api.RegisterPodiumAPIServer(app.grpcServer, app)
+	api.RegisterPodiumServer(app.grpcServer, app)
 
 	app.grpcReady <- true
 	if err := app.grpcServer.Serve(lis); err != nil {
@@ -420,7 +420,7 @@ func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if err := api.RegisterPodiumAPIHandlerFromEndpoint(ctx, gatewayMux, app.GRPCEndpoint, opts); err != nil {
+	if err := api.RegisterPodiumHandlerFromEndpoint(ctx, gatewayMux, app.GRPCEndpoint, opts); err != nil {
 		errch <- fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
 	}
 

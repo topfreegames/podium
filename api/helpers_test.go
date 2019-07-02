@@ -227,7 +227,7 @@ func fastSendTo(method, url string, payload []byte) (int, []byte, error) {
 }
 
 //sets up the environment for grpc communication, starting the app and creating a connected client
-func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
+func SetupGRPC(app *api.App, f func(pb.PodiumClient)) {
 	go func() {
 		_ = app.Start()
 	}()
@@ -241,7 +241,7 @@ func SetupGRPC(app *api.App, f func(pb.PodiumAPIClient)) {
 		_ = conn.Close()
 	}()
 
-	cli := pb.NewPodiumAPIClient(conn)
+	cli := pb.NewPodiumClient(conn)
 
 	f(cli)
 }
