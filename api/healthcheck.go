@@ -16,15 +16,17 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
-//healthCheckHandler is the handler responsible for validating that the app is still up
+// healthCheckHandler is the handler responsible for validating that the app is still up.
 func (app *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	workingString := app.Config.GetString("healthcheck.workingText")
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	res, err := app.Leaderboards.Ping(context.Background())
+	res, err := app.Leaderboards.Ping(r.Context())
 	var msg string
 	if err != nil || res != "PONG" {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -38,16 +40,17 @@ func (app *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *App) HealthCheck(ctx context.Context, in *api.HealthCheckRequest) (*api.HealthCheckResponse, error) {
+func (app *App) HealthCheck(ctx context.Context, req *api.HealthCheckRequest) (*api.HealthCheckResponse, error) {
 	var res string
 
 	err := withSegment("redis", ctx, func() error {
 		var err error
-		res, err = app.Leaderboards.Ping(ctx)
-		if err != nil {
-			return fmt.Errorf("Error trying to ping redis: %v", err)
-		} else if res != "PONG" {
-			return fmt.Errorf("Redis return = %s, want PONG", res)
+
+		switch res, err = app.Leaderboards.Ping(ctx); {
+		case err != nil:
+			return status.Errorf(codes.Internal, "Error trying to ping redis: %v", err)
+		case res != "PONG":
+			return status.Errorf(codes.Internal, "Redis return = %s, want PONG", res)
 		}
 		return nil
 	})

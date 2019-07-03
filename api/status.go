@@ -42,6 +42,6 @@ func (app *App) statusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *App) Status(ctx context.Context, in *empty.Empty) (*api.StatusResponse, error) {
+func (app *App) Status(ctx context.Context, req *empty.Empty) (*api.StatusResponse, error) {
 	return &api.StatusResponse{ErrorRate: app.Errors.Rate()}, nil
 }

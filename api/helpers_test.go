@@ -19,19 +19,17 @@ import (
 	"net/http"
 	"time"
 
-	"google.golang.org/grpc"
-
-	"github.com/spf13/viper"
-	"github.com/topfreegames/podium/leaderboard"
-
 	"github.com/go-redis/redis"
-
-	. "github.com/onsi/gomega"
-	extredis "github.com/topfreegames/extensions/redis"
+	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/api"
+	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/testing"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/grpc"
 
+	. "github.com/onsi/gomega"
+
+	extredis "github.com/topfreegames/extensions/redis"
 	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
@@ -61,7 +59,7 @@ func NewEmptyCtx() context.Context {
 // GetDefaultTestApp returns a new podium API Application bound to random ports for test
 func GetDefaultTestApp() *api.App {
 	logger := testing.NewMockLogger()
-	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, logger)
+	app, err := api.New("127.0.0.1", 0, 0, "../config/test.yaml", false, logger)
 	Expect(err).NotTo(HaveOccurred())
 	return app
 }
@@ -137,7 +135,7 @@ func initializeTestServer(app *api.App) {
 		client = &http.Client{Transport: transport}
 	}
 	go func() {
-		_ = app.Start()
+		_ = app.Start(context.Background())
 	}()
 	err := app.WaitForReady(1 * time.Second)
 	Expect(err).NotTo(HaveOccurred())
@@ -229,7 +227,7 @@ func fastSendTo(method, url string, payload []byte) (int, []byte, error) {
 //sets up the environment for grpc communication, starting the app and creating a connected client
 func SetupGRPC(app *api.App, f func(pb.PodiumClient)) {
 	go func() {
-		_ = app.Start()
+		_ = app.Start(context.Background())
 	}()
 	err := app.WaitForReady(1 * time.Second)
 	Expect(err).NotTo(HaveOccurred())

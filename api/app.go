@@ -21,25 +21,21 @@ import (
 	"syscall"
 	"time"
 
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
-
-	"github.com/topfreegames/podium/leaderboard"
-
 	"github.com/getsentry/raven-go"
-	newrelic "github.com/newrelic/go-agent"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/jaeger"
-	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
+	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	newrelic "github.com/newrelic/go-agent"
+	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
@@ -48,40 +44,41 @@ type JSON map[string]interface{}
 
 // App is a struct that represents a podium Application
 type App struct {
-	Debug                bool
-	Fast                 bool
-	HTTPPort             int
-	GRPCPort             int
-	HTTPEndpoint         string
-	GRPCEndpoint         string
+	Debug bool
+
+	// HTTP endpoint for HTTP requests. Built after calling Start. Format: 127.0.0.1:8080
+	HTTPEndpoint string
+
+	// GRPC endpoint for GRPC requests. Built after calling Start. Format: 127.0.0.1:8081
+	GRPCEndpoint string
+
 	httpReady, grpcReady chan bool
-	Host                 string
-	ConfigPath           string
-	Errors               metrics.EWMA
-	grpcServer           *grpc.Server
-	httpServer           *http.Server
-	Config               *viper.Viper
-	Logger               zap.Logger
-	Leaderboards         *leaderboard.Client
-	NewRelic             newrelic.Application
-	DDStatsD             *extnethttpmiddleware.DogStatsD
+
+	ConfigPath   string
+	Errors       metrics.EWMA
+	grpcServer   *grpc.Server
+	httpServer   *http.Server
+	Config       *viper.Viper
+	Logger       zap.Logger
+	Leaderboards *leaderboard.Client
+	NewRelic     newrelic.Application
+	DDStatsD     *extnethttpmiddleware.DogStatsD
 }
 
-// GetApp returns a new podium Application.
+// New returns a new podium Application.
 // If httpPort is sent as zero, a random port will be selected (the same will happen for grpcPort)
-func GetApp(host string, httpPort, grpcPort int, configPath string, debug bool, logger zap.Logger) (*App, error) {
+func New(host string, httpPort, grpcPort int, configPath string, debug bool, logger zap.Logger) (*App, error) {
 	app := &App{
-		Host:       host,
-		HTTPPort:   httpPort,
-		GRPCPort:   grpcPort,
-		httpReady:  make(chan bool, 1),
-		grpcReady:  make(chan bool, 1),
-		ConfigPath: configPath,
-		Config:     viper.New(),
-		Debug:      debug,
-		Logger:     logger,
+		HTTPEndpoint: fmt.Sprintf("%s:%d", host, httpPort),
+		GRPCEndpoint: fmt.Sprintf("%s:%d", host, grpcPort),
+		httpReady:    make(chan bool, 1),
+		grpcReady:    make(chan bool, 1),
+		ConfigPath:   configPath,
+		Config:       viper.New(),
+		Debug:        debug,
+		Logger:       logger,
 	}
-	err := app.Configure()
+	err := app.configure()
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +97,7 @@ func (app *App) getStatusCodeFromError(err error) (*status.Status, int) {
 }
 
 // Configure instantiates the required dependencies for podium Application
-func (app *App) Configure() error {
+func (app *App) configure() error {
 	app.setConfigurationDefaults()
 
 	err := app.loadConfiguration()
@@ -127,12 +124,10 @@ func (app *App) Configure() error {
 	}
 
 	//we are customizing the default http error reply
-	runtime.HTTPError = func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler,
-		w http.ResponseWriter, _ *http.Request, err error) {
-		w.Header().Set("Content-Type", marshaler.ContentType())
-		var s int
+	runtime.HTTPError = func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, _ *http.Request, rpcErr error) {
 
-		st, s := app.getStatusCodeFromError(err)
+		w.Header().Set("Content-Type", marshaler.ContentType())
+		st, s := app.getStatusCodeFromError(rpcErr)
 
 		w.WriteHeader(s)
 
@@ -146,9 +141,10 @@ func (app *App) Configure() error {
 			Reason:  st.Message(),
 		}
 
-		buf, merr := marshaler.Marshal(body)
-		if merr != nil {
-			app.Logger.Error("Failed to marshal error body,", zap.Error(merr))
+		buf, err := marshaler.Marshal(body)
+		if err != nil {
+			app.Logger.Error("Failed to marshal error body,", zap.Error(err))
+			return
 		}
 		if _, err := w.Write(buf); err != nil {
 			app.Logger.Error("Failed to write response.,", zap.Error(err))
@@ -313,30 +309,22 @@ func (app *App) AddError() {
 	app.Errors.Update(1)
 }
 
-func buildAddress(port int) string {
-	if port == 0 {
-		return "localhost:"
-	} else {
-		return fmt.Sprintf("localhost:%d", port)
-	}
-}
-
 // Start starts listening for web requests at specified host and port
-func (app *App) Start() error {
+func (app *App) Start(ctx context.Context) error {
 	l := app.Logger.With(
 		zap.String("source", "app"),
 		zap.String("operation", "Start"),
-		zap.String("host", app.Host),
-		zap.Int("port", app.HTTPPort),
+		zap.String("HTTPEndpoint", app.HTTPEndpoint),
+		zap.String("GRPCEndPoint", app.GRPCEndpoint),
 	)
 
-	grpcLis, err := net.Listen("tcp", buildAddress(app.GRPCPort))
+	grpcLis, err := net.Listen("tcp", app.GRPCEndpoint)
 	if err != nil {
 		return fmt.Errorf("error trying to listen for connections: %v", err)
 	}
 	app.GRPCEndpoint = grpcLis.Addr().String()
 
-	httpLis, err := net.Listen("tcp", buildAddress(app.HTTPPort))
+	httpLis, err := net.Listen("tcp", app.HTTPEndpoint)
 	if err != nil {
 		return fmt.Errorf("error listening on HTTPEndpoint: %v", err)
 	}
@@ -348,12 +336,17 @@ func (app *App) Start() error {
 	wg.Add(2)
 
 	go func() {
-		app.startGRPCServer(grpcLis, errch)
-		wg.Done()
+		defer wg.Done()
+		if err := app.startGRPCServer(grpcLis); err != nil {
+			errch <- err
+		}
 	}()
+
 	go func() {
-		app.startHTTPServer(httpLis, errch)
-		wg.Done()
+		defer wg.Done()
+		if err := app.startHTTPServer(ctx, httpLis); err != nil {
+			errch <- err
+		}
 	}()
 
 	stopped := make(chan bool, 1)
@@ -364,6 +357,7 @@ func (app *App) Start() error {
 
 	log.I(l, "app started")
 	sg := make(chan os.Signal)
+	//TODO verify that capturing SIGKILL actually works. Signal handling should be moved outside of Start.
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
 
 	// stop server
@@ -383,7 +377,7 @@ func (app *App) Start() error {
 	return nil
 }
 
-func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
+func (app *App) startGRPCServer(lis net.Listener) error {
 	var basicAuthInterceptor grpc.UnaryServerInterceptor
 
 	basicAuthUser := app.Config.GetString("basicauth.username")
@@ -407,21 +401,19 @@ func (app *App) startGRPCServer(lis net.Listener, errch chan<- error) {
 
 	app.grpcReady <- true
 	if err := app.grpcServer.Serve(lis); err != nil {
-		errch <- fmt.Errorf("error trying to serve with grpc server: %v", err)
+		return fmt.Errorf("error trying to serve with grpc server: %v", err)
 	}
+
+	return nil
 }
 
-func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
-	gatewayMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard,
-		&runtime.JSONPb{EmitDefaults: true}))
+func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
+	gatewayMux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{EmitDefaults: true}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	if err := api.RegisterPodiumHandlerFromEndpoint(ctx, gatewayMux, app.GRPCEndpoint, opts); err != nil {
-		errch <- fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
+		return fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -436,8 +428,10 @@ func (app *App) startHTTPServer(lis net.Listener, errch chan<- error) {
 
 	app.httpReady <- true
 	if err := app.httpServer.Serve(lis); err != http.ErrServerClosed {
-		errch <- fmt.Errorf("error listening and serving http requests: %v", err)
+		return fmt.Errorf("error listening and serving http requests: %v", err)
 	}
+
+	return nil
 }
 
 // WaitForReady blocks until App is ready to serve requests or the timeout is reached.

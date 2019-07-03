@@ -15,6 +15,7 @@ import (
 
 	"github.com/mailru/easyjson/jlexer"
 	"github.com/mailru/easyjson/jwriter"
+
 	newrelic "github.com/newrelic/go-agent"
 )
 

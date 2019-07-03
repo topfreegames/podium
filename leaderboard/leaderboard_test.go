@@ -14,16 +14,15 @@ import (
 	"strconv"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
-
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
-	extredis "github.com/topfreegames/extensions/redis"
-
-	. "github.com/topfreegames/podium/leaderboard"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/topfreegames/podium/leaderboard"
+
+	uuid "github.com/satori/go.uuid"
+	extredis "github.com/topfreegames/extensions/redis"
 )
 
 var _ = Describe("Leaderboard Model", func() {

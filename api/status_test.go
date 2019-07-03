@@ -14,10 +14,11 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/golang/protobuf/ptypes/empty"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 

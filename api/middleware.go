@@ -17,14 +17,14 @@ import (
 	"runtime/debug"
 	"time"
 
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/getsentry/raven-go"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 )
 
 type newRelicContextKey struct {
@@ -90,10 +90,7 @@ func (app *App) loggerMiddleware(ctx context.Context, req interface{}, info *grp
 	}
 
 	//Everything went ok
-	if cm := reqLog.Check(zap.DebugLevel, "Request successful."); cm.OK() {
-		cm.Write()
-	}
-
+	log.D(reqLog, "Request successful.")
 	return h, err
 }
 
@@ -114,14 +111,13 @@ func (app *App) recoveryMiddleware(ctx context.Context, req interface{}, info *g
 func (app *App) responseTimeMetricsMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	startTime := time.Now()
 	h, err := handler(ctx, req)
-	_, status := app.getStatusCodeFromError(err)
-	method := info.FullMethod
-
 	timeUsed := time.Since(startTime)
+	_, st := app.getStatusCodeFromError(err)
+	method := info.FullMethod
 
 	tags := []string{
 		fmt.Sprintf("method:%s", method),
-		fmt.Sprintf("status:%d", status),
+		fmt.Sprintf("status:%d", st),
 	}
 
 	if err := app.DDStatsD.Timing("response_time_milliseconds", timeUsed, tags...); err != nil {

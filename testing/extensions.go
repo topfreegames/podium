@@ -10,6 +10,7 @@
 package testing
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -42,7 +43,7 @@ func initializeTestServer(app *api.App) {
 		client = &http.Client{Transport: transport}
 	}
 	go func() {
-		_ = app.Start()
+		_ = app.Start(context.Background())
 	}()
 	time.Sleep(25 * time.Millisecond)
 }
@@ -53,11 +54,10 @@ func getDefaultTestApp() *api.App {
 		zap.NewJSONEncoder(),
 		zap.FatalLevel,
 	)
-	app, err := api.GetApp("0.0.0.0", 0, 0, "../config/test.yaml", false, logger)
+	app, err := api.New("127.0.0.1", 0, 0, "../config/test.yaml", false, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
 	}
-	app.Configure()
 	return app
 }
 

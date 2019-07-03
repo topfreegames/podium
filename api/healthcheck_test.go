@@ -13,6 +13,9 @@ import (
 	"context"
 	"net/http"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -76,6 +79,7 @@ var _ = Describe("Healthcheck Handler", func() {
 			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
 
 			Expect(err).To(HaveOccurred())
+			Expect(status.Code(err)).To(Equal(codes.Internal))
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 			Expect(resp).To(BeNil())
 		})

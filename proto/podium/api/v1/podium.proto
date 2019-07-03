@@ -82,7 +82,7 @@ service Podium {
     };
   }
 
-  // RemoveMembers allow the removal of multiple members of a leaderboard.
+  // RemoveMembers allows the removal of multiple members of a leaderboard.
   rpc RemoveMembers(RemoveMembersRequest) returns (RemoveMembersResponse) {
     option (google.api.http) = {
       delete: "/l/{leaderboard_id}/members"

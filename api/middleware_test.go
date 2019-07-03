@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"google.golang.org/grpc/metadata"
-
 	"github.com/spf13/viper"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestBasicAuthMiddleware(t *testing.T) {

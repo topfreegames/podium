@@ -19,14 +19,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/context"
-
-	"github.com/spf13/viper"
-
 	"github.com/go-redis/redis"
-	tfgredis "github.com/topfreegames/extensions/redis"
+	"github.com/labstack/echo/context"
+	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis/interfaces"
 	"github.com/topfreegames/podium/util"
+
+	tfgredis "github.com/topfreegames/extensions/redis"
 )
 
 //MemberNotFoundError indicates member was not found in Redis

@@ -19,13 +19,15 @@ import (
 	"time"
 
 	"github.com/topfreegames/extensions/redis/interfaces"
+	"github.com/topfreegames/podium/api"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	uuid "github.com/satori/go.uuid"
-	"github.com/topfreegames/podium/api"
 	. "github.com/topfreegames/podium/testing"
 
+	uuid "github.com/satori/go.uuid"
 	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
@@ -2206,6 +2208,7 @@ var _ = Describe("Leaderboard Handler", func() {
 					MemberPublicId: "memberpublicid",
 				})
 				Expect(err).To(HaveOccurred())
+				Expect(status.Code(err)).To(Equal(codes.InvalidArgument))
 				Expect(err.Error()).To(ContainSubstring("Leaderboard IDs are required using the 'leaderboardIds' querystring parameter"))
 			})
 		})
