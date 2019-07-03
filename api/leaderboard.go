@@ -12,6 +12,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/topfreegames/podium/leaderboard"
@@ -59,7 +60,7 @@ func (app *App) BulkUpsertScores(ctx context.Context, req *api.BulkUpsertScoresR
 		if err := app.Leaderboards.SetMembersScore(ctx, req.LeaderboardId, members, req.PrevRank, getScoreTTL(req.ScoreTTL)); err != nil {
 			lg.Error("Setting member scores failed.", zap.Error(err))
 			app.AddError()
-
+			//TODO: Turn all these LeaderboardExpiredError verifications into a middleware
 			if _, ok := err.(*util.LeaderboardExpiredError); ok {
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
@@ -183,6 +184,7 @@ func (app *App) IncrementScore(ctx context.Context, req *api.IncrementScoreReque
 	}, nil
 }
 
+//TODO: Make this function use RemoveMembers
 // RemoveMember removes a member from a leaderboard.
 func (app *App) RemoveMember(ctx context.Context, req *api.RemoveMemberRequest) (*api.RemoveMemberResponse, error) {
 	lg := app.Logger.With(
@@ -194,6 +196,7 @@ func (app *App) RemoveMember(ctx context.Context, req *api.RemoveMemberRequest) 
 	err := withSegment("Model", ctx, func() error {
 		lg.Debug("Removing member.")
 
+		//TODO: implement an operation that checks and if exists removes the member atomically, removing the need to check an error string.
 		if err := app.Leaderboards.RemoveMember(ctx, req.LeaderboardId, req.MemberPublicId); err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
 			lg.Error("Member removal failed.", zap.Error(err))
 			app.AddError()
@@ -246,6 +249,13 @@ func (app *App) RemoveMembers(ctx context.Context, req *api.RemoveMembersRequest
 	return &api.RemoveMembersResponse{Success: true}, nil
 }
 
+func getOrder(order string) string {
+	if order == "" || (order != "asc" && order != "desc") {
+		return "desc"
+	}
+	return order
+}
+
 // GetMember is the handler responsible for retrieving a member score and rank.
 func (app *App) GetMember(ctx context.Context, req *api.GetMemberRequest) (*api.GetMemberResponse, error) {
 	lg := app.Logger.With(
@@ -254,21 +264,20 @@ func (app *App) GetMember(ctx context.Context, req *api.GetMemberRequest) (*api.
 		zap.String("memberPublicID", req.MemberPublicId),
 	)
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
 	var member *leaderboard.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting member.")
+		//TODO: Add a NotFound error on the library
 		member, err = app.Leaderboards.GetMember(ctx, req.LeaderboardId, req.MemberPublicId, order, req.ScoreTTL)
-		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+		switch {
+		case err != nil && strings.HasPrefix(err.Error(), notFoundError):
 			lg.Error("Member not found.", zap.Error(err))
 			app.AddError()
 			return status.Errorf(codes.NotFound, "Member not found.")
-		} else if err != nil {
+		case err != nil:
 			lg.Error("Get member failed.")
 			app.AddError()
 			return err
@@ -298,10 +307,7 @@ func (app *App) GetRank(ctx context.Context, req *api.GetRankRequest) (*api.GetR
 		zap.String("memberPublicID", req.MemberPublicId),
 	)
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
 	var rank int
 	err := withSegment("Model", ctx, func() error {
@@ -339,10 +345,7 @@ func (app *App) GetRankMultiLeaderboards(ctx context.Context, req *api.GetRankMu
 		zap.String("memberPublicID", req.MemberPublicId),
 	)
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
 	if req.LeaderboardIds == "" {
 		app.AddError()
@@ -393,12 +396,9 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 		zap.String("memberPublicID", req.MemberPublicId),
 	)
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
-	pageSize := app.getPageSize(int(req.PageSize))
+	pageSize := getPageSize(int(req.PageSize))
 	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
 		msg := fmt.Sprintf(
 			"Max pageSize allowed: %d. pageSize requested: %d",
@@ -436,7 +436,7 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 	}, nil
 }
 
-func (app *App) getPageSize(pageSize int) int {
+func getPageSize(pageSize int) int {
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
@@ -451,12 +451,9 @@ func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreReque
 		zap.String("leaderboard", req.LeaderboardId),
 	)
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
-	pageSize := app.getPageSize(int(req.PageSize))
+	pageSize := getPageSize(int(req.PageSize))
 	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
 		msg := fmt.Sprintf(
 			"Max pageSize allowed: %d. pageSize requested: %d",
@@ -530,16 +527,11 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 		zap.String("leaderboard", req.LeaderboardId),
 	)
 
-	if req.PageNumber == 0 {
-		req.PageNumber = 1
-	}
+	pageNumber := int(math.Max(float64(req.PageNumber), 1))
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
-	pageSize := app.getPageSize(int(req.PageSize))
+	pageSize := getPageSize(int(req.PageSize))
 	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
 		msg := fmt.Sprintf(
 			"Max pageSize allowed: %d. pageSize requested: %d",
@@ -553,7 +545,7 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting top members.")
-		members, err = app.Leaderboards.GetLeaders(ctx, req.LeaderboardId, pageSize, int(req.PageNumber), order)
+		members, err = app.Leaderboards.GetLeaders(ctx, req.LeaderboardId, pageSize, pageNumber, order)
 
 		if err != nil {
 			lg.Error("Getting top members failed.", zap.Error(err))
@@ -585,10 +577,7 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 		return nil, status.Errorf(codes.InvalidArgument, "Percentage must be a valid integer between 1 and 100.")
 	}
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
 	var members leaderboard.Members
 	err := withSegment("Model", ctx, func() error {
@@ -641,10 +630,7 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 		zap.String("leaderboard", req.LeaderboardId),
 	)
 
-	order := req.Order
-	if order == "" || (order != "asc" && order != "desc") {
-		order = "desc"
-	}
+	order := getOrder(req.Order)
 
 	if req.Ids == "" {
 		app.AddError()
@@ -705,7 +691,7 @@ func newMemberRankResponseList(members leaderboard.Members) []*api.Member {
 	return list
 }
 
-// UpsertScoreAllLeaderboards sets the member score for all leaderboards.
+// UpsertScoreMultiLeaderboards sets the member score for all leaderboards.
 func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, req *api.UpsertScoreMultiLeaderboardsRequest) (*api.UpsertScoreMultiLeaderboardsResponse, error) {
 	if len(req.ScoreMultiChange.Leaderboards) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "leaderboards is required")

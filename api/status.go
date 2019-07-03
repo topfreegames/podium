@@ -21,14 +21,22 @@ import (
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
-// StatusHandler is the handler responsible for reporting podium status
+type statusPayload struct {
+	App statusApp `json:"app"`
+}
+
+type statusApp struct {
+	ErrorRate float64 `json:"errorRate"`
+}
+
+// statusHandler is the handler responsible for reporting podium status.
 func (app *App) statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
-	payload := map[string]interface{}{
-		"app": map[string]interface{}{
-			"errorRate": app.Errors.Rate(),
-		},
+
+	payload := statusPayload{App: statusApp{
+		ErrorRate: app.Errors.Rate()},
 	}
+
 	data, err := json.Marshal(payload)
 	if err != nil {
 		errMsg := fmt.Sprintf("JSON marshaling failed: %v", err)
