@@ -277,12 +277,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:87c768f0bdca2b2dac5e67d57c98e631203e048441340002d4d3afa9cd2c4c40"
+  digest = "1:cdf13ca0f5df719f31c0b466578feba0837bd6bb0aea95b3981a307844803704"
   name = "github.com/mailru/easyjson"
   packages = [
-    ".",
     "buffer",
-    "gen",
     "jlexer",
     "jwriter",
   ]
@@ -730,7 +728,6 @@
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
     "github.com/labstack/echo/context",
-    "github.com/mailru/easyjson/gen",
     "github.com/mailru/easyjson/jlexer",
     "github.com/mailru/easyjson/jwriter",
     "github.com/newrelic/go-agent",
