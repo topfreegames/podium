@@ -17,20 +17,20 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"time"
 
-	"github.com/spf13/viper"
-	"github.com/topfreegames/podium/leaderboard"
-
 	"github.com/go-redis/redis"
-
-	"github.com/labstack/echo/engine/standard"
-	. "github.com/onsi/gomega"
-	extredis "github.com/topfreegames/extensions/redis"
+	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/api"
+	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/testing"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/grpc"
+
+	. "github.com/onsi/gomega"
+
+	extredis "github.com/topfreegames/extensions/redis"
+	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 func GetConnectedRedis() (*extredis.Client, error) {
@@ -56,12 +56,11 @@ func NewEmptyCtx() context.Context {
 	return context.Background()
 }
 
-// GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
+// GetDefaultTestApp returns a new podium API Application bound to random ports for test
 func GetDefaultTestApp() *api.App {
 	logger := testing.NewMockLogger()
-	app, err := api.GetApp("0.0.0.0", 8890, "../config/test.yaml", false, false, logger)
+	app, err := api.New("127.0.0.1", 0, 0, "../config/test.yaml", false, logger)
 	Expect(err).NotTo(HaveOccurred())
-	app.Configure()
 	return app
 }
 
@@ -130,25 +129,28 @@ func Delete(app *api.App, url string) (int, string) {
 var client *http.Client
 var transport *http.Transport
 
-func initClient() {
+func initializeTestServer(app *api.App) {
 	if client == nil {
 		transport = &http.Transport{DisableKeepAlives: true}
 		client = &http.Client{Transport: transport}
 	}
+	go func() {
+		_ = app.Start(context.Background())
+	}()
+	err := app.WaitForReady(1 * time.Second)
+	Expect(err).NotTo(HaveOccurred())
 }
 
-func InitializeTestServer(app *api.App) *httptest.Server {
-	initClient()
-	app.Engine.SetHandler(app.App)
-	return httptest.NewServer(app.Engine.(*standard.Server))
+func shutdownTestServer(app *api.App) {
+	app.GracefullStop()
 }
 
-func GetRequest(app *api.App, ts *httptest.Server, method, url, body string) *http.Request {
+func getRequest(app *api.App, method, url, body string) *http.Request {
 	var bodyBuff io.Reader
 	if body != "" {
 		bodyBuff = bytes.NewBuffer([]byte(body))
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", ts.URL, url), bodyBuff)
+	req, err := http.NewRequest(method, fmt.Sprintf("http://%s%s", app.HTTPEndpoint, url), bodyBuff)
 	req.Header.Set("Connection", "close")
 	req.Close = true
 	Expect(err).NotTo(HaveOccurred())
@@ -156,30 +158,28 @@ func GetRequest(app *api.App, ts *httptest.Server, method, url, body string) *ht
 	return req
 }
 
-func PerformRequest(ts *httptest.Server, req *http.Request) (int, string) {
+func performRequest(req *http.Request) (int, string) {
 	res, err := client.Do(req)
-	//Wait for port of httptest to be reclaimed by OS
-	time.Sleep(50 * time.Millisecond)
 	Expect(err).NotTo(HaveOccurred())
 
 	b, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	err = res.Body.Close()
 	Expect(err).NotTo(HaveOccurred())
 
 	return res.StatusCode, string(b)
 }
 
 func doRequest(app *api.App, method, url, body string) (int, string) {
-	ts := InitializeTestServer(app)
-	defer transport.CloseIdleConnections()
-	defer ts.Close()
-
-	req := GetRequest(app, ts, method, url, body)
-	return PerformRequest(ts, req)
+	initializeTestServer(app)
+	defer shutdownTestServer(app)
+	req := getRequest(app, method, url, body)
+	return performRequest(req)
 }
 
-func getRoute(ts *httptest.Server, url string) string {
-	return fmt.Sprintf("%s%s", ts.URL, url)
+func getRoute(httpEndPoint string, url string) string {
+	return fmt.Sprintf("http://%s%s", httpEndPoint, url)
 }
 
 func fastGet(url string) (int, []byte, error) {
@@ -222,4 +222,24 @@ func fastSendTo(method, url string, payload []byte) (int, []byte, error) {
 	resp := fasthttp.AcquireResponse()
 	err := c.Do(req, resp)
 	return resp.StatusCode(), resp.Body(), err
+}
+
+//sets up the environment for grpc communication, starting the app and creating a connected client
+func SetupGRPC(app *api.App, f func(pb.PodiumClient)) {
+	go func() {
+		_ = app.Start(context.Background())
+	}()
+	err := app.WaitForReady(1 * time.Second)
+	Expect(err).NotTo(HaveOccurred())
+	defer app.GracefullStop()
+
+	conn, err := grpc.Dial(app.GRPCEndpoint, grpc.WithInsecure())
+	Expect(err).NotTo(HaveOccurred())
+	defer func() {
+		_ = conn.Close()
+	}()
+
+	cli := pb.NewPodiumClient(conn)
+
+	f(cli)
 }

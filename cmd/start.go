@@ -10,14 +10,17 @@
 package cmd
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/podium/api"
 	"go.uber.org/zap"
 )
 
 var host string
-var port int
-var debug, quiet, fast bool
+var httpPort int
+var grpcPort int
+var debug, quiet bool
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -40,12 +43,12 @@ var startCmd = &cobra.Command{
 			zap.String("source", "app"),
 		)
 
-		app, err := api.GetApp(
+		app, err := api.New(
 			host,
-			port,
+			httpPort,
+			grpcPort,
 			ConfigFile,
 			debug,
-			fast,
 			logger,
 		)
 
@@ -53,7 +56,11 @@ var startCmd = &cobra.Command{
 			logger.Fatal("Could not get podium application.", zap.Error(err))
 		}
 
-		err = app.Start()
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		err = app.Start(ctx)
 		if err != nil {
 			logger.Fatal("Could not start podium application.", zap.Error(err))
 		}
@@ -64,8 +71,8 @@ func init() {
 	RootCmd.AddCommand(startCmd)
 
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind podium to")
-	startCmd.Flags().IntVarP(&port, "port", "p", 8880, "Port to bind podium to")
+	startCmd.Flags().IntVarP(&httpPort, "http_port", "p", 8880, "HTTP Port to bind podium to")
+	startCmd.Flags().IntVarP(&grpcPort, "grpc_port", "g", 8881, "GRPC Port to bind podium to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode (log=debug)")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log=warn)")
-	startCmd.Flags().BoolVarP(&fast, "fast", "f", true, "FastHTTP server mode")
 }

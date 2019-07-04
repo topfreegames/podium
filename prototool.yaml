@@ -1,0 +1,24 @@
+# prototool configuration.
+# See
+# https://github.com/uber/prototool/blob/dev/etc/config/example/prototool.yaml
+# for reference.
+
+protoc:
+  version: 3.8.0
+  includes:
+    - vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
+
+lint:
+  group: uber2
+  java_package_prefix: 'com.topfreegames.podium'
+  rules:
+    remove:
+      - ENUM_FIELD_PREFIXES_EXCEPT_MESSAGE
+      - FILE_OPTIONS_EQUAL_GO_PACKAGE_V2_SUFFIX
+      - FILE_OPTIONS_REQUIRE_PHP_NAMESPACE
+      - REQUEST_RESPONSE_NAMES_MATCH_RPC
+      - REQUEST_RESPONSE_TYPES_IN_SAME_FILE
+      - REQUEST_RESPONSE_TYPES_UNIQUE
+      - SERVICE_NAMES_API_SUFFIX
+      - SERVICE_NAMES_MATCH_FILE_NAME
+      - WKT_DURATION_SUFFIX

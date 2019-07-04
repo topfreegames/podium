@@ -10,229 +10,190 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
+	"encoding/base64"
 	"fmt"
+	"net/http"
 	"runtime/debug"
 	"time"
 
 	"github.com/getsentry/raven-go"
-	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 )
 
-//NewVersionMiddleware with API version
-func NewVersionMiddleware() *VersionMiddleware {
-	return &VersionMiddleware{
-		Version: VERSION,
-	}
+type newRelicContextKey struct {
+	key string
 }
 
-//VersionMiddleware inserts the current version in all requests
-type VersionMiddleware struct {
-	Version string
+func (app *App) noAuthMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return handler(ctx, req)
 }
 
-// Serve serves the middleware
-func (v *VersionMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		c.Response().Header().Set(echo.HeaderServer, fmt.Sprintf("Podium/v%s", v.Version))
-		c.Response().Header().Set("Podium-Server", fmt.Sprintf("Podium/v%s", v.Version))
-		return next(c)
-	}
-}
-
-//NewSentryMiddleware returns a new sentry middleware
-func NewSentryMiddleware(app *App) *SentryMiddleware {
-	return &SentryMiddleware{
-		App: app,
-	}
-}
-
-//SentryMiddleware is responsible for sending all exceptions to sentry
-type SentryMiddleware struct {
-	App *App
-}
-
-// Serve serves the middleware
-func (s *SentryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		err := next(c)
-		if err != nil {
-			if httpErr, ok := err.(*echo.HTTPError); ok {
-				if httpErr.Code < 500 {
-					return err
-				}
-			}
-			tags := map[string]string{
-				"source": "app",
-				"type":   "Internal server error",
-				"url":    c.Request().URI(),
-				"status": fmt.Sprintf("%d", c.Response().Status()),
-			}
-			raven.SetHttpContext(newHTTPFromCtx(c))
-			raven.CaptureError(err, tags)
-		}
-		return err
-	}
-}
-
-func getHTTPParams(ctx echo.Context) (string, map[string]string, string) {
-	qs := ""
-	if len(ctx.QueryParams()) > 0 {
-		qsBytes, _ := json.Marshal(ctx.QueryParams())
-		qs = string(qsBytes)
+func (app *App) basicAuthMiddleware(ctx context.Context) (context.Context, error) {
+	token, err := grpc_auth.AuthFromMD(ctx, "basic")
+	if err != nil {
+		return nil, err
 	}
 
-	headers := map[string]string{}
-	for _, headerKey := range ctx.Response().Header().Keys() {
-		headers[string(headerKey)] = string(ctx.Response().Header().Get(headerKey))
-	}
+	auth := app.Config.GetString("basicauth.username") + ":" + app.Config.GetString("basicauth.password")
 
-	cookies := string(ctx.Response().Header().Get("Cookie"))
-	return qs, headers, cookies
+	if token != base64.StdEncoding.EncodeToString([]byte(auth)) {
+		return nil, status.Errorf(codes.Unauthenticated, "invalid auth token")
+	}
+	return ctx, nil
 }
 
-func newHTTPFromCtx(ctx echo.Context) *raven.Http {
-	qs, headers, cookies := getHTTPParams(ctx)
+func (app *App) loggerMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	l := app.Logger.With(
+		zap.String("source", "request"),
+	)
 
-	h := &raven.Http{
-		Method:  string(ctx.Request().Method()),
-		Cookies: cookies,
-		Query:   qs,
-		URL:     ctx.Request().URI(),
-		Headers: headers,
+	//all except latency to string
+	var statusCode int
+	var latency time.Duration
+	var startTime, endTime time.Time
+
+	startTime = time.Now()
+
+	h, err := handler(ctx, req)
+
+	//no time.Since in order to format it well after
+	endTime = time.Now()
+	latency = endTime.Sub(startTime)
+
+	_, statusCode = app.getStatusCodeFromError(err)
+
+	method := info.FullMethod
+	reqLog := l.With(
+		zap.String("method", method),
+		zap.Time("endTime", endTime),
+		zap.Int("statusCode", statusCode),
+		zap.Duration("latency", latency),
+	)
+
+	//request failed
+	if statusCode > 399 && statusCode < 500 {
+		log.D(reqLog, "Request failed.")
+		return h, err
 	}
-	return h
-}
 
-//NewRecoveryMiddleware returns a configured middleware
-func NewRecoveryMiddleware(onError func(error, []byte)) *RecoveryMiddleware {
-	return &RecoveryMiddleware{
-		OnError: onError,
+	//request is ok, but server failed
+	if statusCode > 499 {
+		log.D(reqLog, "Response failed.")
+		return h, err
 	}
-}
 
-//RecoveryMiddleware recovers from errors
-type RecoveryMiddleware struct {
-	OnError func(error, []byte)
+	//Everything went ok
+	log.D(reqLog, "Request successful.")
+	return h, err
 }
 
 //Serve executes on error handler when errors happen
-func (r *RecoveryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		defer func() {
-			if err := recover(); err != nil {
-				eError, ok := err.(error)
-				if !ok {
-					eError = fmt.Errorf(fmt.Sprintf("%v", err))
-				}
-				if r.OnError != nil {
-					r.OnError(eError, debug.Stack())
-				}
-				c.Error(eError)
+func (app *App) recoveryMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			eError, ok := err.(error)
+			if !ok {
+				eError = fmt.Errorf(fmt.Sprintf("%v", err))
 			}
-		}()
-		return next(c)
+			app.OnErrorHandler(eError, debug.Stack())
+		}
+	}()
+	return handler(ctx, req)
+}
+
+func (app *App) responseTimeMetricsMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	startTime := time.Now()
+	h, err := handler(ctx, req)
+	timeUsed := time.Since(startTime)
+	_, st := app.getStatusCodeFromError(err)
+	method := info.FullMethod
+
+	tags := []string{
+		fmt.Sprintf("method:%s", method),
+		fmt.Sprintf("status:%d", st),
+	}
+
+	if err := app.DDStatsD.Timing("response_time_milliseconds", timeUsed, tags...); err != nil {
+		app.Logger.Error("DDStatsD Timing", zap.Error(err))
+	}
+
+	return h, err
+}
+
+type addVersionMiddleware struct {
+	Handler http.Handler
+}
+
+func addVersionHeaders(w http.ResponseWriter) {
+	w.Header().Set("Server", fmt.Sprintf("Podium/v%s", VERSION))
+	w.Header().Set("Podium-Server", fmt.Sprintf("Podium/v%s", VERSION))
+}
+
+func (m addVersionMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	addVersionHeaders(w)
+	m.Handler.ServeHTTP(w, r)
+}
+
+func addVersionHandlerFunc(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addVersionHeaders(w)
+		f(w, r)
 	}
 }
 
-// NewLoggerMiddleware returns the logger middleware
-func NewLoggerMiddleware(theLogger zap.Logger) *LoggerMiddleware {
-	l := &LoggerMiddleware{Logger: theLogger}
-	return l
-}
-
-//LoggerMiddleware is responsible for logging to Zap all requests
-type LoggerMiddleware struct {
-	Logger zap.Logger
-}
-
-// Serve serves the middleware
-func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		l := l.Logger.With(
-			zap.String("source", "request"),
-		)
-
-		//all except latency to string
-		var ip, method string
-		var status int
-		var latency time.Duration
-		var startTime, endTime time.Time
-
-		method = c.Request().Method()
-		startTime = time.Now()
-
-		err := next(c)
-
-		//no time.Since in order to format it well after
-		endTime = time.Now()
-		latency = endTime.Sub(startTime)
-
-		status = c.Response().Status()
-		ip = c.Request().RemoteAddress()
-
-		route := c.Path()
-		reqLog := l.With(
-			zap.String("route", route),
-			zap.Time("endTime", endTime),
-			zap.Int("statusCode", status),
-			zap.Duration("latency", latency),
-			zap.String("ip", ip),
-			zap.String("method", method),
-		)
-
-		//request failed
-		if status > 399 && status < 500 {
-			log.D(reqLog, "Request failed.")
-			return err
+func (app *App) sentryMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	h, err := handler(ctx, req)
+	if err != nil {
+		_, statusCode := app.getStatusCodeFromError(err)
+		if statusCode < 500 {
+			return h, err
 		}
 
-		//request is ok, but server failed
-		if status > 499 {
-			log.D(reqLog, "Response failed.")
-			return err
+		tags := map[string]string{
+			"source": "app",
+			"type":   "Internal server error",
+			"method": info.FullMethod,
+			"params": fmt.Sprintf("%v", req),
+			"status": fmt.Sprintf("%d", statusCode),
 		}
-
-		//Everything went ok
-		if cm := reqLog.Check(zap.DebugLevel, "Request successful."); cm.OK() {
-			cm.Write()
-		}
-		return err
+		raven.CaptureError(err, tags)
 	}
+	return h, err
 }
 
-//NewNewRelicMiddleware returns the logger middleware
-func NewNewRelicMiddleware(app *App, theLogger zap.Logger) *NewRelicMiddleware {
-	l := &NewRelicMiddleware{App: app, Logger: theLogger}
-	return l
-}
-
-//NewRelicMiddleware is responsible for logging to Zap all requests
-type NewRelicMiddleware struct {
-	App    *App
-	Logger zap.Logger
-}
-
-// Serve serves the middleware
-func (nr *NewRelicMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		method := c.Request().Method()
-		route := fmt.Sprintf("%s %s", method, c.Path())
-		txn := nr.App.NewRelic.StartTransaction(route, nil, nil)
-		c.Set("txn", txn)
-		defer func() {
-			c.Set("txn", nil)
-			txn.End()
-		}()
-
-		err := next(c)
-		if err != nil {
-			txn.NoticeError(err)
-			return err
-		}
-
-		return nil
+func (app *App) newRelicMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	txn := app.NewRelic.StartTransaction(info.FullMethod, nil, nil)
+	newCtx := context.WithValue(ctx, newRelicContextKey{"txn"}, txn)
+	defer func() {
+		txn.End()
+	}()
+	h, err := handler(newCtx, req)
+	if err != nil {
+		txn.NoticeError(err)
 	}
+	return h, err
+}
+
+type removeTrailingSlashMiddleware struct {
+	Handler http.Handler
+}
+
+func (m *removeTrailingSlashMiddleware) removeTrailingSlash(path string) string {
+	l := len(path) - 1
+	if l > 0 && path != "/" && path[l] == '/' {
+		return path[:l]
+	}
+	return path
+}
+
+func (m removeTrailingSlashMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.URL.Path = m.removeTrailingSlash(r.URL.Path)
+	m.Handler.ServeHTTP(w, r)
 }

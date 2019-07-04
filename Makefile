@@ -22,7 +22,6 @@ clear-hooks:
 
 setup: setup-hooks
 	@GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
-	@go get github.com/mailru/easyjson/...
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
 	@dep ensure
@@ -35,12 +34,12 @@ build:
 	@go build -o ./bin/podium ./main.go
 
 # run app
-run: schema-update redis
+run: redis
 	@go run main.go start
 
 # run app
-run-prod: schema-update redis build
-	@./bin/podium start -q -f -c ./config/local.yaml
+run-prod: redis build
+	@./bin/podium start -q -c ./config/local.yaml
 
 # get a redis instance up (localhost:1212)
 redis: redis-shutdown
@@ -59,7 +58,7 @@ redis-shutdown:
 redis-clear:
 	@redis-cli -p 1212 FLUSHDB
 
-test: schema-update test-redis
+test: test-redis
 	@ginkgo --cover -r .
 	@make test-redis-kill
 
@@ -122,8 +121,8 @@ bench-podium-app: build bench-podium-app-run
 
 bench-podium-app-run: bench-podium-app-kill
 	@rm -rf /tmp/podium-bench.log
-	@./bin/podium start -p 8888 -f -q -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
-	@echo "Podium started at http://localhost:8888."
+	@./bin/podium start -p 8888 -g 8889 -q -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
+	@echo "Podium started at http://localhost:8888. GRPC at 8889."
 
 bench-podium-app-kill:
 	@-ps aux | egrep 'podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
@@ -162,9 +161,16 @@ rtfd:
 	@sphinx-build -b html -d ./docs/_build/doctrees ./docs/ docs/_build/html
 	@open docs/_build/html/index.html
 
-schema-update:
-	@go generate ./api/payload.go
-
 mock-lib:
 	@mockgen github.com/topfreegames/podium/lib PodiumInterface | sed 's/mock_lib/mocks/' > lib/mocks/podium.go
 
+# TODO(lucas-machado): Replace protoc with prototool
+grpc-stub:
+	@protoc -I$(GOPATH)/src/github.com/topfreegames/podium \
+	-I$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+	--go_out=plugins=grpc:. \
+	proto/podium/api/v1/podium.proto
+	@protoc -I$(GOPATH)/src/github.com/topfreegames/podium \
+	-I$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+	--grpc-gateway_out=logtostderr=true:. \
+	proto/podium/api/v1/podium.proto

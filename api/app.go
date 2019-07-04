@@ -10,29 +10,33 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
-	"github.com/topfreegames/podium/leaderboard"
-
 	"github.com/getsentry/raven-go"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/engine/fasthttp"
-	"github.com/labstack/echo/engine/standard"
-	"github.com/labstack/echo/middleware"
-	newrelic "github.com/newrelic/go-agent"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/extensions/echo"
-	extechomiddleware "github.com/topfreegames/extensions/echo/middleware"
 	"github.com/topfreegames/extensions/jaeger"
-	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
+	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	newrelic "github.com/newrelic/go-agent"
+	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
+	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 // JSON type
@@ -40,14 +44,20 @@ type JSON map[string]interface{}
 
 // App is a struct that represents a podium Application
 type App struct {
-	Debug        bool
-	Fast         bool
-	Port         int
-	Host         string
+	Debug bool
+
+	// HTTP endpoint for HTTP requests. Built after calling Start. Format: 127.0.0.1:8080
+	HTTPEndpoint string
+
+	// GRPC endpoint for GRPC requests. Built after calling Start. Format: 127.0.0.1:8081
+	GRPCEndpoint string
+
+	httpReady, grpcReady chan bool
+
 	ConfigPath   string
 	Errors       metrics.EWMA
-	App          *echo.Echo
-	Engine       engine.Server
+	grpcServer   *grpc.Server
+	httpServer   *http.Server
 	Config       *viper.Viper
 	Logger       zap.Logger
 	Leaderboards *leaderboard.Client
@@ -55,25 +65,39 @@ type App struct {
 	DDStatsD     *extnethttpmiddleware.DogStatsD
 }
 
-// GetApp returns a new podium Application
-func GetApp(host string, port int, configPath string, debug, fast bool, logger zap.Logger) (*App, error) {
+// New returns a new podium Application.
+// If httpPort is sent as zero, a random port will be selected (the same will happen for grpcPort)
+func New(host string, httpPort, grpcPort int, configPath string, debug bool, logger zap.Logger) (*App, error) {
 	app := &App{
-		Host:       host,
-		Port:       port,
-		ConfigPath: configPath,
-		Config:     viper.New(),
-		Debug:      debug,
-		Logger:     logger,
+		HTTPEndpoint: fmt.Sprintf("%s:%d", host, httpPort),
+		GRPCEndpoint: fmt.Sprintf("%s:%d", host, grpcPort),
+		httpReady:    make(chan bool, 1),
+		grpcReady:    make(chan bool, 1),
+		ConfigPath:   configPath,
+		Config:       viper.New(),
+		Debug:        debug,
+		Logger:       logger,
 	}
-	err := app.Configure()
+	err := app.configure()
 	if err != nil {
 		return nil, err
 	}
 	return app, nil
 }
 
+func (app *App) getStatusCodeFromError(err error) (*status.Status, int) {
+	var statusCode int
+	st, ok := status.FromError(err)
+	if !ok {
+		statusCode = http.StatusInternalServerError
+	} else {
+		statusCode = runtime.HTTPStatusFromCode(st.Code())
+	}
+	return st, statusCode
+}
+
 // Configure instantiates the required dependencies for podium Application
-func (app *App) Configure() error {
+func (app *App) configure() error {
 	app.setConfigurationDefaults()
 
 	err := app.loadConfiguration()
@@ -97,6 +121,34 @@ func (app *App) Configure() error {
 	err = app.configureApplication()
 	if err != nil {
 		return err
+	}
+
+	//we are customizing the default http error reply
+	runtime.HTTPError = func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, _ *http.Request, rpcErr error) {
+
+		w.Header().Set("Content-Type", marshaler.ContentType())
+		st, s := app.getStatusCodeFromError(rpcErr)
+
+		w.WriteHeader(s)
+
+		type errorBody struct {
+			Success bool   `json:"success"`
+			Reason  string `json:"reason"`
+		}
+
+		body := &errorBody{
+			Success: false,
+			Reason:  st.Message(),
+		}
+
+		buf, err := marshaler.Marshal(body)
+		if err != nil {
+			app.Logger.Error("Failed to marshal error body,", zap.Error(err))
+			return
+		}
+		if _, err := w.Write(buf); err != nil {
+			app.Logger.Error("Failed to write response.,", zap.Error(err))
+		}
 	}
 
 	return nil
@@ -223,55 +275,6 @@ func (app *App) configureApplication() error {
 		zap.String("operation", "configureApplication"),
 	)
 
-	app.Engine = standard.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
-	if app.Fast {
-		rb := app.Config.GetInt("api.maxReadBufferSize")
-		engine := fasthttp.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
-		engine.ReadBufferSize = rb
-		app.Engine = engine
-	}
-	app.App = echo.New()
-	a := app.App
-
-	_, w, _ := os.Pipe()
-	a.SetLogOutput(w)
-
-	basicAuthUser := app.Config.GetString("basicauth.username")
-	if basicAuthUser != "" {
-		basicAuthPass := app.Config.GetString("basicauth.password")
-
-		a.Use(middleware.BasicAuth(func(username, password string) bool {
-			return username == basicAuthUser && password == basicAuthPass
-		}))
-	}
-
-	a.Pre(middleware.RemoveTrailingSlash())
-	a.Use(NewLoggerMiddleware(app.Logger).Serve)
-	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
-	a.Use(extechomiddleware.NewResponseTimeMetricsMiddleware(app.DDStatsD).Serve)
-	a.Use(NewVersionMiddleware().Serve)
-	a.Use(NewSentryMiddleware(app).Serve)
-	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
-
-	a.Get("/healthcheck", HealthCheckHandler(app))
-	a.Get("/status", StatusHandler(app))
-	a.Delete("/l/:leaderboardID", RemoveLeaderboardHandler(app))
-	a.Put("/l/:leaderboardID/scores", BulkUpsertMembersScoreHandler(app))
-	a.Put("/l/:leaderboardID/members/:memberPublicID/score", UpsertMemberScoreHandler(app))
-	a.Patch("/l/:leaderboardID/members/:memberPublicID/score", IncrementMemberScoreHandler(app))
-	a.Get("/l/:leaderboardID/members/:memberPublicID", GetMemberHandler(app))
-	a.Get("/l/:leaderboardID/members", GetMembersHandler(app))
-	a.Delete("/l/:leaderboardID/members", RemoveMembersHandler(app))
-	a.Delete("/l/:leaderboardID/members/:memberPublicID", RemoveMemberHandler(app))
-	a.Get("/l/:leaderboardID/members/:memberPublicID/rank", GetMemberRankHandler(app))
-	a.Get("/l/:leaderboardID/members/:memberPublicID/around", GetAroundMemberHandler(app))
-	a.Get("/l/:leaderboardID/members-count", GetTotalMembersHandler(app))
-	a.Get("/l/:leaderboardID/top/:pageNumber", GetTopMembersHandler(app))
-	a.Get("/l/:leaderboardID/top-percent/:percentage", GetTopPercentageHandler(app))
-	a.Put("/m/:memberPublicID/scores", UpsertMemberLeaderboardsScoreHandler(app))
-	a.Get("/m/:memberPublicID/scores", GetMemberRankInManyLeaderboardsHandler(app))
-	a.Get("/l/:leaderboardID/scores/:score/around", GetAroundScoreHandler(app))
-
 	app.Errors = metrics.NewEWMA15()
 
 	go func() {
@@ -307,20 +310,54 @@ func (app *App) AddError() {
 }
 
 // Start starts listening for web requests at specified host and port
-func (app *App) Start() error {
+func (app *App) Start(ctx context.Context) error {
 	l := app.Logger.With(
 		zap.String("source", "app"),
 		zap.String("operation", "Start"),
-		zap.String("host", app.Host),
-		zap.Int("port", app.Port),
+		zap.String("HTTPEndpoint", app.HTTPEndpoint),
+		zap.String("GRPCEndPoint", app.GRPCEndpoint),
 	)
 
+	grpcLis, err := net.Listen("tcp", app.GRPCEndpoint)
+	if err != nil {
+		return fmt.Errorf("error trying to listen for connections: %v", err)
+	}
+	app.GRPCEndpoint = grpcLis.Addr().String()
+
+	httpLis, err := net.Listen("tcp", app.HTTPEndpoint)
+	if err != nil {
+		return fmt.Errorf("error listening on HTTPEndpoint: %v", err)
+	}
+	app.HTTPEndpoint = httpLis.Addr().String()
+
+	//errch is the channel for retrieving errors from server goroutines.
+	errch := make(chan error, 2)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
 	go func() {
-		app.App.Run(app.Engine)
+		defer wg.Done()
+		if err := app.startGRPCServer(grpcLis); err != nil {
+			errch <- err
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := app.startHTTPServer(ctx, httpLis); err != nil {
+			errch <- err
+		}
+	}()
+
+	stopped := make(chan bool, 1)
+	go func() {
+		wg.Wait()
+		stopped <- true
 	}()
 
 	log.I(l, "app started")
 	sg := make(chan os.Signal)
+	//TODO verify that capturing SIGKILL actually works. Signal handling should be moved outside of Start.
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
 
 	// stop server
@@ -331,8 +368,99 @@ func (app *App) Start() error {
 			cm.Write(zap.String("signal", fmt.Sprintf("%v", s)),
 				zap.Int("graceperiod", graceperiod))
 		})
+		app.GracefullStop()
 		time.Sleep(time.Duration(graceperiod) * time.Millisecond)
+	case err := <-errch:
+		return err
+	case <-stopped:
 	}
 	log.I(l, "app stopped")
 	return nil
+}
+
+func (app *App) startGRPCServer(lis net.Listener) error {
+	var basicAuthInterceptor grpc.UnaryServerInterceptor
+
+	basicAuthUser := app.Config.GetString("basicauth.username")
+	if basicAuthUser == "" {
+		basicAuthInterceptor = grpc.UnaryServerInterceptor(app.noAuthMiddleware)
+	} else {
+		basicAuthInterceptor = grpc_auth.UnaryServerInterceptor(app.basicAuthMiddleware)
+	}
+
+	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
+		grpc_middleware.ChainUnaryServer(
+			basicAuthInterceptor,
+			grpc.UnaryServerInterceptor(app.loggerMiddleware),
+			grpc.UnaryServerInterceptor(app.recoveryMiddleware),
+			grpc.UnaryServerInterceptor(app.responseTimeMetricsMiddleware),
+			grpc.UnaryServerInterceptor(app.sentryMiddleware),
+			grpc.UnaryServerInterceptor(app.newRelicMiddleware),
+		),
+	))
+	api.RegisterPodiumServer(app.grpcServer, app)
+
+	app.grpcReady <- true
+	if err := app.grpcServer.Serve(lis); err != nil {
+		return fmt.Errorf("error trying to serve with grpc server: %v", err)
+	}
+
+	return nil
+}
+
+func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
+	gatewayMux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{EmitDefaults: true}))
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+
+	if err := api.RegisterPodiumHandlerFromEndpoint(ctx, gatewayMux, app.GRPCEndpoint, opts); err != nil {
+		return fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", removeTrailingSlashMiddleware{addVersionMiddleware{gatewayMux}})
+	mux.HandleFunc("/healthcheck", addVersionHandlerFunc(app.healthCheckHandler))
+	mux.HandleFunc("/status", addVersionHandlerFunc(app.statusHandler))
+
+	app.httpServer = &http.Server{
+		Addr:    app.HTTPEndpoint,
+		Handler: mux,
+	}
+
+	app.httpReady <- true
+	if err := app.httpServer.Serve(lis); err != http.ErrServerClosed {
+		return fmt.Errorf("error listening and serving http requests: %v", err)
+	}
+
+	return nil
+}
+
+// WaitForReady blocks until App is ready to serve requests or the timeout is reached.
+// An error is returned on timeout.
+func (app *App) WaitForReady(d time.Duration) error {
+	isReady := func(c chan bool) bool {
+		select {
+		case <-c:
+			return true
+		case <-time.After(d):
+			return false
+		}
+	}
+
+	if isReady(app.grpcReady) && isReady(app.httpReady) {
+		return nil
+	}
+	return fmt.Errorf("timed out waiting for endpoints")
+}
+
+// GracefulStop attempts to stop the server.
+func (app *App) GracefullStop() {
+	if app.grpcServer != nil {
+		app.grpcServer.GracefulStop()
+	}
+	if app.httpServer != nil {
+		if err := app.httpServer.Shutdown(context.Background()); err != nil {
+			app.Logger.Error("HTTP server Shutdown.", zap.Error(err))
+		}
+	}
 }

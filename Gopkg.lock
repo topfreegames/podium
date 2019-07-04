@@ -42,13 +42,6 @@
   version = "v6.0.0"
 
 [[projects]]
-  digest = "1:9592eb82806d8c561d7ccdf1236b52a5d1db3ea31b3606c3eae0a44d5dd0e2c2"
-  name = "github.com/buger/jsonparser"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "f04e003e4115787c6272636780bc206e5ffad6c4"
-
-[[projects]]
   digest = "1:d21a704218a1599b56b2c02d2c0cce601cca6125b00588f1046be56029cfcd0e"
   name = "github.com/certifi/gocertifi"
   packages = ["."]
@@ -63,14 +56,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "3a0bb77429bd3a61596f5e8a3172445844342120"
-
-[[projects]]
-  digest = "1:217f778e19b8d206112c21d21a7cc72ca3cb493b67631680a2324bc50335d432"
-  name = "github.com/dgrijalva/jwt-go"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
 
 [[projects]]
   digest = "1:bfc7cf935fa1bd2e6532b8a9da9b8edfb04e8ce66e66df43a44e12afa1d9af79"
@@ -128,12 +113,26 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:ffc060c551980d37ee9e428ef528ee2813137249ccebb0bfc412ef83071cac91"
+  digest = "1:b8e46955e8385b06d7b0b26165cdb7216dec8bce1cfcc05499cdd9da8af15445"
   name = "github.com/golang/protobuf"
-  packages = ["proto"]
+  packages = [
+    "jsonpb",
+    "proto",
+    "protoc-gen-go/descriptor",
+    "protoc-gen-go/generator",
+    "protoc-gen-go/generator/internal/remap",
+    "protoc-gen-go/plugin",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/empty",
+    "ptypes/struct",
+    "ptypes/timestamp",
+    "ptypes/wrappers",
+  ]
   pruneopts = "UT"
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   digest = "1:160eabf7a69910fd74f29c692718bc2437c1c1c7d4c9dea9712357752a70e5df"
@@ -167,6 +166,30 @@
   ]
   pruneopts = "UT"
   revision = "a9f819bfc744fe70043abcc5a6cd0137a678e3d8"
+
+[[projects]]
+  digest = "1:a93a4de7b00fb9cc952bc0483e9a32cd273adbbd7f3282bfe89656b2f88fb08c"
+  name = "github.com/grpc-ecosystem/go-grpc-middleware"
+  packages = [
+    ".",
+    "auth",
+    "util/metautils",
+  ]
+  pruneopts = "UT"
+  revision = "c250d6563d4d4c20252cd865923440e829844f4e"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:c20c9a82345346a19916a0086e61ea97425172036a32b8a8975490da6a129fda"
+  name = "github.com/grpc-ecosystem/grpc-gateway"
+  packages = [
+    "internal",
+    "runtime",
+    "utilities",
+  ]
+  pruneopts = "UT"
+  revision = "cd0c8ef3533e9c04e6520cac37a81fe262fb0b34"
+  version = "v1.9.2"
 
 [[projects]]
   digest = "1:3ae590f0db186d10ed2fcf76388dff58c0b9049e4857c3b7539b269b7e844c30"
@@ -238,32 +261,12 @@
   revision = "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 
 [[projects]]
-  digest = "1:5316e2fc5d849026f1840b32d02776dfbcbc36113279d7053cd26abbd48eefd1"
+  digest = "1:ccfacbf75c5ea91cae9b712964fc826be5b5cc6b5da3e2a5d855205a89becb31"
   name = "github.com/labstack/echo"
-  packages = [
-    ".",
-    "context",
-    "engine",
-    "engine/fasthttp",
-    "engine/standard",
-    "log",
-    "middleware",
-  ]
+  packages = ["context"]
   pruneopts = "UT"
   revision = "e08070379af60f5b9c0fb5bb2d1527ba9624fe43"
   version = "v2.2.0"
-
-[[projects]]
-  digest = "1:4785fe710c106d60599d3b40d78d855046c8fa5ee225f61bc94e2b8c94983c82"
-  name = "github.com/labstack/gommon"
-  packages = [
-    "bytes",
-    "color",
-    "log",
-    "random",
-  ]
-  pruneopts = "UT"
-  revision = "431777a5117c8de4352a400dad1e2a55f484b189"
 
 [[projects]]
   digest = "1:ad64e297f65e4e80644e3010363f555644d22966db06e3634c6ceb2a856589cb"
@@ -274,23 +277,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:222017f7a5c546c9f07f669275584681f92924c4b073ed01922abb368875513a"
+  digest = "1:cdf13ca0f5df719f31c0b466578feba0837bd6bb0aea95b3981a307844803704"
   name = "github.com/mailru/easyjson"
   packages = [
-    ".",
     "buffer",
     "jlexer",
     "jwriter",
   ]
   pruneopts = "UT"
   revision = "4a8a4c12c4d1b0c0a7de630426ce6dcb07141b17"
-
-[[projects]]
-  digest = "1:c623e7c8744fcc88dca8be72758c6f5dfb99e664d00ca9c1a2e406bd064c051d"
-  name = "github.com/mattn/go-colorable"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "6c903ff4aa50920ca86087a280590b36b3152b9c"
 
 [[projects]]
   digest = "1:3dce9780102fd9dfd8b864b18b84b1f94868f992d455af69a4604fae5d3b24f1"
@@ -471,12 +466,10 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:d1a108dd49227e7d4d48fdf20dca8d6b322129fafbfe66a76a930d73f5e6025a"
+  digest = "1:c38b03093ea7de485f97aeadbaec0be5bd518699c96c0bc10f7f2414e372a446"
   name = "github.com/topfreegames/extensions"
   packages = [
     "dogstatsd",
-    "echo",
-    "echo/middleware",
     "http",
     "jaeger",
     "middleware",
@@ -485,7 +478,6 @@
     "redis",
     "redis/interfaces",
     "tracing",
-    "tracing/echo",
     "tracing/http",
     "tracing/redis",
   ]
@@ -550,13 +542,6 @@
   revision = "07f692d02d618489bb3e3d7984caaa82af91b133"
 
 [[projects]]
-  digest = "1:9afe305ba8eb834434a11043d1629785ed7c3dc7bf4c1bf8219b945556c31344"
-  name = "github.com/valyala/fasttemplate"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "3b874956e03f1636d171bda64b130f9135f42cff"
-
-[[projects]]
   digest = "1:6f1a54cc83e0f44f61106f68aa940aece341bdfd137b1cfbad406609bc15f030"
   name = "go.uber.org/zap"
   packages = ["."]
@@ -577,14 +562,21 @@
   revision = "7682e7e3945130cf3cde089834664f68afdd1523"
 
 [[projects]]
-  digest = "1:3373df9a79dbfdec0111498a2358444eee9f70c3748ee0e0c2a1ad993978f676"
+  branch = "master"
+  digest = "1:2f357867bf425774d35beca5be718402a4488b8b23b1563ce8c5bb91d09285a7"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "trace",
   ]
   pruneopts = "UT"
-  revision = "2a824cf9226006580a06d9fa8f10901c17b49ed5"
+  revision = "b5b0513f8c1bb7c1e3e6f168fba117131fe2614a"
 
 [[projects]]
   branch = "master"
@@ -601,25 +593,36 @@
   revision = "fdc9e635145ae97e6c2cb777c48305600cf515cb"
 
 [[projects]]
-  digest = "1:835b5e7be8193afcbea31497a2e820ca04bff697bded271707a4fcb9f53f9eac"
+  digest = "1:730ba27cd66db3b98ec8f51a6f20d45ec277d490cca36b1f54e31d3fcaf4840e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "8d1157a435470616f975ff9bb013bea8d0962067"
+  revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
 
 [[projects]]
-  digest = "1:30efeafbb3a09cd4defe00e6155afb072614289acd1dbb01f2d3961bb2ed3741"
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
   name = "golang.org/x/text"
   packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "language",
+    "secure/bidirule",
     "transform",
+    "unicode/bidi",
     "unicode/cldr",
     "unicode/norm",
+    "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "7b68e1fe5400d87fbd01e3ae11df5629d9df8360"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   digest = "1:a48f97fb737d5d61cf13e81cfef040942d217d086766b823757d39d4f6a4c547"
@@ -641,6 +644,60 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:1233ed1b527b0ff66c3df5879f7e80b1d8631e030cc45821b77fc25acd0d72a6"
+  name = "google.golang.org/genproto"
+  packages = [
+    "googleapis/api/annotations",
+    "googleapis/api/httpbody",
+    "googleapis/rpc/status",
+    "protobuf/field_mask",
+  ]
+  pruneopts = "UT"
+  revision = "a7e196e89fd3a3c4d103ca540bd5dac3a736e375"
+
+[[projects]]
+  digest = "1:e8800ddadd6bce3bc0c5ffd7bc55dbdddc6e750956c10cc10271cade542fccbe"
+  name = "google.golang.org/grpc"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
+    "codes",
+    "connectivity",
+    "credentials",
+    "credentials/internal",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "internal",
+    "internal/backoff",
+    "internal/balancerload",
+    "internal/binarylog",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/syscall",
+    "internal/transport",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+  ]
+  pruneopts = "UT"
+  revision = "501c41df7f472c740d0674ff27122f3f48c80ce7"
+  version = "v1.21.1"
+
+[[projects]]
   branch = "v1"
   digest = "1:50c58685e45772643e094991b7f3ab097b18eb3e1d8cbb7c032884cf1f59d134"
   name = "gopkg.in/jarcoal/httpmock.v1"
@@ -659,18 +716,18 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/buger/jsonparser",
     "github.com/getsentry/raven-go",
     "github.com/go-redis/redis",
     "github.com/golang/mock/gomock",
+    "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes/empty",
     "github.com/gosuri/uiprogress",
     "github.com/gosuri/uiprogress/util/strutil",
-    "github.com/labstack/echo",
-    "github.com/labstack/echo/engine",
-    "github.com/labstack/echo/engine/fasthttp",
-    "github.com/labstack/echo/engine/standard",
-    "github.com/labstack/echo/middleware",
-    "github.com/mailru/easyjson",
+    "github.com/grpc-ecosystem/go-grpc-middleware",
+    "github.com/grpc-ecosystem/go-grpc-middleware/auth",
+    "github.com/grpc-ecosystem/grpc-gateway/runtime",
+    "github.com/grpc-ecosystem/grpc-gateway/utilities",
+    "github.com/labstack/echo/context",
     "github.com/mailru/easyjson/jlexer",
     "github.com/mailru/easyjson/jwriter",
     "github.com/newrelic/go-agent",
@@ -682,8 +739,6 @@
     "github.com/satori/go.uuid",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
-    "github.com/topfreegames/extensions/echo",
-    "github.com/topfreegames/extensions/echo/middleware",
     "github.com/topfreegames/extensions/http",
     "github.com/topfreegames/extensions/jaeger",
     "github.com/topfreegames/extensions/middleware",
@@ -691,6 +746,12 @@
     "github.com/topfreegames/extensions/redis/interfaces",
     "github.com/valyala/fasthttp",
     "go.uber.org/zap",
+    "google.golang.org/genproto/googleapis/api/annotations",
+    "google.golang.org/grpc",
+    "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/metadata",
+    "google.golang.org/grpc/status",
     "gopkg.in/jarcoal/httpmock.v1",
   ]
   solver-name = "gps-cdcl"

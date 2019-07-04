@@ -10,842 +10,759 @@
 package api
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"math"
 	"strings"
 
-	"github.com/buger/jsonparser"
-	"github.com/labstack/echo"
 	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/util"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	api "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
-var notFoundError = "Could not find data for member"
-var noPageSizeProvidedError = "strconv.ParseInt: parsing \"\": invalid syntax"
-var defaultPageSize = 20
+const (
+	notFoundError   = "Could not find data for member"
+	defaultPageSize = 20
+)
 
-func serializeMember(member *leaderboard.Member, position int, includeTTL bool) map[string]interface{} {
-	memberData := map[string]interface{}{
-		"publicID": member.PublicID,
-		"score":    member.Score,
-		"rank":     member.Rank,
+func validateBulkUpsertScoresRequest(req *api.BulkUpsertScoresRequest) error {
+	for _, m := range req.MemberScores.Members {
+		if m.PublicID == "" {
+			return status.Errorf(codes.InvalidArgument, "publicID is required")
+		}
 	}
-	if member.PreviousRank != 0 {
-		memberData["previousRank"] = member.PreviousRank
-	}
-	if position >= 0 {
-		memberData["position"] = position
-	}
-	if includeTTL {
-		memberData["expireAt"] = member.ExpireAt
-	}
-	return memberData
+	return nil
 }
 
-func serializeMembers(members leaderboard.Members, includePosition bool, includeTTL bool) []map[string]interface{} {
-	serializedMembers := make([]map[string]interface{}, len(members))
-	for i, member := range members {
-		if includePosition {
-			serializedMembers[i] = serializeMember(member, i, includeTTL)
-		} else {
-			serializedMembers[i] = serializeMember(member, -1, includeTTL)
-		}
+// BulkUpsertScores is the handler responsible for creating or updating members score.
+func (app *App) BulkUpsertScores(ctx context.Context, req *api.BulkUpsertScoresRequest) (*api.BulkUpsertScoresResponse, error) {
+	if err := validateBulkUpsertScoresRequest(req); err != nil {
+		return nil, err
 	}
-	return serializedMembers
-}
 
-// BulkUpsertMembersScoreHandler is the handler responsible for creating or updating members score
-func BulkUpsertMembersScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "BulkUpsertMembersScoreHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+	lg := app.Logger.With(
+		zap.String("handler", "BulkUpsertScores"),
+		zap.String("leaderboard", req.LeaderboardId),
+	)
 
-		var payload setMembersScorePayload
-		prevRank := c.QueryParam("prevRank") == "true"
-		scoreTTL := c.QueryParam("scoreTTL")
+	members := make(leaderboard.Members, len(req.MemberScores.Members))
 
-		err := WithSegment("Payload", c, func() error {
-			if err := LoadJSONPayload(&payload, c, lg); err != nil {
-				app.AddError()
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(400, err.Error(), c)
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Setting member scores.")
+		for i, ms := range req.MemberScores.Members {
+			members[i] = &leaderboard.Member{Score: int64(ms.Score), PublicID: ms.PublicID}
 		}
 
-		members := make(leaderboard.Members, len(payload.MembersScore))
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Setting member scores.")
-			for i, ms := range payload.MembersScore {
-				members[i] = &leaderboard.Member{Score: ms.Score, PublicID: ms.PublicID}
-			}
-			err = app.Leaderboards.SetMembersScore(c.StdContext(), leaderboardID, members, prevRank, scoreTTL)
-
-			if err != nil {
-				lg.Error("Setting member scores failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Setting member scores succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWithError(err, c)
-		}
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, scoreTTL != ""),
-		}, c)
-	}
-}
-
-// UpsertMemberScoreHandler is the handler responsible for creating or updating the member score
-func UpsertMemberScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "UpsertMemberScoreHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		var payload setScorePayload
-		prevRank := false
-		prevRankStr := c.QueryParam("prevRank")
-		if prevRankStr != "" && prevRankStr == "true" {
-			prevRank = true
-		}
-		scoreTTL := c.QueryParam("scoreTTL")
-
-		err := WithSegment("Payload", c, func() error {
-			b, err := GetRequestBody(c)
-			if err != nil {
-				app.AddError()
-				return err
-			}
-			if _, err := jsonparser.GetInt(b, "score"); err != nil {
-				app.AddError()
-				if _, t, _, err := jsonparser.Get(b, "score"); err == nil {
-					return fmt.Errorf("invalid type for score: %v", t)
-				}
-				return fmt.Errorf("score is required")
-			}
-			if err := LoadJSONPayload(&payload, c, lg); err != nil {
-				app.AddError()
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var member *leaderboard.Member
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Setting member score.", zap.Int64("score", payload.Score))
-			member, err = app.Leaderboards.SetMemberScore(c.StdContext(), leaderboardID, memberPublicID, payload.Score,
-				prevRank, scoreTTL)
-
-			if err != nil {
-				lg.Error("Setting member score failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Setting member score succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWithError(err, c)
-		}
-		return SucceedWith(serializeMember(member, -1, scoreTTL != ""), c)
-	}
-}
-
-// IncrementMemberScoreHandler is the handler responsible for incrementing the member score
-func IncrementMemberScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		scoreTTL := c.QueryParam("scoreTTL")
-		lg := app.Logger.With(
-			zap.String("handler", "IncrementMemberScoreHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		var payload incrementScorePayload
-
-		err := WithSegment("Payload", c, func() error {
-			if err := LoadJSONPayload(&payload, c, lg); err != nil {
-				app.AddError()
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var member *leaderboard.Member
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Incrementing member score.", zap.Int("increment", payload.Increment))
-			member, err = app.Leaderboards.IncrementMemberScore(c.StdContext(), leaderboardID, memberPublicID,
-				payload.Increment, scoreTTL)
-
-			if err != nil {
-				lg.Error("Member score increment failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Member score increment succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWithError(err, c)
-		}
-
-		return SucceedWith(serializeMember(member, -1, scoreTTL != ""), c)
-	}
-}
-
-//RemoveMemberHandler removes a member from a leaderboard
-func RemoveMemberHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "RemoveMemberHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		err := WithSegment("Model", c, func() error {
-			lg.Debug("Removing member.")
-			err := app.Leaderboards.RemoveMember(c.StdContext(), leaderboardID, memberPublicID)
-
-			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member removal failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Member removal succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{}, c)
-	}
-}
-
-//RemoveMembersHandler removes several members from a leaderboard
-func RemoveMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "RemoveMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
-
-		ids := c.QueryParam("ids")
-		if ids == "" {
+		if err := app.Leaderboards.SetMembersScore(ctx, req.LeaderboardId, members, req.PrevRank, getScoreTTL(req.ScoreTTL)); err != nil {
+			lg.Error("Setting member scores failed.", zap.Error(err))
 			app.AddError()
-			return FailWith(400, "Member IDs are required using the 'ids' querystring parameter", c)
-		}
-
-		memberIDs := strings.Split(ids, ",")
-		idsInter := make([]interface{}, len(memberIDs))
-		for i, v := range memberIDs {
-			idsInter[i] = v
-		}
-
-		err := WithSegment("Model", c, func() error {
-			lg.Debug("Removing members.", zap.String("ids", ids))
-			err := app.Leaderboards.RemoveMembers(c.StdContext(), leaderboardID, idsInter)
-
-			if err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Members removal failed.", zap.Error(err))
-				app.AddError()
-				return err
+			//TODO: Turn all these LeaderboardExpiredError verifications into a middleware
+			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			lg.Debug("Members removal succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
+			return err
 		}
-
-		return SucceedWith(map[string]interface{}{}, c)
+		lg.Debug("Setting member scores succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	responses := make([]*api.BulkUpsertScoresResponse_Member, len(members))
+
+	for i, m := range members {
+		responses[i] = &api.BulkUpsertScoresResponse_Member{
+			PublicID:     m.PublicID,
+			Score:        float64(m.Score),
+			Rank:         int32(m.Rank),
+			PreviousRank: int32(m.PreviousRank),
+			ExpireAt:     int32(m.ExpireAt),
+		}
+	}
+
+	return &api.BulkUpsertScoresResponse{Success: true, Members: responses}, nil
 }
 
-// GetMemberHandler is the handler responsible for retrieving a member score and rank
-func GetMemberHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
+func getScoreTTL(scoreTTL int32) string {
+	if scoreTTL == 0 {
+		return ""
+	}
 
-		lg := app.Logger.With(
-			zap.String("handler", "GetMemberHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
+	return fmt.Sprint(scoreTTL)
+}
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
+// UpsertScore is the handler responsible for creating or updating the member score.
+func (app *App) UpsertScore(ctx context.Context, req *api.UpsertScoreRequest) (*api.UpsertScoreResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "UpsertScore"),
+		zap.String("leaderboard", req.LeaderboardId),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	var member *leaderboard.Member
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Setting member score.", zap.Int64("score", int64(req.ScoreChange.Score)))
+
+		var err error
+		member, err = app.Leaderboards.SetMemberScore(
+			ctx, req.LeaderboardId, req.MemberPublicId, int64(req.ScoreChange.Score), req.PrevRank, getScoreTTL(req.ScoreTTL))
+
+		if err != nil {
+			lg.Error("Setting member score failed.", zap.Error(err))
+			app.AddError()
+			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+				return status.Errorf(codes.InvalidArgument, err.Error())
+			}
+
+			return err
 		}
+		lg.Debug("Setting member score succeeded.")
+		return nil
+	})
 
-		scoreTTL := c.QueryParam("scoreTTL") == "true"
-		var member *leaderboard.Member
-		status := 404
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting member.")
-			member, err = app.Leaderboards.GetMember(c.StdContext(), leaderboardID, memberPublicID, order, scoreTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.UpsertScoreResponse{
+		Success:      true,
+		PublicID:     member.PublicID,
+		Score:        float64(member.Score),
+		Rank:         int32(member.Rank),
+		PreviousRank: int32(member.PreviousRank),
+		ExpireAt:     int32(member.ExpireAt),
+	}, nil
+}
+
+// IncrementScore is the handler responsible for incrementing the member score.
+func (app *App) IncrementScore(ctx context.Context, req *api.IncrementScoreRequest) (*api.IncrementScoreResponse, error) {
+	if req.Body.Increment == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "increment is required")
+	}
+
+	lg := app.Logger.With(
+		zap.String("handler", "IncrementScore"),
+		zap.String("leaderboard", req.LeaderboardId),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	var member *leaderboard.Member
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Incrementing member score.", zap.Int64("increment", int64(req.Body.Increment)))
+		member, err = app.Leaderboards.IncrementMemberScore(context.Background(), req.LeaderboardId, req.MemberPublicId,
+			int(req.Body.Increment), getScoreTTL(req.ScoreTTL))
+
+		if err != nil {
+			lg.Error("Member score increment failed.", zap.Error(err))
+			app.AddError()
+			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+				return status.Errorf(codes.InvalidArgument, err.Error())
+			}
+
+			return err
+		}
+		lg.Debug("Member score increment succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.IncrementScoreResponse{
+		Success:      true,
+		PublicID:     member.PublicID,
+		Score:        float64(member.Score),
+		Rank:         int32(member.Rank),
+		PreviousRank: int32(member.PreviousRank),
+		ExpireAt:     int32(member.ExpireAt),
+	}, nil
+}
+
+//TODO: Make this function use RemoveMembers
+// RemoveMember removes a member from a leaderboard.
+func (app *App) RemoveMember(ctx context.Context, req *api.RemoveMemberRequest) (*api.RemoveMemberResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "RemoveMember"),
+		zap.String("leaderboard", req.LeaderboardId),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Removing member.")
+
+		//TODO: implement an operation that checks and if exists removes the member atomically, removing the need to check an error string.
+		if err := app.Leaderboards.RemoveMember(ctx, req.LeaderboardId, req.MemberPublicId); err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member removal failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Member removal succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.RemoveMemberResponse{Success: true}, nil
+
+}
+
+// RemoveMembers removes several members from a leaderboard.
+func (app *App) RemoveMembers(ctx context.Context, req *api.RemoveMembersRequest) (*api.RemoveMembersResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "RemoveMembers"),
+		zap.String("leaderboard", req.LeaderboardId),
+	)
+
+	if req.Ids == "" {
+		app.AddError()
+		return nil, status.Errorf(codes.InvalidArgument, "Member IDs are required using the 'ids' querystring parameter")
+	}
+
+	memberIDs := strings.Split(req.Ids, ",")
+	idsInter := make([]interface{}, len(memberIDs))
+	for i, v := range memberIDs {
+		idsInter[i] = v
+	}
+
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Removing members.", zap.String("ids", req.Ids))
+
+		if err := app.Leaderboards.RemoveMembers(ctx, req.LeaderboardId, idsInter); err != nil && !strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Members removal failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Members removal succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.RemoveMembersResponse{Success: true}, nil
+}
+
+func getOrder(order string) string {
+	if order == "" || (order != "asc" && order != "desc") {
+		return "desc"
+	}
+	return order
+}
+
+// GetMember is the handler responsible for retrieving a member score and rank.
+func (app *App) GetMember(ctx context.Context, req *api.GetMemberRequest) (*api.GetMemberResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetMember"),
+		zap.String("leaderboard", req.LeaderboardId),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	order := getOrder(req.Order)
+
+	var member *leaderboard.Member
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting member.")
+		//TODO: Add a NotFound error on the library
+		member, err = app.Leaderboards.GetMember(ctx, req.LeaderboardId, req.MemberPublicId, order, req.ScoreTTL)
+		switch {
+		case err != nil && strings.HasPrefix(err.Error(), notFoundError):
+			lg.Error("Member not found.", zap.Error(err))
+			app.AddError()
+			return status.Errorf(codes.NotFound, "Member not found.")
+		case err != nil:
+			lg.Error("Get member failed.")
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting member succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.GetMemberResponse{
+		Success:      true,
+		PublicID:     member.PublicID,
+		Score:        float64(member.Score),
+		Rank:         int32(member.Rank),
+		PreviousRank: int32(member.PreviousRank),
+		ExpireAt:     int32(member.ExpireAt),
+	}, nil
+}
+
+// GetRank is the handler responsible for retrieving a member rank.
+func (app *App) GetRank(ctx context.Context, req *api.GetRankRequest) (*api.GetRankResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetRank"),
+		zap.String("leaderboard", req.LeaderboardId),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	order := getOrder(req.Order)
+
+	var rank int
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting rank.")
+		rank, err = app.Leaderboards.GetRank(ctx, req.LeaderboardId, req.MemberPublicId, order)
+
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member not found.", zap.Error(err))
+			app.AddError()
+			return status.Errorf(codes.NotFound, "Member not found.")
+		} else if err != nil {
+			lg.Error("Getting rank failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting rank succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.GetRankResponse{
+		Success:  true,
+		PublicID: req.MemberPublicId,
+		Rank:     int32(rank),
+	}, nil
+}
+
+// GetRankMultiLeaderboards returns the member rank req several leaderboards at once.
+func (app *App) GetRankMultiLeaderboards(ctx context.Context, req *api.GetRankMultiLeaderboardsRequest) (*api.GetRankMultiLeaderboardsResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetRankMultiLeaderboards"),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	order := getOrder(req.Order)
+
+	if req.LeaderboardIds == "" {
+		app.AddError()
+		return nil, status.Errorf(codes.InvalidArgument, "Leaderboard IDs are required using the 'leaderboardIds' querystring parameter")
+	}
+
+	leaderboardIDs := strings.Split(req.LeaderboardIds, ",")
+	serializedScores := make([]*api.GetRankMultiLeaderboardsResponse_Member, len(leaderboardIDs))
+
+	err := withSegment("Model", ctx, func() error {
+		for i, leaderboardID := range leaderboardIDs {
+			lg.Debug("Getting member rank on leaderboard.", zap.String("leaderboard", leaderboardID))
+			member, err := app.Leaderboards.GetMember(ctx, leaderboardID, req.MemberPublicId, order, req.ScoreTTL)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
 				lg.Error("Member not found.", zap.Error(err))
 				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
+				return status.Errorf(codes.NotFound, "Leaderboard not found or member not found req leaderboard.")
 			} else if err != nil {
-				lg.Error("Get member failed.")
+				lg.Error("Getting member rank on leaderboard failed.", zap.Error(err))
 				app.AddError()
-				status = 500
 				return err
 			}
-			lg.Debug("Getting member succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(serializeMember(member, -1, scoreTTL), c)
-	}
-}
-
-// GetMemberRankHandler is the handler responsible for retrieving a member rank
-func GetMemberRankHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetMemberRankHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		status := 404
-		rank := 0
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting rank.")
-			rank, err = app.Leaderboards.GetRank(c.StdContext(), leaderboardID, memberPublicID, order)
-
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
-				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
-			} else if err != nil {
-				lg.Error("Getting rank failed.", zap.Error(err))
-				app.AddError()
-				status = 500
-				return err
+			lg.Debug("Getting member rank on leaderboard succeeded.")
+			serializedScores[i] = &api.GetRankMultiLeaderboardsResponse_Member{
+				LeaderboardID: leaderboardID,
+				Rank:          int32(member.Rank),
+				Score:         float64(member.Score),
+				ExpireAt:      int32(member.ExpireAt),
 			}
-			lg.Debug("Getting rank succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
 		}
-
-		return SucceedWith(map[string]interface{}{
-			"publicID": memberPublicID,
-			"rank":     rank,
-		}, c)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	return &api.GetRankMultiLeaderboardsResponse{
+		Success: true,
+		Scores:  serializedScores,
+	}, nil
 }
 
-//GetMemberRankInManyLeaderboardsHandler returns the member rank in several leaderboards at once
-func GetMemberRankInManyLeaderboardsHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetMemberRankInManyLeaderboardsHandler"),
-			zap.String("memberPublicID", memberPublicID),
+// GetAroundMember retrieves a list of member score and rank centered req the given member.
+func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberRequest) (*api.GetAroundMemberResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetAroundMember"),
+		zap.String("leaderboard", req.LeaderboardId),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	order := getOrder(req.Order)
+
+	pageSize := getPageSize(int(req.PageSize))
+	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+		msg := fmt.Sprintf(
+			"Max pageSize allowed: %d. pageSize requested: %d",
+			app.Config.GetInt("api.maxReturnedMembers"),
+			pageSize,
 		)
+		return nil, status.Errorf(codes.InvalidArgument, msg)
+	}
 
-		ids := c.QueryParam("leaderboardIds")
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-		scoreTTL := c.QueryParam("scoreTTL") == "true"
-
-		if ids == "" {
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting members around player.")
+		members, err = app.Leaderboards.GetAroundMe(ctx, req.LeaderboardId, pageSize, req.MemberPublicId, order,
+			req.GetLastIfNotFound)
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member not found.", zap.Error(err))
 			app.AddError()
-			return FailWith(400, "Leaderboard IDs are required using the 'leaderboardIds' querystring parameter", c)
-		}
-
-		leaderboardIDs := strings.Split(ids, ",")
-		serializedScores := make([]map[string]interface{}, len(leaderboardIDs))
-
-		status := 404
-		err := WithSegment("Model", c, func() error {
-			for i, leaderboardID := range leaderboardIDs {
-				lg.Debug("Getting member rank on leaderboard.", zap.String("leaderboard", leaderboardID))
-				member, err := app.Leaderboards.GetMember(c.StdContext(), leaderboardID, memberPublicID, order, scoreTTL)
-				if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-					lg.Error("Member not found.", zap.Error(err))
-					app.AddError()
-					status = 404
-					return fmt.Errorf("Leaderboard not found or member not found in leaderboard.")
-				} else if err != nil {
-					lg.Error("Getting member rank on leaderboard failed.", zap.Error(err))
-					app.AddError()
-					status = 500
-					return err
-				}
-				lg.Debug("Getting member rank on leaderboard succeeded.")
-				serializedScores[i] = map[string]interface{}{
-					"leaderboardID": leaderboardID,
-					"rank":          member.Rank,
-					"score":         member.Score,
-				}
-				if scoreTTL {
-					serializedScores[i]["expireAt"] = member.ExpireAt
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"scores": serializedScores,
-		}, c)
-	}
-}
-
-// GetAroundMemberHandler retrieves a list of member score and rank centered in the given member
-func GetAroundMemberHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetAroundMemberHandler"),
-			zap.String("leaderboard", leaderboardID),
-			zap.String("memberPublicID", memberPublicID),
-		)
-
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-		getLastIfNotFound := false
-		getLastIfNotFoundStr := c.QueryParam("getLastIfNotFound")
-		if getLastIfNotFoundStr == "true" {
-			getLastIfNotFound = true
-		}
-
-		pageSize, err := GetPageSize(app, c, defaultPageSize)
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var members leaderboard.Members
-		status := 404
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting members around player.")
-			members, err = app.Leaderboards.GetAroundMe(c.StdContext(), leaderboardID, pageSize, memberPublicID, order,
-				getLastIfNotFound)
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
-				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
-			} else if err != nil {
-				lg.Error("Getting members around player failed.", zap.Error(err))
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting members around player succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
-	}
-}
-
-// GetAroundScoreHandler retrieves a list of member scores and ranks centered in a given score
-func GetAroundScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetAroundScoreHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
-
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		score, err := strconv.ParseInt(c.Param("score"), 10, 64)
-		if err != nil {
-			return FailWith(400, "Score not sent or wrongly formatted", c)
-		}
-
-		pageSize, err := GetPageSize(app, c, defaultPageSize)
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var members leaderboard.Members
-		status := 404
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting players around score.", zap.Int64("score", score))
-			members, err = app.Leaderboards.GetAroundScore(c.StdContext(), leaderboardID, pageSize, score, order)
-			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
-				app.AddError()
-				status = 404
-				return fmt.Errorf("Member not found.")
-			} else if err != nil {
-				lg.Error("Getting players around score failed.", zap.Error(err))
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting players around score succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
-	}
-}
-
-// GetTotalMembersHandler is the handler responsible for returning the total number of members in a leaderboard
-func GetTotalMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetTotalMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
-
-		count := 0
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting total members.")
-			count, err = app.Leaderboards.TotalMembers(c.StdContext(), leaderboardID)
-
-			if err != nil {
-				lg.Error("Getting total members failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Getting total members succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"count": count,
-		}, c)
-	}
-}
-
-// GetTopMembersHandler retrieves onePage of member score and rank
-func GetTopMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetTopMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
-
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		pageNumber, err := GetIntRouteParam(app, c, "pageNumber", 1)
-		if err != nil {
+			return status.Errorf(codes.NotFound, "Member not found.")
+		} else if err != nil {
+			lg.Error("Getting members around player failed.", zap.Error(err))
 			app.AddError()
-			return FailWith(400, err.Error(), c)
+			return err
 		}
-
-		pageSize, err := GetPageSize(app, c, defaultPageSize)
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		var members leaderboard.Members
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting top members.")
-			members, err = app.Leaderboards.GetLeaders(c.StdContext(), leaderboardID, pageSize, pageNumber, order)
-
-			if err != nil {
-				lg.Error("Getting top members failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Getting top members succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
+		lg.Debug("Getting members around player succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	return &api.GetAroundMemberResponse{
+		Success: true,
+		Members: newMemberRankResponseList(members),
+	}, nil
 }
 
-// GetTopPercentageHandler retrieves top x % members in the leaderboard
-func GetTopPercentageHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetTopPercentageHandler"),
-			zap.String("leaderboard", leaderboardID),
+func getPageSize(pageSize int) int {
+	if pageSize == 0 {
+		pageSize = defaultPageSize
+	}
+
+	return pageSize
+}
+
+// GetAroundScore retrieves a list of member scores and ranks centered req a given score.
+func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreRequest) (*api.GetAroundScoreResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetAroundScoreHandler"),
+		zap.String("leaderboard", req.LeaderboardId),
+	)
+
+	order := getOrder(req.Order)
+
+	pageSize := getPageSize(int(req.PageSize))
+	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+		msg := fmt.Sprintf(
+			"Max pageSize allowed: %d. pageSize requested: %d",
+			app.Config.GetInt("api.maxReturnedMembers"),
+			pageSize,
 		)
+		return nil, status.Errorf(codes.InvalidArgument, msg)
+	}
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-
-		percentageStr := c.Param("percentage")
-		percentage, err := strconv.ParseInt(percentageStr, 10, 32)
-		if err != nil {
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting players around score.", zap.Int64("score", int64(req.Score)))
+		members, err = app.Leaderboards.GetAroundScore(ctx, req.LeaderboardId, pageSize, int64(req.Score), order)
+		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
+			lg.Error("Member not found.", zap.Error(err))
 			app.AddError()
-			return FailWith(400, fmt.Sprintf("Invalid percentage provided: %s", err.Error()), c)
-		}
-		if percentage == 0 {
+			return status.Errorf(codes.NotFound, "Member not found.")
+		} else if err != nil {
+			lg.Error("Getting players around score failed.", zap.Error(err))
 			app.AddError()
-			return FailWith(400, "Percentage must be a valid integer between 1 and 100.", c)
+			return err
 		}
-
-		var members leaderboard.Members
-		status := 400
-		err = WithSegment("Model", c, func() error {
-			lg.Debug("Getting top percentage.", zap.Int64("percentage", percentage))
-			members, err = app.Leaderboards.GetTopPercentage(c.StdContext(), leaderboardID, defaultPageSize,
-				int(percentage), app.Config.GetInt("api.maxReturnedMembers"), order)
-
-			if err != nil {
-				lg.Error("Getting top percentage failed.", zap.Error(err))
-				if err.Error() == "Percentage must be a valid integer between 1 and 100." {
-					app.AddError()
-					status = 400
-					return err
-				}
-
-				app.AddError()
-				status = 500
-				return err
-			}
-			lg.Debug("Getting top percentage succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(status, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members": serializeMembers(members, false, false),
-		}, c)
+		lg.Debug("Getting players around score succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	return &api.GetAroundScoreResponse{
+		Success: true,
+		Members: newMemberRankResponseList(members),
+	}, nil
 }
 
-// GetMembersHandler retrieves several members at once
-func GetMembersHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "GetMembersHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+// TotalMembers is the handler responsible for returning the total number of members req a leaderboard.
+func (app *App) TotalMembers(ctx context.Context, req *api.TotalMembersRequest) (*api.TotalMembersResponse, error) {
+	leaderboardID := req.LeaderboardId
+	lg := app.Logger.With(
+		zap.String("handler", "TotalMembers"),
+		zap.String("leaderboard", leaderboardID),
+	)
 
-		order := c.QueryParam("order")
-		if order == "" || (order != "asc" && order != "desc") {
-			order = "desc"
-		}
-		scoreTTL := c.QueryParam("scoreTTL") == "true"
+	var count int
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting total members.")
+		count, err = app.Leaderboards.TotalMembers(ctx, leaderboardID)
 
-		ids := c.QueryParam("ids")
-		if ids == "" {
+		if err != nil {
+			lg.Error("Getting total members failed.", zap.Error(err))
 			app.AddError()
-			return FailWith(400, "Member IDs are required using the 'ids' querystring parameter", c)
+			return err
 		}
+		lg.Debug("Getting total members succeeded.")
+		return nil
+	})
 
-		memberIDs := strings.Split(ids, ",")
-
-		var members leaderboard.Members
-		err := WithSegment("Model", c, func() error {
-			var err error
-			lg.Debug("Getting members.", zap.String("ids", ids))
-			members, err = app.Leaderboards.GetMembers(c.StdContext(), leaderboardID, memberIDs, order, scoreTTL)
-
-			if err != nil {
-				lg.Error("Getting members failed.", zap.Error(err))
-				app.AddError()
-				return err
-			}
-			lg.Debug("Getting members succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		notFound := []string{}
-
-		for _, memberID := range memberIDs {
-			found := false
-			for _, member := range members {
-				if member.PublicID == memberID {
-					found = true
-					break
-				}
-			}
-			if !found {
-				notFound = append(notFound, memberID)
-			}
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"members":  serializeMembers(members, true, scoreTTL),
-			"notFound": notFound,
-		}, c)
+	if err != nil {
+		return nil, err
 	}
+
+	return &api.TotalMembersResponse{Success: true, Count: int32(count)}, nil
 }
 
-// UpsertMemberLeaderboardsScoreHandler sets the member score for all leaderboards
-func UpsertMemberLeaderboardsScoreHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		memberPublicID := c.Param("memberPublicID")
-		lg := app.Logger.With(
-			zap.String("handler", "UpsertMemberLeaderboardsScoreHandler"),
-			zap.String("memberPublicID", memberPublicID),
+// GetTopMembers retrieves onePage of member score and rank.
+func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest) (*api.GetTopMembersResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetTopMembers"),
+		zap.String("leaderboard", req.LeaderboardId),
+	)
+
+	pageNumber := int(math.Max(float64(req.PageNumber), 1))
+
+	order := getOrder(req.Order)
+
+	pageSize := getPageSize(int(req.PageSize))
+	if pageSize > app.Config.GetInt("api.maxReturnedMembers") {
+		msg := fmt.Sprintf(
+			"Max pageSize allowed: %d. pageSize requested: %d",
+			app.Config.GetInt("api.maxReturnedMembers"),
+			pageSize,
 		)
-
-		scoreTTL := c.QueryParam("scoreTTL")
-
-		var payload setScoresPayload
-
-		prevRank := false
-		prevRankStr := c.QueryParam("prevRank")
-		if prevRankStr != "" && prevRankStr == "true" {
-			prevRank = true
-		}
-
-		err := WithSegment("Payload", c, func() error {
-			b, err := GetRequestBody(c)
-			if err != nil {
-				app.AddError()
-				return err
-			}
-			if _, err := jsonparser.GetInt(b, "score"); err != nil {
-				app.AddError()
-				return fmt.Errorf("score is required")
-			}
-			if err := LoadJSONPayload(&payload, c, lg); err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
-
-		serializedScores := make([]map[string]interface{}, len(payload.Leaderboards))
-
-		err = WithSegment("Model", c, func() error {
-			for i, leaderboardID := range payload.Leaderboards {
-				lg.Debug("Updating score.",
-					zap.String("leaderboardID", leaderboardID),
-					zap.Int64("score", payload.Score))
-				member, err := app.Leaderboards.SetMemberScore(c.StdContext(), leaderboardID, memberPublicID,
-					payload.Score, prevRank, scoreTTL)
-
-				if err != nil {
-					lg.Error("Update score failed.", zap.Error(err))
-					app.AddError()
-					return err
-				}
-				serializedScore := serializeMember(member, -1, scoreTTL != "")
-				serializedScore["leaderboardID"] = leaderboardID
-				serializedScores[i] = serializedScore
-			}
-			lg.Debug("Update score succeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
-		}
-
-		return SucceedWith(map[string]interface{}{
-			"scores": serializedScores,
-		}, c)
+		return nil, status.Errorf(codes.InvalidArgument, msg)
 	}
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting top members.")
+		members, err = app.Leaderboards.GetLeaders(ctx, req.LeaderboardId, pageSize, pageNumber, order)
+
+		if err != nil {
+			lg.Error("Getting top members failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting top members succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.GetTopMembersResponse{
+		Success: true,
+		Members: newMemberRankResponseList(members),
+	}, nil
 }
 
-// RemoveLeaderboardHandler is the handler responsible for removing a leaderboard
-func RemoveLeaderboardHandler(app *App) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		leaderboardID := c.Param("leaderboardID")
-		lg := app.Logger.With(
-			zap.String("handler", "RemoveLeaderboardHandler"),
-			zap.String("leaderboard", leaderboardID),
-		)
+// GetTopPercentage retrieves top x % members req the leaderboard.
+func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageRequest) (*api.GetTopPercentageResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetTopPercentage"),
+		zap.String("leaderboard", req.LeaderboardId),
+	)
 
-		err := WithSegment("Model", c, func() error {
-			lg.Debug("Removing leaderboard.")
-			err := app.Leaderboards.RemoveLeaderboard(c.StdContext(), leaderboardID)
+	if req.Percentage == 0 {
+		app.AddError()
+		return nil, status.Errorf(codes.InvalidArgument, "Percentage must be a valid integer between 1 and 100.")
+	}
+
+	order := getOrder(req.Order)
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting top percentage.", zap.Int("percentage", int(req.Percentage)))
+		members, err = app.Leaderboards.GetTopPercentage(ctx, req.LeaderboardId, defaultPageSize,
+			int(req.Percentage), app.Config.GetInt("api.maxReturnedMembers"), order)
+
+		if err != nil {
+			lg.Error("Getting top percentage failed.", zap.Error(err))
+			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
+				app.AddError()
+				return status.Errorf(codes.InvalidArgument, err.Error())
+			}
+
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting top percentage succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.GetTopPercentageResponse{
+		Success: true,
+		Members: newMemberRankResponseList(members),
+	}, nil
+}
+
+func newGetMembersResponseList(members leaderboard.Members) []*api.GetMembersResponse_Member {
+	list := make([]*api.GetMembersResponse_Member, len(members))
+	for i, m := range members {
+		list[i] = &api.GetMembersResponse_Member{
+			PublicID: m.PublicID,
+			Score:    float64(m.Score),
+			Rank:     int32(m.Rank),
+			ExpireAt: int32(m.ExpireAt),
+			Position: int32(i),
+		}
+	}
+	return list
+}
+
+// GetMembers retrieves several members at once.
+func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*api.GetMembersResponse, error) {
+	lg := app.Logger.With(
+		zap.String("handler", "GetMembers"),
+		zap.String("leaderboard", req.LeaderboardId),
+	)
+
+	order := getOrder(req.Order)
+
+	if req.Ids == "" {
+		app.AddError()
+		return nil, status.Error(codes.InvalidArgument, "Member IDs are required using the 'ids' querystring parameter")
+	}
+
+	memberIDs := strings.Split(req.Ids, ",")
+
+	var members leaderboard.Members
+	err := withSegment("Model", ctx, func() error {
+		var err error
+		lg.Debug("Getting members.", zap.String("ids", req.Ids))
+		members, err = app.Leaderboards.GetMembers(ctx, req.LeaderboardId, memberIDs, order, req.ScoreTTL)
+
+		if err != nil {
+			lg.Error("Getting members failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Getting members succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var notFound []string
+
+	for _, memberID := range memberIDs {
+		found := false
+		for _, member := range members {
+			if member.PublicID == memberID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			notFound = append(notFound, memberID)
+		}
+	}
+
+	return &api.GetMembersResponse{
+		Success:  true,
+		Members:  newGetMembersResponseList(members),
+		NotFound: notFound,
+	}, nil
+}
+
+func newMemberRankResponseList(members leaderboard.Members) []*api.Member {
+	list := make([]*api.Member, len(members))
+	for i, m := range members {
+		list[i] = &api.Member{
+			PublicID: m.PublicID,
+			Score:    float64(m.Score),
+			Rank:     int32(m.Rank),
+		}
+	}
+	return list
+}
+
+// UpsertScoreMultiLeaderboards sets the member score for all leaderboards.
+func (app *App) UpsertScoreMultiLeaderboards(ctx context.Context, req *api.UpsertScoreMultiLeaderboardsRequest) (*api.UpsertScoreMultiLeaderboardsResponse, error) {
+	if len(req.ScoreMultiChange.Leaderboards) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "leaderboards is required")
+	}
+
+	lg := app.Logger.With(
+		zap.String("handler", "UpsertScoreAllLeaderboards"),
+		zap.String("memberPublicID", req.MemberPublicId),
+	)
+
+	serializedScores := make([]*api.UpsertScoreMultiLeaderboardsResponse_Member, len(req.ScoreMultiChange.Leaderboards))
+
+	err := withSegment("Model", ctx, func() error {
+		for i, leaderboardID := range req.ScoreMultiChange.Leaderboards {
+			lg.Debug("Updating score.",
+				zap.String("leaderboardID", leaderboardID),
+				zap.Int64("score", int64(req.ScoreMultiChange.Score)))
+
+			member, err := app.Leaderboards.SetMemberScore(ctx, leaderboardID, req.MemberPublicId,
+				int64(req.ScoreMultiChange.Score), req.PrevRank, getScoreTTL(req.ScoreTTL))
 
 			if err != nil {
-				lg.Error("Remove leaderboard failed.", zap.Error(err))
+				lg.Error("Update score failed.", zap.Error(err))
 				app.AddError()
 				return err
 			}
-			lg.Debug("Remove leaderboard succeeeded.")
-			return nil
-		})
-		if err != nil {
-			return FailWith(500, err.Error(), c)
+			serializedScore := &api.UpsertScoreMultiLeaderboardsResponse_Member{
+				PublicID:      member.PublicID,
+				Score:         float64(member.Score),
+				Rank:          int32(member.Rank),
+				PreviousRank:  int32(member.PreviousRank),
+				ExpireAt:      int32(member.ExpireAt),
+				LeaderboardID: leaderboardID,
+			}
+			serializedScores[i] = serializedScore
 		}
-
-		return SucceedWith(map[string]interface{}{}, c)
+		lg.Debug("Update score succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	return &api.UpsertScoreMultiLeaderboardsResponse{
+		Success: true,
+		Scores:  serializedScores,
+	}, nil
+}
+
+// RemoveLeaderboard is the handler responsible for removing a leaderboard.
+func (app *App) RemoveLeaderboard(ctx context.Context, req *api.RemoveLeaderboardRequest) (*api.RemoveLeaderboardResponse, error) {
+	leaderboardID := req.LeaderboardId
+	lg := app.Logger.With(
+		zap.String("handler", "RemoveLeaderboard"),
+		zap.String("leaderboard", leaderboardID),
+	)
+
+	err := withSegment("Model", ctx, func() error {
+		lg.Debug("Removing leaderboard.")
+
+		if err := app.Leaderboards.RemoveLeaderboard(ctx, leaderboardID); err != nil {
+			lg.Error("Remove leaderboard failed.", zap.Error(err))
+			app.AddError()
+			return err
+		}
+		lg.Debug("Remove leaderboard succeeded.")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.RemoveLeaderboardResponse{Success: true}, nil
 }
