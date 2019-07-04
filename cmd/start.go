@@ -72,7 +72,7 @@ func init() {
 
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind podium to")
 	startCmd.Flags().IntVarP(&httpPort, "http_port", "p", 8880, "HTTP Port to bind podium to")
-	startCmd.Flags().IntVarP(&grpcPort, "grpc_port", "g", 8890, "GRPC Port to bind podium to")
+	startCmd.Flags().IntVarP(&grpcPort, "grpc_port", "g", 8881, "GRPC Port to bind podium to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode (log=debug)")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log=warn)")
 }

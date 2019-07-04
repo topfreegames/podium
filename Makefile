@@ -39,7 +39,7 @@ run: redis
 
 # run app
 run-prod: redis build
-	@./bin/podium start -q -f -c ./config/local.yaml
+	@./bin/podium start -q -c ./config/local.yaml
 
 # get a redis instance up (localhost:1212)
 redis: redis-shutdown
@@ -121,8 +121,8 @@ bench-podium-app: build bench-podium-app-run
 
 bench-podium-app-run: bench-podium-app-kill
 	@rm -rf /tmp/podium-bench.log
-	@./bin/podium start -p 8888 -f -q -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
-	@echo "Podium started at http://localhost:8888."
+	@./bin/podium start -p 8888 -g 8889 -q -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
+	@echo "Podium started at http://localhost:8888. GRPC at 8889."
 
 bench-podium-app-kill:
 	@-ps aux | egrep 'podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9

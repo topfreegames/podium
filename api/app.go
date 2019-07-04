@@ -368,6 +368,7 @@ func (app *App) Start(ctx context.Context) error {
 			cm.Write(zap.String("signal", fmt.Sprintf("%v", s)),
 				zap.Int("graceperiod", graceperiod))
 		})
+		app.GracefullStop()
 		time.Sleep(time.Duration(graceperiod) * time.Millisecond)
 	case err := <-errch:
 		return err

@@ -9,6 +9,7 @@ FROM alpine:3.9
 MAINTAINER TFG Co <backend@tfgco.com>
 
 EXPOSE 80
+EXPOSE 81
 
 RUN apk add bash
 ADD bin/podium-linux-x86_64 /go/bin/podium
@@ -25,4 +26,4 @@ ENV PODIUM_SENTRY_URL ""
 ENV PODIUM_BASICAUTH_USERNAME ""
 ENV PODIUM_BASICAUTH_PASSWORD ""
 
-CMD /go/bin/podium start -c /home/podium/default.yaml -p 80
+CMD /go/bin/podium start -c /home/podium/default.yaml -p 80 -g 81
