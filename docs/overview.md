@@ -24,7 +24,7 @@ Podium is based on the premise that you have a backend server for your game. Tha
 
 For the devs out there, our code is in Go, but more specifically:
 
-* Web Framework - [Echo](https://github.com/labstack/echo) based on the insanely fast [FastHTTP](https://github.com/valyala/fasthttp);
+* Web Framework - [gRPC](https://godoc.org/google.golang.org/grpc) and [gRPC-gateway](github.com/grpc-ecosystem/grpc-gateway).
 * Database - Redis.
 
 ## Who's Using it

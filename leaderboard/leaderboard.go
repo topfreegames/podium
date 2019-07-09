@@ -10,6 +10,7 @@
 package leaderboard
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -20,7 +21,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/labstack/echo/context"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis/interfaces"
 	"github.com/topfreegames/podium/util"
