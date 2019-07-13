@@ -13,6 +13,7 @@ OS = "$(shell uname | awk '{ print tolower($$0) }')"
 REDIS_CONF_PATH=./scripts/redis.conf
 LOCAL_REDIS_PORT=1212
 LOCAL_TEST_REDIS_PORT=1234
+PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
 
 setup-hooks:
 	@cd .git/hooks && ln -sf ../../hooks/pre-commit.sh pre-commit
@@ -24,6 +25,7 @@ setup: setup-hooks
 	@GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
+	@go get github.com/uber/prototool/cmd/prototool
 	@dep ensure
 
 setup-docs:
@@ -164,13 +166,8 @@ rtfd:
 mock-lib:
 	@mockgen github.com/topfreegames/podium/lib PodiumInterface | sed 's/mock_lib/mocks/' > lib/mocks/podium.go
 
-# TODO(lucas-machado): Replace protoc with prototool
-grpc-stub:
-	@protoc -I$(GOPATH)/src/github.com/topfreegames/podium \
-	-I$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
-	--go_out=plugins=grpc:. \
-	proto/podium/api/v1/podium.proto
-	@protoc -I$(GOPATH)/src/github.com/topfreegames/podium \
-	-I$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
-	--grpc-gateway_out=logtostderr=true:. \
-	proto/podium/api/v1/podium.proto
+.PHONY: proto
+proto:
+	@rm proto/podium/api/v1/*.go > /dev/null 2>&1 || true
+	@${PROTOTOOL} generate
+
