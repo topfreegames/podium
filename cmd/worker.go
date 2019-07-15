@@ -37,13 +37,26 @@ var workerCmd = &cobra.Command{
 		)
 		logger.Info("Starting podium score expirer worker...")
 
-		w, err := worker.GetExpirationWorker(ConfigFile, logger)
+		w, err := worker.GetExpirationWorker(ConfigFile)
 
 		if err != nil {
 			logger.Fatal("Could not get podium worker.", zap.Error(err))
 		}
 
-		w.Run()
+		expirationsChan := make(chan []*worker.ExpirationResult)
+
+		go func() {
+			for expirations := range expirationsChan {
+				logger.Debug("expiration results", zap.Object("result", expirations))
+			}
+		}()
+
+		err = w.Run(expirationsChan)
+		close(expirationsChan)
+
+		if err != nil {
+			logger.Fatal("Running podium worker", zap.Error(err))
+		}
 	},
 }
 
