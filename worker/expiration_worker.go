@@ -21,7 +21,6 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	extredis "github.com/topfreegames/extensions/redis"
-	"go.uber.org/zap"
 )
 
 // ExpirationResult is the struct that represents the result of an expiration job
@@ -34,7 +33,6 @@ type ExpirationResult struct {
 // ExpirationWorker is the struct that represents the scores expirer worker
 type ExpirationWorker struct {
 	RedisClient             *extredis.Client
-	Logger                  zap.Logger
 	Config                  *viper.Viper
 	ConfigPath              string
 	ExpirationCheckInterval time.Duration
@@ -44,37 +42,60 @@ type ExpirationWorker struct {
 }
 
 // GetExpirationWorker returns a new scores expirer worker
-func GetExpirationWorker(configPath string, logger zap.Logger) (*ExpirationWorker, error) {
+func GetExpirationWorker(configPath string) (*ExpirationWorker, error) {
 	worker := &ExpirationWorker{
 		ConfigPath: configPath,
-		Logger:     logger,
 		Config:     viper.New(),
 	}
+
+	err := worker.loadConfiguration()
+	if err != nil {
+		return nil, err
+	}
+
+	err = worker.configure()
+	if err != nil {
+		return nil, err
+	}
+
+	return worker, nil
+}
+
+// NewExpirationWorker returns a new scores expirer worker with already loaded configuration.
+func NewExpirationWorker(host string, port int, password string, db int, connectionTimeout int,
+	expirationCheckInterval time.Duration, expirationLimitPerRun int) (*ExpirationWorker, error) {
+
+	config := viper.New()
+
+	config.Set("redis.host", host)
+	config.Set("redis.port", port)
+	config.Set("redis.password", password)
+	config.Set("redis.db", db)
+	config.Set("redis.connectionTimeout", connectionTimeout)
+	config.Set("worker.expirationCheckInterval", expirationCheckInterval)
+	config.Set("worker.expirationLimitPerRun", expirationLimitPerRun)
+
+	worker := &ExpirationWorker{
+		Config: config,
+	}
+
 	err := worker.configure()
 	if err != nil {
 		return nil, err
 	}
+
 	return worker, nil
 }
 
 func (w *ExpirationWorker) configure() error {
-	err := w.loadConfiguration()
-	if err != nil {
-		return err
-	}
 	w.setConfigurationDefaults()
 	w.ExpirationCheckInterval = w.Config.GetDuration("worker.expirationCheckInterval")
 	w.ExpirationLimitPerRun = w.Config.GetInt("worker.expirationLimitPerRun")
-
-	l := w.Logger.With(
-		zap.String("operation", "configureWorker"),
-	)
 
 	redisHost := w.Config.GetString("redis.host")
 	redisPort := w.Config.GetInt("redis.port")
 	redisPass := w.Config.GetString("redis.password")
 	redisDB := w.Config.GetInt("redis.db")
-	redisConnectionTimeout := w.Config.GetString("redis.connectionTimeout")
 
 	redisURLObject := url.URL{
 		Scheme: "redis",
@@ -84,18 +105,11 @@ func (w *ExpirationWorker) configure() error {
 	}
 	redisURL := redisURLObject.String()
 	w.Config.Set("redis.url", redisURL)
-	rl := l.With(
-		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", redisHost, redisPort, redisDB)),
-		zap.String("connectionTimeout", redisConnectionTimeout),
-	)
-	rl.Debug("Connecting to redis...")
 	cli, err := extredis.NewClient("redis", w.Config)
 	if err != nil {
-		rl.Error("Failed to connect to redis")
-		return err
+		return fmt.Errorf("Failed to connect to redis: %v", err)
 	}
 	w.RedisClient = cli
-	rl.Info("Connected to redis successfully.")
 	return nil
 }
 
@@ -105,9 +119,7 @@ func (w *ExpirationWorker) loadConfiguration() error {
 	w.Config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	w.Config.AutomaticEnv()
 
-	if err := w.Config.ReadInConfig(); err == nil {
-		w.Logger.Info("Loaded config file.", zap.String("configFile", w.Config.ConfigFileUsed()))
-	} else {
+	if err := w.Config.ReadInConfig(); err != nil {
 		return fmt.Errorf("Could not load configuration file from: %s", w.ConfigPath)
 	}
 
@@ -161,22 +173,16 @@ func (w *ExpirationWorker) expireScores() ([]*ExpirationResult, error) {
 		w.running = false
 	}()
 	res := make([]*ExpirationResult, 0)
-	l := w.Logger.With(
-		zap.String("operation", "expireScores"),
-	)
 	expirationSets, err := w.RedisClient.Client.SMembers("expiration-sets").Result()
 	if err != nil {
 		return nil, err
 	}
-	l.Debug("expiring scores", zap.Object("sets", expirationSets))
 	for _, set := range expirationSets {
 		ttlSuffix := ":ttl"
 		if !(strings.HasSuffix(set, ttlSuffix)) {
-			l.Warn("invalid epiration set", zap.String("set", set))
 			continue
 		}
 		leaderboardName := strings.TrimSuffix(set, ttlSuffix)
-		l.Debug("expiring scores from set", zap.String("set", set))
 
 		expirationScript := w.getExpireScoresScript()
 		result, err := expirationScript.Run(w.RedisClient.Client, []string{leaderboardName, set}, time.Now().Unix()).Result()
@@ -190,13 +196,6 @@ func (w *ExpirationWorker) expireScores() ([]*ExpirationResult, error) {
 		if results[1].(int64) > 0 {
 			deletedSet = true
 		}
-
-		l.Info("expired members from set",
-			zap.String("leaderboardName", leaderboardName),
-			zap.String("set", set),
-			zap.Int64("deletedMembersCount", deletedMembersCount),
-			zap.Bool("deletedSet", deletedSet),
-		)
 
 		res = append(res, &ExpirationResult{
 			Set:            set,
@@ -213,10 +212,10 @@ func (w *ExpirationWorker) Stop() {
 }
 
 // Run starts the worker -- this method blocks
-func (w *ExpirationWorker) Run() {
+func (w *ExpirationWorker) Run(resultsChan chan<- []*ExpirationResult, errChan chan<- error) {
 	w.shouldRun = true
 	stopChan := make(chan struct{})
-	sigChan := make(chan os.Signal)
+	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan,
 		syscall.SIGHUP,
 		syscall.SIGINT,
@@ -224,32 +223,27 @@ func (w *ExpirationWorker) Run() {
 		syscall.SIGQUIT)
 
 	w.running = false
-	l := w.Logger.With(
-		zap.String("operation", "Run"),
-		zap.Duration("ExpirationCheckInterval", w.ExpirationCheckInterval),
-	)
-	l.Info("Running scores expirer worker")
 	ticker := time.NewTicker(w.ExpirationCheckInterval)
 	go func() {
 		for range ticker.C {
-			if w.shouldRun == false {
+			if !w.shouldRun {
 				close(stopChan)
 				break
 			}
-			if w.running == false {
+			if !w.running {
 				w.running = true
-				result, err := w.expireScores()
+				results, err := w.expireScores()
 				if err != nil {
-					l.Error("error expiring scores", zap.Error(err))
+					errChan <- fmt.Errorf("error expiring scores: %v", err)
+					continue
 				}
-				l.Debug("expiration results", zap.Object("result", result))
+				resultsChan <- results
 			}
 		}
 	}()
-	for w.shouldRun == true {
+	for w.shouldRun {
 		select {
 		case <-sigChan:
-			w.Logger.Warn("Scores expirer worker exiting...")
 			w.shouldRun = false
 			<-stopChan
 		case <-stopChan:

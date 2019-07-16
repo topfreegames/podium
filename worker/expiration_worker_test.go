@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/leaderboard"
-	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/worker"
 
 	. "github.com/onsi/ginkgo"
@@ -30,6 +29,17 @@ var _ = Describe("Scores Expirer Worker", func() {
 	var redisClient *redis.Client
 	var expirationWorker *worker.ExpirationWorker
 	var leaderboards *leaderboard.Client
+	expirationSink := make(chan []*worker.ExpirationResult)
+	errorSink := make(chan error)
+
+	go func() {
+		for {
+			select {
+			case <-expirationSink:
+			case <-errorSink:
+			}
+		}
+	}()
 
 	BeforeEach(func() {
 		var err error
@@ -38,7 +48,6 @@ var _ = Describe("Scores Expirer Worker", func() {
 		config.Set("redis.url", "redis://localhost:1234/0")
 		config.Set("redis.connectionTimeout", 200)
 
-		logger := testing.NewMockLogger()
 		redisClient, err = redis.NewClient("redis", config)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -49,7 +58,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		_, err = p.Exec()
 		Expect(err).NotTo(HaveOccurred())
 
-		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml", logger)
+		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -66,10 +75,10 @@ var _ = Describe("Scores Expirer Worker", func() {
 		_, err := leaderboards.SetMemberScore(context.Background(), lbName, "denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-		result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
+		_, err = redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		redisExpirationSetKey := "expiration-sets"
-		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
+		result, err := redisClient.Client.Exists(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result).To(Equal(int64(1)))
 		result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
@@ -88,7 +97,8 @@ var _ = Describe("Scores Expirer Worker", func() {
 			time.Sleep(time.Duration(6) * time.Second)
 			expirationWorker.Stop()
 		}()
-		expirationWorker.Run()
+		expirationWorker.Run(expirationSink, errorSink)
+
 		res, err := redisClient.Client.ZRangeWithScores(lbName, 0, 1).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(res)).To(Equal(0))
@@ -108,10 +118,10 @@ var _ = Describe("Scores Expirer Worker", func() {
 		_, err := leaderboards.SetMemberScore(context.Background(), lbName, "denix", 481516, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-		result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
+		_, err = redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		redisExpirationSetKey := "expiration-sets"
-		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
+		result, err := redisClient.Client.Exists(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result).To(Equal(int64(1)))
 		result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
@@ -130,7 +140,8 @@ var _ = Describe("Scores Expirer Worker", func() {
 			time.Sleep(time.Duration(6) * time.Second)
 			expirationWorker.Stop()
 		}()
-		expirationWorker.Run()
+		expirationWorker.Run(expirationSink, errorSink)
+
 		res, err := redisClient.Client.ZRangeWithScores(lbName, 0, 1).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(res)).To(Equal(1))
@@ -165,7 +176,8 @@ var _ = Describe("Scores Expirer Worker", func() {
 			time.Sleep(time.Duration(5) * time.Second)
 			expirationWorker.Stop()
 		}()
-		expirationWorker.Run()
+		expirationWorker.Run(expirationSink, errorSink)
+
 		res, err := redisClient.Client.ZRangeWithScores(lbName, 0, 1).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(res)).To(Equal(1))
@@ -186,13 +198,14 @@ var _ = Describe("Scores Expirer Worker", func() {
 		ttl := "2"
 		lbName := "test-expire-leaderboard"
 		_, err := leaderboards.SetMemberScore(context.Background(), lbName, "denix", 481516, false, ttl)
+		Expect(err).NotTo(HaveOccurred())
 		_, err = leaderboards.SetMemberScore(context.Background(), lbName, "denix2", 481512, false, ttl)
 		Expect(err).NotTo(HaveOccurred())
 		redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-		result, err := redisClient.Client.Exists(redisLBExpirationKey).Result()
+		_, err = redisClient.Client.Exists(redisLBExpirationKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		redisExpirationSetKey := "expiration-sets"
-		result, err = redisClient.Client.Exists(redisExpirationSetKey).Result()
+		result, err := redisClient.Client.Exists(redisExpirationSetKey).Result()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result).To(Equal(int64(1)))
 		result2, err := redisClient.Client.SMembers(redisExpirationSetKey).Result()
@@ -213,7 +226,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 			expirationWorker.Stop()
 		}()
 
-		expirationWorker.Run()
+		expirationWorker.Run(expirationSink, errorSink)
 
 		res, err := redisClient.Client.ZRangeWithScores(lbName, 0, 2).Result()
 		Expect(err).NotTo(HaveOccurred())
@@ -229,4 +242,16 @@ var _ = Describe("Scores Expirer Worker", func() {
 		Expect(exists).To(Equal(int64(1)))
 	})
 
+	It("should create a valid expiration worker with external configuration", func() {
+		config := viper.New()
+		config.SetConfigFile("../config/test.yaml")
+		err := config.ReadInConfig()
+		Expect(err).NotTo(HaveOccurred())
+
+		expirationWorker, err = worker.NewExpirationWorker(config.GetString("redis.host"),
+			config.GetInt("redis.port"), config.GetString("redis.password"), config.GetInt("redis.db"),
+			config.GetInt("redis.connectionTimeout"), config.GetDuration("worker.expirationCheckInterval"),
+			config.GetInt("worker.expirationLimitPerRun"))
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
