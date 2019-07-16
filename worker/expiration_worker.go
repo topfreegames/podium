@@ -61,8 +61,8 @@ func GetExpirationWorker(configPath string) (*ExpirationWorker, error) {
 	return worker, nil
 }
 
-// GetExpirationWorkerExtCfg returns a new scores expirer worker with already loaded configuration.
-func GetExpirationWorkerExtCfg(host string, port int, password string, db int, connectionTimeout int,
+// NewExpirationWorker returns a new scores expirer worker with already loaded configuration.
+func NewExpirationWorker(host string, port int, password string, db int, connectionTimeout int,
 	expirationCheckInterval time.Duration, expirationLimitPerRun int) (*ExpirationWorker, error) {
 
 	config := viper.New()
@@ -212,11 +212,10 @@ func (w *ExpirationWorker) Stop() {
 }
 
 // Run starts the worker -- this method blocks
-func (w *ExpirationWorker) Run(resultsChan chan<- []*ExpirationResult) error {
+func (w *ExpirationWorker) Run(resultsChan chan<- []*ExpirationResult, errChan chan<- error) {
 	w.shouldRun = true
 	stopChan := make(chan struct{})
-	sigChan := make(chan os.Signal)
-	errChan := make(chan error)
+	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan,
 		syscall.SIGHUP,
 		syscall.SIGINT,
@@ -227,27 +226,23 @@ func (w *ExpirationWorker) Run(resultsChan chan<- []*ExpirationResult) error {
 	ticker := time.NewTicker(w.ExpirationCheckInterval)
 	go func() {
 		for range ticker.C {
-			if w.shouldRun == false {
+			if !w.shouldRun {
 				close(stopChan)
 				break
 			}
-			if w.running == false {
+			if !w.running {
 				w.running = true
 				results, err := w.expireScores()
 				if err != nil {
 					errChan <- fmt.Errorf("error expiring scores: %v", err)
-					break
+					continue
 				}
 				resultsChan <- results
 			}
 		}
 	}()
-	for w.shouldRun == true {
+	for w.shouldRun {
 		select {
-		case err := <-errChan:
-			w.shouldRun = false
-			<-stopChan
-			return err
 		case <-sigChan:
 			w.shouldRun = false
 			<-stopChan
@@ -255,5 +250,4 @@ func (w *ExpirationWorker) Run(resultsChan chan<- []*ExpirationResult) error {
 			break
 		}
 	}
-	return nil
 }

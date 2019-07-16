@@ -9,15 +9,11 @@
 package cmd
 
 import (
-	"io"
-	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/spf13/cobra"
 )
-
-var out io.Writer = os.Stdout
 
 func Test(t *testing.T) {
 	Describe("Root Cmd", func() {

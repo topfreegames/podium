@@ -44,19 +44,20 @@ var workerCmd = &cobra.Command{
 		}
 
 		expirationsChan := make(chan []*worker.ExpirationResult)
+		errChan := make(chan error)
 
 		go func() {
-			for expirations := range expirationsChan {
-				logger.Debug("expiration results", zap.Object("result", expirations))
+			for {
+				select {
+				case expirations := <-expirationsChan:
+					logger.Debug("expiration results", zap.Object("result", expirations))
+				case err := <-errChan:
+					logger.Error("error from worker", zap.Error(err))
+				}
 			}
 		}()
 
-		err = w.Run(expirationsChan)
-		close(expirationsChan)
-
-		if err != nil {
-			logger.Fatal("Running podium worker", zap.Error(err))
-		}
+		w.Run(expirationsChan, errChan)
 	},
 }
 
