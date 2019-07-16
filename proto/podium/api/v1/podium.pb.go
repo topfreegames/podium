@@ -10,8 +10,6 @@ import (
 	empty "github.com/golang/protobuf/ptypes/empty"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -1246,7 +1244,7 @@ func (m *RemoveMemberRequest) GetMemberPublicId() string {
 type RemoveMembersRequest struct {
 	// The leaderboard identification.
 	LeaderboardId string `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
-	// Comma separated member id list (ex: ids=memberPublicID1,memberPublicID2,...)
+	// Comma separated member id list (ex: ids="memberPublicID1,memberPublicID2,...")
 	Ids                  string   `protobuf:"bytes,2,opt,name=ids,proto3" json:"ids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1342,7 +1340,9 @@ func (m *RemoveLeaderboardResponse) GetReason() string {
 }
 
 type RemoveMemberResponse struct {
-	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	// If the request was successfull.
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	// If the request failed the reason (as a error message) is written here.
 	Reason               string   `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1389,7 +1389,9 @@ func (m *RemoveMemberResponse) GetReason() string {
 }
 
 type RemoveMembersResponse struct {
-	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	// If the request was successfull.
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	// If the request failed the reason (as a error message) is written here.
 	Reason               string   `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1435,7 +1437,7 @@ func (m *RemoveMembersResponse) GetReason() string {
 	return ""
 }
 
-//
+// Message to retrieve the rank of a member
 type GetRankRequest struct {
 	// The leaderboard identification.
 	LeaderboardId string `protobuf:"bytes,1,opt,name=leaderboard_id,json=leaderboardId,proto3" json:"leaderboard_id,omitempty"`
@@ -2738,7 +2740,7 @@ type PodiumClient interface {
 	GetMembers(ctx context.Context, in *GetMembersRequest, opts ...grpc.CallOption) (*GetMembersResponse, error)
 	// RemoveMember removes a member from a leaderboard.
 	RemoveMember(ctx context.Context, in *RemoveMemberRequest, opts ...grpc.CallOption) (*RemoveMemberResponse, error)
-	// RemoveMembers allow the removal of multiple members of a leaderboard.
+	// RemoveMembers allows the removal of multiple members of a leaderboard.
 	RemoveMembers(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*RemoveMembersResponse, error)
 	// GetRank retrieves ranking information about a member.
 	GetRank(ctx context.Context, in *GetRankRequest, opts ...grpc.CallOption) (*GetRankResponse, error)
@@ -2949,7 +2951,7 @@ type PodiumServer interface {
 	GetMembers(context.Context, *GetMembersRequest) (*GetMembersResponse, error)
 	// RemoveMember removes a member from a leaderboard.
 	RemoveMember(context.Context, *RemoveMemberRequest) (*RemoveMemberResponse, error)
-	// RemoveMembers allow the removal of multiple members of a leaderboard.
+	// RemoveMembers allows the removal of multiple members of a leaderboard.
 	RemoveMembers(context.Context, *RemoveMembersRequest) (*RemoveMembersResponse, error)
 	// GetRank retrieves ranking information about a member.
 	GetRank(context.Context, *GetRankRequest) (*GetRankResponse, error)
@@ -2965,65 +2967,6 @@ type PodiumServer interface {
 	UpsertScoreMultiLeaderboards(context.Context, *UpsertScoreMultiLeaderboardsRequest) (*UpsertScoreMultiLeaderboardsResponse, error)
 	// GetRankMultiLeaderboards retrieves information about a member in multiple leaderboards.
 	GetRankMultiLeaderboards(context.Context, *GetRankMultiLeaderboardsRequest) (*GetRankMultiLeaderboardsResponse, error)
-}
-
-// UnimplementedPodiumServer can be embedded to have forward compatible implementations.
-type UnimplementedPodiumServer struct {
-}
-
-func (*UnimplementedPodiumServer) HealthCheck(ctx context.Context, req *HealthCheckRequest) (*HealthCheckResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
-}
-func (*UnimplementedPodiumServer) Status(ctx context.Context, req *empty.Empty) (*StatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
-}
-func (*UnimplementedPodiumServer) RemoveLeaderboard(ctx context.Context, req *RemoveLeaderboardRequest) (*RemoveLeaderboardResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveLeaderboard not implemented")
-}
-func (*UnimplementedPodiumServer) BulkUpsertScores(ctx context.Context, req *BulkUpsertScoresRequest) (*BulkUpsertScoresResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BulkUpsertScores not implemented")
-}
-func (*UnimplementedPodiumServer) UpsertScore(ctx context.Context, req *UpsertScoreRequest) (*UpsertScoreResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpsertScore not implemented")
-}
-func (*UnimplementedPodiumServer) TotalMembers(ctx context.Context, req *TotalMembersRequest) (*TotalMembersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TotalMembers not implemented")
-}
-func (*UnimplementedPodiumServer) IncrementScore(ctx context.Context, req *IncrementScoreRequest) (*IncrementScoreResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method IncrementScore not implemented")
-}
-func (*UnimplementedPodiumServer) GetMember(ctx context.Context, req *GetMemberRequest) (*GetMemberResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMember not implemented")
-}
-func (*UnimplementedPodiumServer) GetMembers(ctx context.Context, req *GetMembersRequest) (*GetMembersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMembers not implemented")
-}
-func (*UnimplementedPodiumServer) RemoveMember(ctx context.Context, req *RemoveMemberRequest) (*RemoveMemberResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
-}
-func (*UnimplementedPodiumServer) RemoveMembers(ctx context.Context, req *RemoveMembersRequest) (*RemoveMembersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveMembers not implemented")
-}
-func (*UnimplementedPodiumServer) GetRank(ctx context.Context, req *GetRankRequest) (*GetRankResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRank not implemented")
-}
-func (*UnimplementedPodiumServer) GetAroundMember(ctx context.Context, req *GetAroundMemberRequest) (*GetAroundMemberResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAroundMember not implemented")
-}
-func (*UnimplementedPodiumServer) GetAroundScore(ctx context.Context, req *GetAroundScoreRequest) (*GetAroundScoreResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAroundScore not implemented")
-}
-func (*UnimplementedPodiumServer) GetTopMembers(ctx context.Context, req *GetTopMembersRequest) (*GetTopMembersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetTopMembers not implemented")
-}
-func (*UnimplementedPodiumServer) GetTopPercentage(ctx context.Context, req *GetTopPercentageRequest) (*GetTopPercentageResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetTopPercentage not implemented")
-}
-func (*UnimplementedPodiumServer) UpsertScoreMultiLeaderboards(ctx context.Context, req *UpsertScoreMultiLeaderboardsRequest) (*UpsertScoreMultiLeaderboardsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpsertScoreMultiLeaderboards not implemented")
-}
-func (*UnimplementedPodiumServer) GetRankMultiLeaderboards(ctx context.Context, req *GetRankMultiLeaderboardsRequest) (*GetRankMultiLeaderboardsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRankMultiLeaderboards not implemented")
 }
 
 func RegisterPodiumServer(s *grpc.Server, srv PodiumServer) {
