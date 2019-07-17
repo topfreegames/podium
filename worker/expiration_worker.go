@@ -30,6 +30,10 @@ type ExpirationResult struct {
 	Set            string
 }
 
+func (r *ExpirationResult) String() string {
+	return fmt.Sprintf("(DeletedMembers: %d, DeletedSet: %t, Set: %s)", r.DeletedMembers, r.DeletedSet, r.Set)
+}
+
 // ExpirationWorker is the struct that represents the scores expirer worker
 type ExpirationWorker struct {
 	RedisClient             *extredis.Client

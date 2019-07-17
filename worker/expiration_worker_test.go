@@ -254,4 +254,17 @@ var _ = Describe("Scores Expirer Worker", func() {
 			config.GetInt("worker.expirationLimitPerRun"))
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("should print correctly expiration results", func() {
+		results := []*worker.ExpirationResult{
+			{DeletedMembers: 1, DeletedSet: true, Set: "s1"},
+			{DeletedMembers: 0, DeletedSet: false, Set: "s2"},
+		}
+
+		got := fmt.Sprintf("results: %v", results)
+		want :=
+			"results: [(DeletedMembers: 1, DeletedSet: true, Set: s1) (DeletedMembers: 0, DeletedSet: false, Set: s2)]"
+
+		Expect(got).To(Equal(want))
+	})
 })
