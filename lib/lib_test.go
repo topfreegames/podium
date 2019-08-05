@@ -336,7 +336,7 @@ var _ = Describe("Lib", func() {
 				}		
 				`))
 
-			members, err := p.GetMembersAroundMember(nil, leaderboard, "pid1", 10)
+			members, err := p.GetMembersAroundMember(nil, leaderboard, "pid1", 10, false)
 
 			Expect(members).NotTo(BeNil())
 			Expect(err).NotTo(HaveOccurred())

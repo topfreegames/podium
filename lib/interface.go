@@ -9,7 +9,7 @@ type PodiumInterface interface {
 	GetMember(ctx context.Context, leaderboard, memberID string) (*Member, error)
 	GetMembers(ctx context.Context, leaderboard string, memberIDs []string) (*MemberList, error)
 	GetMemberInLeaderboards(ctx context.Context, leaderboards []string, memberID string, order ...string) (*ScoreList, error)
-	GetMembersAroundMember(ctx context.Context, leaderboard, memberID string, pageSize int) (*MemberList, error)
+	GetMembersAroundMember(ctx context.Context, leaderboard, memberID string, pageSize int, lastIfNotFound bool, order ...string) (*MemberList, error)
 	GetTop(ctx context.Context, leaderboard string, page, pageSize int) (*MemberList, error)
 	GetTopPercent(ctx context.Context, leaderboard string, percentage int) (*MemberList, error)
 	Healthcheck(ctx context.Context) (string, error)
