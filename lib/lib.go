@@ -256,7 +256,7 @@ func (p *Podium) buildGetCountURL(leaderboard string) string {
 }
 
 func (p *Podium) buildGetMembersAroundMemberURL(leaderboard, memberID string, pageSize int, lastIfNotFound bool, order string) string {
-	pathname := fmt.Sprintf("/l/%s/members/%s/around?pageSize=%d?getLastIfNotFound=%t?order=%s", leaderboard, memberID, pageSize, lastIfNotFound, order)
+	pathname := fmt.Sprintf("/l/%s/members/%s/around?pageSize=%d&getLastIfNotFound=%t&order=%s", leaderboard, memberID, pageSize, lastIfNotFound, order)
 	return p.buildURL(pathname)
 }
 
