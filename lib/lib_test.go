@@ -296,7 +296,7 @@ var _ = Describe("Lib", func() {
 			leaderboard := globalLeaderboard
 
 			//mock url that should be called
-			url := "http://podium/l/" + leaderboard + "/members/pid1/around?pageSize=10"
+			url := "http://podium/l/" + leaderboard + "/members/pid1/around?pageSize=10&getLastIfNotFound=false&order=desc"
 			httpmock.RegisterResponder("GET", url,
 				httpmock.NewStringResponder(200, `
 				{
