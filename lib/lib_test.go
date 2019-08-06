@@ -341,6 +341,87 @@ var _ = Describe("Lib", func() {
 			Expect(members).NotTo(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("Should return 404 Not Found if member is not present in the leaderboard and lastIfNotFound is false", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/members/pid7/around?pageSize=10&getLastIfNotFound=false&order=desc"
+			httpmock.RegisterResponder("GET", url,
+				httpmock.NewStringResponder(404, `
+				{
+					"success": false,
+					"reason": "Could not find player in leaderboard."
+				}
+				`))
+
+			members, err := p.GetMembersAroundMember(nil, leaderboard, "pid7", 10, false)
+
+			Expect(members).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			reqErr, ok := err.(*lib.RequestError)
+			Expect(ok).To(BeTrue())
+			Expect(reqErr.Status()).To(BeNumerically("==", 404))
+		})
+
+		It("Should treat the member as being in last place if it is not present in the leaderboard and lastIfNotFound is true", func() {
+			leaderboard := globalLeaderboard
+
+			//mock url that should be called
+			url := "http://podium/l/" + leaderboard + "/members/pid0/around?pageSize=10&getLastIfNotFound=true&order=desc"
+			httpmock.RegisterResponder("GET", url,
+				httpmock.NewStringResponder(200, `
+				{
+					"members": [
+							{
+									"publicID": "pid2",
+									"rank": 1,
+									"score": 200
+							},
+							{
+									"publicID": "pid1",
+									"rank": 2,
+									"score": 100
+							},
+							{
+									"publicID": "pid6",
+									"rank": 3,
+									"score": 99
+							},
+							{
+									"publicID": "pid3",
+									"rank": 4,
+									"score": 80
+							},
+							{
+									"publicID": "pid4",
+									"rank": 5,
+									"score": 20
+							},
+							{
+									"publicID": "pid5",
+									"rank": 6,
+									"score": 1
+							},
+							{
+									"publicID": "pid0",
+									"rank": 7,
+									"score": 0
+							}
+					],
+					"success": true
+				}
+				`))
+
+			members, err := p.GetMembersAroundMember(nil, leaderboard, "pid0", 10, true)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).NotTo(BeNil())
+			Expect(members.Members).NotTo(BeEmpty())
+			member := members.Members[len(members.Members)-1]
+			Expect(member).NotTo(BeNil())
+			Expect(member.PublicID).To(Equal("pid0"))
+		})
 	})
 
 	Describe("GetMembers", func() {
