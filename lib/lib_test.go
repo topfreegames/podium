@@ -342,7 +342,7 @@ var _ = Describe("Lib", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("Should return 404 Not Found if member is not present in the leaderboard and lastIfNotFound is false", func() {
+		It("Should return 404 Not Found if member is not present in the leaderboard and getLastIfNotFound is false", func() {
 			leaderboard := globalLeaderboard
 
 			//mock url that should be called
@@ -364,7 +364,7 @@ var _ = Describe("Lib", func() {
 			Expect(reqErr.Status()).To(BeNumerically("==", 404))
 		})
 
-		It("Should treat the member as being in last place if it is not present in the leaderboard and lastIfNotFound is true", func() {
+		It("Should treat the member as being in last place if it is not present in the leaderboard and getLastIfNotFound is true", func() {
 			leaderboard := globalLeaderboard
 
 			//mock url that should be called

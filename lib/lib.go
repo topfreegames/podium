@@ -255,8 +255,8 @@ func (p *Podium) buildGetCountURL(leaderboard string) string {
 	return p.buildURL(pathname)
 }
 
-func (p *Podium) buildGetMembersAroundMemberURL(leaderboard, memberID string, pageSize int, lastIfNotFound bool, order string) string {
-	pathname := fmt.Sprintf("/l/%s/members/%s/around?pageSize=%d&getLastIfNotFound=%t&order=%s", leaderboard, memberID, pageSize, lastIfNotFound, order)
+func (p *Podium) buildGetMembersAroundMemberURL(leaderboard, memberID string, pageSize int, getLastIfNotFound bool, order string) string {
+	pathname := fmt.Sprintf("/l/%s/members/%s/around?pageSize=%d&getLastIfNotFound=%t&order=%s", leaderboard, memberID, pageSize, getLastIfNotFound, order)
 	return p.buildURL(pathname)
 }
 
@@ -419,14 +419,13 @@ func (p *Podium) GetMember(ctx context.Context, leaderboard, memberID string) (*
 }
 
 // GetMembersAroundMember returns the members around the given memberID
-func (p *Podium) GetMembersAroundMember(ctx context.Context, leaderboard, memberID string, pageSize int, lastIfNotFound bool, order ...string) (*MemberList, error) {
+func (p *Podium) GetMembersAroundMember(ctx context.Context, leaderboard, memberID string, pageSize int, getLastIfNotFound bool, order ...string) (*MemberList, error) {
 	var o = "desc"
 	if len(order) > 0 {
 		o = order[0]
 	}
 
-	route := p.buildGetMembersAroundMemberURL(leaderboard, memberID, pageSize, lastIfNotFound, o)
-
+	route := p.buildGetMembersAroundMemberURL(leaderboard, memberID, pageSize, getLastIfNotFound, o)
 	body, err := p.sendTo(ctx, "GET", route, nil)
 
 	if err != nil {
