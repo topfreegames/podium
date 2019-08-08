@@ -105,16 +105,21 @@ func (mr *MockPodiumInterfaceMockRecorder) GetMembers(arg0, arg1, arg2 interface
 }
 
 // GetMembersAroundMember mocks base method
-func (m *MockPodiumInterface) GetMembersAroundMember(arg0 context.Context, arg1, arg2 string, arg3 int) (*lib.MemberList, error) {
-	ret := m.ctrl.Call(m, "GetMembersAroundMember", arg0, arg1, arg2, arg3)
+func (m *MockPodiumInterface) GetMembersAroundMember(arg0 context.Context, arg1, arg2 string, arg3 int, arg4 bool, arg5 ...string) (*lib.MemberList, error) {
+	varargs := []interface{}{arg0, arg1, arg2, arg3, arg4}
+	for _, a := range arg5 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetMembersAroundMember", varargs...)
 	ret0, _ := ret[0].(*lib.MemberList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetMembersAroundMember indicates an expected call of GetMembersAroundMember
-func (mr *MockPodiumInterfaceMockRecorder) GetMembersAroundMember(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembersAroundMember", reflect.TypeOf((*MockPodiumInterface)(nil).GetMembersAroundMember), arg0, arg1, arg2, arg3)
+func (mr *MockPodiumInterfaceMockRecorder) GetMembersAroundMember(arg0, arg1, arg2, arg3, arg4 interface{}, arg5 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1, arg2, arg3, arg4}, arg5...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembersAroundMember", reflect.TypeOf((*MockPodiumInterface)(nil).GetMembersAroundMember), varargs...)
 }
 
 // GetTop mocks base method
