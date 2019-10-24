@@ -471,6 +471,20 @@ var _ = Describe("Leaderboard Model", func() {
 			Expect(lastAroundMe.PublicID).To(Equal("member_10"))
 		})
 
+		It("should get member in last place if getLastIfNotFound is true and member is not found", func() {
+			pageSize := 25
+			for i := 1; i <= 100; i++ {
+				_, err := leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(100-i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+			nonMemberID := "not_a_member"
+			members, err := leaderboards.GetAroundMe(NewEmptyCtx(), testLeaderboardID, pageSize, nonMemberID, "desc", true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(pageSize))
+			lastAroundMe := members[pageSize-1]
+			Expect(lastAroundMe.PublicID).To(Equal(nonMemberID))
+		})
+
 		It("should fail if faulty redis client", func() {
 			_, err := faultyLeaderboards.GetAroundMe(NewEmptyCtx(), testLeaderboardID, 10, "qwe", "desc", false)
 			Expect(err).To(HaveOccurred())

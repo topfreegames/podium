@@ -1302,13 +1302,14 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 		})
 
-		It("Should get last positions if not in ranking", func() {
+		It("Should treat member as if in last position if not in ranking", func() {
 			for i := 1; i <= 100; i++ {
 				_, err := a.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(100-i), false, "")
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(a, "/l/testkey/members/member_999/around?pageSize=20&getLastIfNotFound=true")
+			inexistentMemberPublicID := "member_999"
+			status, body := Get(a, fmt.Sprintf("/l/testkey/members/%s/around?pageSize=20&getLastIfNotFound=true", inexistentMemberPublicID))
 			Expect(status).To(Equal(http.StatusOK), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
@@ -1316,8 +1317,9 @@ var _ = Describe("Leaderboard Handler", func() {
 			members := result["members"].([]interface{})
 			Expect(len(members)).To(Equal(20))
 			start := int(members[0].(map[string]interface{})["rank"].(float64))
-			Expect(start).To(Equal(81))
-			for i, memberObj := range members {
+			Expect(start).To(Equal(82))
+			allMembersButLast := members[:len(members)-1]
+			for i, memberObj := range allMembersButLast {
 				member := memberObj.(map[string]interface{})
 				pos := start + i
 				Expect(int(member["rank"].(float64))).To(Equal(pos))
@@ -1329,6 +1331,9 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(dbMember.Score).To(Equal(int64(member["score"].(float64))))
 				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
 			}
+			lastMemberObj := members[len(members)-1]
+			lastMember := lastMemberObj.(map[string]interface{})
+			Expect(lastMember["publicID"].(string)).To(Equal(inexistentMemberPublicID))
 		})
 
 		It("Should fail with 404 if score for member does not exist", func() {

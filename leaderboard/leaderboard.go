@@ -160,6 +160,15 @@ func getMembersByRange(redisClient interfaces.RedisClient, leaderboard string, s
 	if err != nil {
 		return nil, fmt.Errorf("Retrieval of members for range (start %d end %d) failed: %v", startOffset, endOffset, err)
 	}
+
+	if startOffset < 0 {
+		total, err := cli.ZCard(leaderboard).Result()
+		if err != nil {
+			return nil, fmt.Errorf("Retrieval of total members failed: %v", err)
+		}
+		startOffset = int(total) + startOffset
+	}
+
 	members := make([]*Member, len(values))
 	for i := 0; i < len(members); i++ {
 		publicID := values[i].Member.(string)
@@ -176,7 +185,7 @@ func (c *Client) GetMembersByRange(ctx context.Context, leaderboard string, star
 	return getMembersByRange(c.redisWithTracing(ctx), leaderboard, startOffset, endOffset, order)
 }
 
-// getMemberIDWithClosestScore returns a member in a given leaderboard with score >= the score provided
+// getMemberIDWithClosestScore returns a member in a given leaderboard with score <= the score provided
 func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard string, score int64) (string, error) {
 	cli := redisClient
 
@@ -487,6 +496,7 @@ func (c *Client) getAroundMe(redisClient interfaces.RedisClient, leaderboardID s
 
 	if memberNotFound && getLastIfNotFound {
 		currentMember = &Member{PublicID: memberID, Score: 0, Rank: totalMembers + 1}
+		pageSize--
 	}
 
 	startOffset := currentMember.Rank - (pageSize / 2)
@@ -507,6 +517,10 @@ func (c *Client) getAroundMe(redisClient interfaces.RedisClient, leaderboardID s
 		return nil, fmt.Errorf("Failed to retrieve information around a specific member: %v", err)
 	}
 
+	if memberNotFound && getLastIfNotFound {
+		members = append(members, currentMember)
+	}
+
 	return members, nil
 }
 
@@ -525,7 +539,11 @@ func (c *Client) GetAroundScore(ctx context.Context, leaderboardID string, pageS
 		return nil, fmt.Errorf("Failed to retrieve information around a specific score (%d): %v", score, err)
 	}
 
-	return c.getAroundMe(redisClient, leaderboardID, pageSize, memberID, order, true)
+	if memberID == "" {
+		return getMembersByRange(redisClient, leaderboardID, -pageSize, -1, order)
+	}
+
+	return c.getAroundMe(redisClient, leaderboardID, pageSize, memberID, order, false)
 }
 
 // GetRank returns the rank of the member with the given ID
