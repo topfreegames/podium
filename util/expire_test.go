@@ -28,11 +28,12 @@ var _ = Describe("Expires Helper", func() {
 	})
 
 	Describe("Yearly expiration", func() {
-		It("should get expiration for year 2020", func() {
-			exp, err := util.GetExpireAt("leaderboard_year2020")
+		It("should get expiration for year", func() {
+			currentYear := time.Now().Format("2006")
+			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%s", currentYear))
 			Expect(err).NotTo(HaveOccurred())
 
-			startTime, err := time.Parse("2006", "2020")
+			startTime, err := time.Parse("2006", currentYear)
 			Expect(err).NotTo(HaveOccurred())
 
 			endTime := startTime.AddDate(2, 0, 0)
@@ -113,17 +114,12 @@ var _ = Describe("Expires Helper", func() {
 
 	Describe("Montly expiration", func() {
 		It("should get monthly expiration", func() {
-			now := time.Now().UTC()
-			year := now.Year()
-			month := now.Month()
-			monthS := fmt.Sprintf("%d", month)
-			if month < 10 {
-				monthS = fmt.Sprintf("0%s", monthS)
-			}
-			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%dmonth%s", year, monthS))
+			year := time.Now().UTC().Format("2006")
+			month := time.Now().UTC().Format("01")
+			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%smonth%s", year, month))
 			Expect(err).NotTo(HaveOccurred())
 
-			startTime, _ := time.Parse("200601", fmt.Sprintf("%d%s", year, monthS))
+			startTime, _ := time.Parse("200601", fmt.Sprintf("%s%s", year, month))
 			end := util.MonthlyExpiration(startTime)
 			ts := end.Unix()
 			Expect(exp).To(BeEquivalentTo(ts))
