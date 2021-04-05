@@ -133,7 +133,7 @@ func (w *ExpirationWorker) loadConfiguration() error {
 
 func (w *ExpirationWorker) setConfigurationDefaults() {
 	w.Config.SetDefault("redis.host", "localhost")
-	w.Config.SetDefault("redis.port", 1212)
+	w.Config.SetDefault("redis.port", "6379")
 	w.Config.SetDefault("redis.password", "")
 	w.Config.SetDefault("redis.db", 0)
 	w.Config.SetDefault("redis.maxPoolSize", 20)

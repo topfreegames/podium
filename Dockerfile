@@ -4,7 +4,7 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2019 Top Free Games <backend@tfgco.com>
 
-FROM alpine:3.9
+FROM alpine:3.13.4
 
 MAINTAINER TFG Co <backend@tfgco.com>
 

@@ -13,12 +13,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/types"
 	"github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
+	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 )
 
@@ -48,16 +50,18 @@ func initializeTestServer(app *api.App) {
 	time.Sleep(25 * time.Millisecond)
 }
 
-// GetDefaultTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test
+var defaultApp *api.App
+
 func getDefaultTestApp() *api.App {
-	logger := zap.New(
-		zap.NewJSONEncoder(),
-		zap.FatalLevel,
-	)
+	if defaultApp != nil {
+		return defaultApp
+	}
+	logger := log.CreateLoggerWithLevel(zap.FatalLevel, log.LoggerOptions{WriteSyncer: os.Stdout, RemoveTimestamp: true})
 	app, err := api.New("127.0.0.1", 0, 0, "../config/test.yaml", false, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
 	}
+	defaultApp = app
 	return app
 }
 
@@ -78,6 +82,7 @@ func XHTTPMeasure(description string, setup func(map[string]interface{}), f func
 
 func measure(description string, setup func(map[string]interface{}), f func(string, map[string]interface{}), timeout float64, flagType types.FlagType) bool {
 	app := getDefaultTestApp()
+
 	d := func(t string, f func()) { ginkgo.Describe(t, f) }
 	if flagType == types.FlagTypeFocused {
 		d = func(t string, f func()) { ginkgo.FDescribe(t, f) }
@@ -100,7 +105,6 @@ func measure(description string, setup func(map[string]interface{}), f func(stri
 			loops++
 			if loops == 200 {
 				transport.CloseIdleConnections()
-				app.GracefullStop()
 			}
 		})
 

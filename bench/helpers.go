@@ -22,7 +22,7 @@ import (
 
 func getRedis() *redis.Client {
 	config := viper.New()
-	config.Set("redis.url", "redis://localhost:1224/0")
+	config.Set("redis.url", "redis://localhost:6379/0")
 	config.Set("redis.connectionTimeout", 200)
 
 	redisClient, err := redis.NewClient("redis", config)
