@@ -90,8 +90,6 @@ cross-linux:
 
 cross-darwin:
 	@mkdir -p ./bin
-	@echo "Building for darwin-i386..."
-	@env GOOS=darwin GOARCH=386 go build -o ./bin/podium-darwin-i386 ./main.go
 	@echo "Building for darwin-x86_64..."
 	@env GOOS=darwin GOARCH=amd64 go build -o ./bin/podium-darwin-x86_64 ./main.go
 	@$(MAKE) cross-exec
