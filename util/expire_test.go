@@ -42,13 +42,14 @@ var _ = Describe("Expires Helper", func() {
 
 	Describe("Custom Day expiration", func() {
 		It("should get expiration", func() {
-			exp, err := util.GetExpireAt("leaderboard_from20201010to20201011")
+			formatedStartTime := time.Now().AddDate(0, 0, 1).Format("20060102")
+			formatedEndTime := time.Now().AddDate(0, 0, 2).Format("20060102")
+			expireString := fmt.Sprintf("leaderboard_from%sto%s", formatedStartTime, formatedEndTime)
+			exp, err := util.GetExpireAt(expireString)
 			Expect(err).NotTo(HaveOccurred())
 
-			startTime, err := time.Parse("20060102", "20201010")
-			Expect(err).NotTo(HaveOccurred())
-			endTime, err := time.Parse("20060102", "20201011")
-			Expect(err).NotTo(HaveOccurred())
+			startTime, err := time.Parse("20060102", formatedStartTime)
+			endTime, err := time.Parse("20060102", formatedEndTime)
 
 			ts := endTime.Add(endTime.Sub(startTime)).Unix()
 			Expect(exp).To(BeEquivalentTo(ts))

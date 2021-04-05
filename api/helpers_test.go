@@ -17,28 +17,41 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/leaderboard"
-	"github.com/topfreegames/podium/testing"
+	"github.com/topfreegames/podium/log"
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 
+	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 
 	extredis "github.com/topfreegames/extensions/redis"
 	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
-func GetConnectedRedis() (*extredis.Client, error) {
-	config := viper.New()
-	config.Set("redis.url", "redis://localhost:1234/0")
-	config.Set("redis.connectionTimeout", 200)
+var serverInitialized map[string]bool = map[string]bool{}
+var defaultApp *api.App
+var defaultFaultyRedisApp *api.App
 
-	return extredis.NewClient("redis", config)
+func GetConnectedRedis(app *api.App) (*extredis.Client, error) {
+	redisURL := url.URL{
+		Scheme: "redis",
+		User:   url.UserPassword("", app.Config.GetString("redis.password")),
+		Host:   fmt.Sprintf("%s:%d", app.Config.GetString("redis.host"), app.Config.GetInt("redis.port")),
+		Path:   app.Config.GetString("redis.db"),
+	}
+	app.Config.Set("redis.url", redisURL.String())
+	app.Config.Set("redis.connectionTimeout", 200)
+
+	return extredis.NewClient("redis", app.Config)
 }
 
 //GetFaultyRedis returns an invalid connection to redis
@@ -58,19 +71,33 @@ func NewEmptyCtx() context.Context {
 
 // GetDefaultTestApp returns a new podium API Application bound to random ports for test
 func GetDefaultTestApp() *api.App {
-	logger := testing.NewMockLogger()
-	app, err := api.New("127.0.0.1", 0, 0, "../config/test.yaml", false, logger)
+	if defaultApp != nil {
+		return defaultApp
+	}
+	logger := log.CreateLoggerWithLevel(zapcore.DebugLevel, log.LoggerOptions{WriteSyncer: os.Stdout, RemoveTimestamp: true})
+	app, err := api.New("127.0.0.1", 8080, 8081, "../config/test.yaml", false, logger)
 	Expect(err).NotTo(HaveOccurred())
+
+	defaultApp = app
 	return app
 }
 
 // GetFaultyTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test but with a failing Redis
 func GetDefaultTestAppWithFaultyRedis() *api.App {
-	app := GetDefaultTestApp()
-	faultyRedisClient, err := GetConnectedRedis()
+	if defaultFaultyRedisApp != nil {
+		return defaultFaultyRedisApp
+	}
+
+	logger := log.CreateLoggerWithLevel(zapcore.DebugLevel, log.LoggerOptions{WriteSyncer: os.Stdout, RemoveTimestamp: true})
+	app, err := api.New("127.0.0.1", 8082, 8083, "../config/test.yaml", false, logger)
+	Expect(err).NotTo(HaveOccurred())
+
+	faultyRedisClient, err := GetConnectedRedis(app)
 	Expect(err).NotTo(HaveOccurred())
 	faultyRedisClient.Client = GetFaultyRedis()
 	app.Leaderboards = leaderboard.NewClientWithRedis(faultyRedisClient)
+
+	defaultFaultyRedisApp = app
 	return app
 }
 
@@ -144,15 +171,14 @@ func initializeTestServer(app *api.App) {
 		transport = &http.Transport{DisableKeepAlives: true}
 		client = &http.Client{Transport: transport}
 	}
-	go func() {
-		_ = app.Start(context.Background())
-	}()
-	err := app.WaitForReady(1 * time.Second)
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func shutdownTestServer(app *api.App) {
-	app.GracefullStop()
+	if !serverInitialized[app.HTTPEndpoint] {
+		go func() {
+			_ = app.Start(context.Background())
+		}()
+		serverInitialized[app.HTTPEndpoint] = true
+		err := app.WaitForReady(500 * time.Millisecond)
+		Expect(err).NotTo(HaveOccurred())
+	}
 }
 
 func getRequest(app *api.App, method, url, body string) *http.Request {
@@ -214,9 +240,11 @@ func fastPatchTo(url string, payload []byte) (int, []byte, error) {
 var fastClient *fasthttp.Client
 
 func fastGetClient() *fasthttp.Client {
-	if fastClient == nil {
-		fastClient = &fasthttp.Client{}
+	if fastClient != nil {
+		return fastClient
 	}
+
+	fastClient = &fasthttp.Client{}
 	return fastClient
 }
 
@@ -235,12 +263,7 @@ func fastSendTo(method, url string, payload []byte) (int, []byte, error) {
 
 //sets up the environment for grpc communication, starting the app and creating a connected client
 func SetupGRPC(app *api.App, f func(pb.PodiumClient)) {
-	go func() {
-		_ = app.Start(context.Background())
-	}()
-	err := app.WaitForReady(1 * time.Second)
-	Expect(err).NotTo(HaveOccurred())
-	defer app.GracefullStop()
+	initializeTestServer(app)
 
 	conn, err := grpc.Dial(app.GRPCEndpoint, grpc.WithInsecure())
 	Expect(err).NotTo(HaveOccurred())

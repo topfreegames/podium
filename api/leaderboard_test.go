@@ -41,7 +41,7 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	BeforeEach(func() {
-		extRedisClient, err := GetConnectedRedis()
+		extRedisClient, err := GetConnectedRedis(a)
 		Expect(err).NotTo(HaveOccurred())
 		redisClient = extRedisClient.Client
 		redisClient.Del("testkey")
