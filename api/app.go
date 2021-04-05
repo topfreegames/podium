@@ -228,11 +228,11 @@ func (app *App) configureJaeger() {
 
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
-	app.Config.SetDefault("graceperiod.ms", 5000)
+	app.Config.SetDefault("graceperiod.ms", 50)
 	app.Config.SetDefault("api.maxReturnedMembers", 2000)
 	app.Config.SetDefault("api.maxReadBufferSize", 32000)
 	app.Config.SetDefault("redis.host", "localhost")
-	app.Config.SetDefault("redis.port", 1212)
+	app.Config.SetDefault("redis.port", 6379)
 	app.Config.SetDefault("redis.password", "")
 	app.Config.SetDefault("redis.db", 0)
 	app.Config.SetDefault("redis.connectionTimeout", 200)

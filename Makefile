@@ -11,8 +11,8 @@ GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegame
 MYIP = $(shell ifconfig | egrep inet | egrep -v inet6 | egrep -v 127.0.0.1 | awk ' { print $$2 } ')
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
 REDIS_CONF_PATH=./scripts/redis.conf
-LOCAL_REDIS_PORT=1212
-LOCAL_TEST_REDIS_PORT=1234
+LOCAL_REDIS_PORT=6379
+LOCAL_TEST_REDIS_PORT=6379
 PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
 
 setup-hooks:
@@ -104,6 +104,9 @@ docker-build:
 
 docker-run:
 	@docker run -i -t --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:80 podium
+
+docker-run-redis:
+	@docker run --name=redis -d -p 6379:$(LOCAL_REDIS_PORT) redis:6.0.9-alpine
 
 docker-run-basic-auth:
 	@docker run -i -t --rm -e BASICAUTH_USERNAME=admin -e BASICAUTH_PASSWORD=12345 -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:80 podium

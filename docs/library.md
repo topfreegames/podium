@@ -12,7 +12,7 @@ import "github.com/topfreegames/podium/leaderboard"
 
 ```
 const host = "localhost"
-const port = 1234
+const port = 6379
 const password = ""
 const db = 0
 const connectionTimeout = 200

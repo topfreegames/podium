@@ -45,7 +45,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		var err error
 
 		config := viper.New()
-		config.Set("redis.url", "redis://localhost:1234/0")
+		config.Set("redis.url", "redis://localhost:6379/0")
 		config.Set("redis.connectionTimeout", 200)
 
 		redisClient, err = redis.NewClient("redis", config)

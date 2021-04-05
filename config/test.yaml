@@ -3,7 +3,7 @@ healthcheck:
 
 redis:
   host: localhost
-  port: 1234
+  port: 6379
   connectionTimeout: 200
 
 api:

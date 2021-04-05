@@ -35,7 +35,7 @@ var _ = Describe("Leaderboard Model", func() {
 	BeforeEach(func() {
 		var err error
 		const host = "localhost"
-		const port = 1234
+		const port = 6379
 		const db = 0
 		const connectionTimeout = 200
 

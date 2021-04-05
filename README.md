@@ -46,7 +46,7 @@ import (
 )
 
 func main() {
-	leaderboards, err := leaderboard.NewClient("localhost", 1234, "", 0, 200)
+	leaderboards, err := leaderboard.NewClient("localhost", 6379, "", 0, 200)
 	if err != nil {
 		log.Fatalf("leaderboard.NewClient failed: %v", err)
 	}

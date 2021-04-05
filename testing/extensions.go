@@ -80,6 +80,7 @@ func XHTTPMeasure(description string, setup func(map[string]interface{}), f func
 
 func measure(description string, setup func(map[string]interface{}), f func(string, map[string]interface{}), timeout float64, flagType types.FlagType) bool {
 	app := getDefaultTestApp()
+
 	d := func(t string, f func()) { ginkgo.Describe(t, f) }
 	if flagType == types.FlagTypeFocused {
 		d = func(t string, f func()) { ginkgo.FDescribe(t, f) }

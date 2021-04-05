@@ -11,9 +11,11 @@ package cmd
 
 import (
 	"context"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/podium/api"
+	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 )
 
