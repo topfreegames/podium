@@ -10,7 +10,10 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
+	"github.com/topfreegames/podium/log"
 	"github.com/topfreegames/podium/worker"
 	"go.uber.org/zap"
 )
@@ -29,12 +32,13 @@ var workerCmd = &cobra.Command{
 		if quiet {
 			ll = zap.WarnLevel
 		}
-		logger := zap.New(
-			zap.NewJSONEncoder(),
-			ll,
-		).With(
+		logger := log.CreateLoggerWithLevel(ll, log.LoggerOptions{WriteSyncer: os.Stdout})
+		logger = logger.With(
 			zap.String("source", "worker"),
 		)
+
+		defer logger.Sync()
+
 		logger.Info("Starting podium score expirer worker...")
 
 		w, err := worker.GetExpirationWorker(ConfigFile)
@@ -50,7 +54,7 @@ var workerCmd = &cobra.Command{
 			for {
 				select {
 				case expirations := <-expirationsChan:
-					logger.Debug("expiration results", zap.Object("result", expirations))
+					logger.Debug("expiration results", zap.Any("result", expirations))
 				case err := <-errChan:
 					logger.Error("error from worker", zap.Error(err))
 				}

@@ -59,7 +59,7 @@ type App struct {
 	grpcServer   *grpc.Server
 	httpServer   *http.Server
 	Config       *viper.Viper
-	Logger       zap.Logger
+	Logger       *zap.Logger
 	Leaderboards *leaderboard.Client
 	NewRelic     newrelic.Application
 	DDStatsD     *extnethttpmiddleware.DogStatsD
@@ -67,7 +67,7 @@ type App struct {
 
 // New returns a new podium Application.
 // If httpPort is sent as zero, a random port will be selected (the same will happen for grpcPort)
-func New(host string, httpPort, grpcPort int, configPath string, debug bool, logger zap.Logger) (*App, error) {
+func New(host string, httpPort, grpcPort int, configPath string, debug bool, logger *zap.Logger) (*App, error) {
 	app := &App{
 		HTTPEndpoint: fmt.Sprintf("%s:%d", host, httpPort),
 		GRPCEndpoint: fmt.Sprintf("%s:%d", host, grpcPort),
@@ -259,7 +259,7 @@ func (app *App) loadConfiguration() error {
 func (app *App) OnErrorHandler(err error, stack []byte) {
 	app.Logger.Error(
 		"Panic occurred.",
-		zap.Object("panicText", err),
+		zap.Any("panicText", err),
 		zap.String("stack", string(stack)),
 	)
 
@@ -371,6 +371,7 @@ func (app *App) Start(ctx context.Context) error {
 		app.GracefullStop()
 		time.Sleep(time.Duration(graceperiod) * time.Millisecond)
 	case err := <-errch:
+		app.Logger.Error("Err on start server", zap.Error(err))
 		return err
 	case <-stopped:
 	}

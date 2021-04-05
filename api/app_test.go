@@ -1,19 +1,27 @@
 package api_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
-	. "github.com/topfreegames/podium/testing"
+	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var _ = Describe("App", func() {
-	var logger *MockLogger
+	var logger *zap.Logger
 	BeforeEach(func() {
-		logger = NewMockLogger()
+		logger = log.CreateLoggerWithLevel(zapcore.FatalLevel, log.LoggerOptions{WriteSyncer: os.Stdout, RemoveTimestamp: true})
+	})
+
+	AfterSuite(func() {
+		ShutdownDefaultTestApp()
+		ShutdownDefaultTestAppWithFaltyRedis()
 	})
 
 	Describe("App creation", func() {
@@ -55,17 +63,24 @@ var _ = Describe("App", func() {
 	})
 
 	Describe("Error Handler", func() {
+		var sink *TestBuffer
+		BeforeEach(func() {
+			sink = &TestBuffer{}
+			logger = log.CreateLoggerWithLevel(zapcore.ErrorLevel, log.LoggerOptions{WriteSyncer: sink, RemoveTimestamp: true})
+		})
+
 		It("should handle errors and send to raven", func() {
 			app, err := api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", false, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			app.OnErrorHandler(fmt.Errorf("some other error occurred"), []byte("stack"))
-			Expect(logger).To(HaveLogMessage(
-				zap.ErrorLevel, "Panic occurred.",
-				"panicText", "some other error occurred",
-				"stack", "stack",
-			))
-
+			result := sink.Buffer.String()
+			var obj map[string]interface{}
+			err = json.Unmarshal([]byte(result), &obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj["level"]).To(Equal("error"))
+			Expect(obj["panicText"]).To(Equal("some other error occurred"))
+			Expect(obj["stack"]).To(Equal("stack"))
 		})
 	})
 

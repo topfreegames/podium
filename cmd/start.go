@@ -36,12 +36,13 @@ var startCmd = &cobra.Command{
 		if quiet {
 			ll = zap.WarnLevel
 		}
-		logger := zap.New(
-			zap.NewJSONEncoder(),
-			ll,
-		).With(
+
+		logger := log.CreateLoggerWithLevel(ll, log.LoggerOptions{WriteSyncer: os.Stdout})
+		logger = logger.With(
 			zap.String("source", "app"),
 		)
+
+		defer logger.Sync()
 
 		app, err := api.New(
 			host,

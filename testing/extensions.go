@@ -13,12 +13,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/types"
 	"github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
+	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 )
 

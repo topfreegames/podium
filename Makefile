@@ -22,11 +22,10 @@ clear-hooks:
 	@cd .git/hooks && rm pre-commit
 
 setup: setup-hooks
-	@GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
 	@go get github.com/uber/prototool/cmd/prototool
-	@dep ensure
+	@go mod tidy
 
 setup-docs:
 	@pip2.7 install -q --log /tmp/pip.log --no-cache-dir sphinx recommonmark sphinx_rtd_theme
@@ -60,9 +59,8 @@ redis-shutdown:
 redis-clear:
 	@redis-cli -p 1212 FLUSHDB
 
-test: test-redis
+test:
 	@ginkgo --cover -r .
-	@make test-redis-kill
 
 test-coverage: test
 	@rm -rf _build
