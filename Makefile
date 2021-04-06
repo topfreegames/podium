@@ -31,7 +31,6 @@ setup-docs:
 	@pip2.7 install -q --log /tmp/pip.log --no-cache-dir sphinx recommonmark sphinx_rtd_theme
 
 build:
-	@go build $(GODIRS)
 	@go build -o ./bin/podium ./main.go
 
 # run app

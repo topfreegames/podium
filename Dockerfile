@@ -4,26 +4,21 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2019 Top Free Games <backend@tfgco.com>
 
-FROM alpine:3.13.4
+FROM golang:1.16.3-alpine as build
 
 MAINTAINER TFG Co <backend@tfgco.com>
 
-EXPOSE 80
-EXPOSE 81
+COPY . /podium
 
-RUN apk add bash
-ADD bin/podium-linux-x86_64 /go/bin/podium
-RUN chmod +x /go/bin/podium
+WORKDIR /podium
 
-RUN mkdir -p /home/podium/
-ADD ./config/default.yaml /home/podium/default.yaml
+RUN apk update && apk add make && make setup && make build
 
-ENV PODIUM_REDIS_HOST localhost
-ENV PODIUM_REDIS_PORT 6379
-ENV PODIUM_REDIS_PASSWORD ""
-ENV PODIUM_REDIS_DB 0
-ENV PODIUM_SENTRY_URL ""
-ENV PODIUM_BASICAUTH_USERNAME ""
-ENV PODIUM_BASICAUTH_PASSWORD ""
+FROM alpine:3.12
 
-CMD /go/bin/podium start -c /home/podium/default.yaml -p 80 -g 81
+COPY --from=build /podium/bin/podium /podium
+COPY --from=build /podium/config/default.yaml /default.yaml
+
+RUN chmod +x /podium
+
+ENTRYPOINT ["/podium", "-c", "/default.yaml"]
