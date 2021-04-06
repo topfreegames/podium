@@ -11,13 +11,22 @@ jobs:
         ports:
           - '6379:6379'
     steps:
+      - id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
       - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - name: Go Build Cache
+        uses: actions/cache@v2
         with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          path: ${{ steps.go-cache-paths.outputs.go-build }}
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+      # Cache go mod cache, used to speedup builds
+      - name: Go Mod Cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
@@ -25,7 +34,15 @@ jobs:
       - name: Setup env
         run: make setup
       - name: Test
-        run: make test
+        run: make test-coverage
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile coverage-all.out -service=github
   build_and_deploy_podium:
     needs:
       - tests
