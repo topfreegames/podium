@@ -519,7 +519,7 @@ Podium API
     * e.g. `GET /l/:leaderboardID/members/:memberPublicID/around?pageSize=10?order=asc`
     * defaults to "desc"
   * getLastIfNotFound=[true|false]
-    * if set to true, will treat members not in ranking as being in last position
+    * if set to true, will return the last members of the ranking when the member is not in the ranking
     * if set to false, will return 404 when the member is not in the ranking
     * e.g. `GET /l/:leaderboardID/members/:memberPublicID/around?getLastIfNotFound=true`
     * defaults to "false"
