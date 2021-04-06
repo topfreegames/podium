@@ -42,7 +42,7 @@ jobs:
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goveralls -coverprofile coverage-all.out -service=github
+        run: goveralls -coverprofile test-coverage-all.out -service=github
   build_and_deploy_podium:
     needs:
       - tests
