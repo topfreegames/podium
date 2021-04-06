@@ -1,6 +1,6 @@
 # Podium
 
-[![Build Status](https://travis-ci.org/topfreegames/podium.svg?branch=master)](https://travis-ci.org/topfreegames/podium)
+[![Podium](https://github.com/topfreegames/podium/actions/workflows/go.yml/badge.svg)](https://github.com/topfreegames/podium/actions/workflows/go.yml)
 [![Coverage Status](https://coveralls.io/repos/github/topfreegames/podium/badge.svg?branch=master)](https://coveralls.io/github/topfreegames/podium?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/topfreegames/podium)](https://goreportcard.com/report/github.com/topfreegames/podium)
 [![Docs](https://readthedocs.org/projects/podium/badge/?version=latest)](http://podium.readthedocs.io/en/latest/)
