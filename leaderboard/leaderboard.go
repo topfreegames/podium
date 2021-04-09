@@ -22,10 +22,10 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/extensions/v9/redis/interfaces"
+	"github.com/topfreegames/extensions/redis/interfaces"
 	"github.com/topfreegames/podium/leaderboard/v2/expiration"
 
-	tfgredis "github.com/topfreegames/extensions/v9/redis"
+	tfgredis "github.com/topfreegames/extensions/redis"
 )
 
 //MemberNotFoundError indicates member was not found in Redis

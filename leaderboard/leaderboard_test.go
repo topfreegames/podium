@@ -22,7 +22,7 @@ import (
 	. "github.com/topfreegames/podium/leaderboard/v2"
 
 	uuid "github.com/satori/go.uuid"
-	extredis "github.com/topfreegames/extensions/v9/redis"
+	extredis "github.com/topfreegames/extensions/redis"
 )
 
 var _ = Describe("Leaderboard Model", func() {
