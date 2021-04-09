@@ -8,7 +8,7 @@
 // https://github.com/dayvson/go-leaderboard
 // Copyright © 2013 Maxwell Dayvson da Silva
 
-package util
+package expiration
 
 import (
 	"regexp"

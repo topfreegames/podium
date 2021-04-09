@@ -23,7 +23,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis/interfaces"
-	"github.com/topfreegames/podium/util"
+	"github.com/topfreegames/podium/leaderboard/expiration"
 
 	tfgredis "github.com/topfreegames/extensions/redis"
 )
@@ -225,9 +225,9 @@ func (c *Client) IncrementMemberScore(ctx context.Context, leaderboardID string,
 
 	script := getSetScoreScript("ZINCRBY")
 
-	expireAt, err := util.GetExpireAt(leaderboardID)
+	expireAt, err := expiration.GetExpireAt(leaderboardID)
 	if err != nil {
-		if _, ok := err.(*util.LeaderboardExpiredError); ok {
+		if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
 			return nil, err
 		} else {
 			return nil, fmt.Errorf("Could not get expiration: %v", err)
@@ -261,9 +261,9 @@ func (c *Client) SetMemberScore(ctx context.Context, leaderboardID string, membe
 func (c *Client) SetMembersScore(ctx context.Context, leaderboardID string, members Members, prevRank bool,
 	scoreTTL string) error {
 
-	expireAt, err := util.GetExpireAt(leaderboardID)
+	expireAt, err := expiration.GetExpireAt(leaderboardID)
 	if err != nil {
-		if _, ok := err.(*util.LeaderboardExpiredError); ok {
+		if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
 			return err
 		} else {
 			return fmt.Errorf("Could not get expiration: %v", err)
