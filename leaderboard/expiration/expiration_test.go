@@ -7,7 +7,7 @@
 // https://github.com/dayvson/go-leaderboard
 // Copyright © 2013 Maxwell Dayvson da Silva
 
-package util_test
+package expiration_test
 
 import (
 	"fmt"
@@ -15,13 +15,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/topfreegames/podium/util"
+	"github.com/topfreegames/podium/leaderboard/expiration"
 )
 
 var _ = Describe("Expires Helper", func() {
 	Describe("No timestamps in leaderboard name", func() {
 		It("should get null expiration name without expiration", func() {
-			exp, err := util.GetExpireAt("my_leaderboard")
+			exp, err := expiration.GetExpireAt("my_leaderboard")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(exp).To(BeEquivalentTo(-1))
 		})
@@ -29,7 +29,7 @@ var _ = Describe("Expires Helper", func() {
 
 	Describe("Yearly expiration", func() {
 		It("should get expiration for year 2020", func() {
-			exp, err := util.GetExpireAt("leaderboard_year2020")
+			exp, err := expiration.GetExpireAt("leaderboard_year2020")
 			Expect(err).NotTo(HaveOccurred())
 
 			startTime, err := time.Parse("2006", "2020")
@@ -45,7 +45,7 @@ var _ = Describe("Expires Helper", func() {
 			formatedStartTime := time.Now().AddDate(0, 0, 1).Format("20060102")
 			formatedEndTime := time.Now().AddDate(0, 0, 2).Format("20060102")
 			expireString := fmt.Sprintf("leaderboard_from%sto%s", formatedStartTime, formatedEndTime)
-			exp, err := util.GetExpireAt(expireString)
+			exp, err := expiration.GetExpireAt(expireString)
 			Expect(err).NotTo(HaveOccurred())
 
 			startTime, err := time.Parse("20060102", formatedStartTime)
@@ -56,26 +56,26 @@ var _ = Describe("Expires Helper", func() {
 		})
 
 		It("should return error for invalid timestamp", func() {
-			exp, err := util.GetExpireAt("leaderboard_from20201039to20201011")
+			exp, err := expiration.GetExpireAt("leaderboard_from20201039to20201011")
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("parsing time \"20201039\": day out of range"))
 
-			exp, err = util.GetExpireAt("leaderboard_from20201010to20201139")
+			exp, err = expiration.GetExpireAt("leaderboard_from20201010to20201139")
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("parsing time \"20201139\": day out of range"))
 		})
 
 		It("should return error for negative duration", func() {
-			exp, err := util.GetExpireAt("leaderboard_from20201011to20201010")
+			exp, err := expiration.GetExpireAt("leaderboard_from20201011to20201010")
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("has invalid duration -86400"))
 		})
 
 		It("should return error if duration is 0", func() {
-			exp, err := util.GetExpireAt("leaderboard_from20201010to20201010")
+			exp, err := expiration.GetExpireAt("leaderboard_from20201010to20201010")
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("has invalid duration 0"))
@@ -86,7 +86,7 @@ var _ = Describe("Expires Helper", func() {
 		It("should get expiration", func() {
 			start := time.Now()
 			end := time.Now().Add(time.Hour * 24)
-			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_from%dto%d", start.Unix(), end.Unix()))
+			exp, err := expiration.GetExpireAt(fmt.Sprintf("leaderboard_from%dto%d", start.Unix(), end.Unix()))
 			Expect(err).NotTo(HaveOccurred())
 
 			ts := end.Add(end.Sub(start)).Unix()
@@ -96,7 +96,7 @@ var _ = Describe("Expires Helper", func() {
 		It("should get invalid expiration if timestamps reversed", func() {
 			start := time.Now()
 			end := time.Now().Add(time.Hour * 24)
-			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_from%dto%d", end.Unix(), start.Unix()))
+			exp, err := expiration.GetExpireAt(fmt.Sprintf("leaderboard_from%dto%d", end.Unix(), start.Unix()))
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("has invalid duration -86400"))
@@ -104,7 +104,7 @@ var _ = Describe("Expires Helper", func() {
 
 		It("should get invalid expiration if same timestamps", func() {
 			start := time.Now()
-			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_from%dto%d", start.Unix(), start.Unix()))
+			exp, err := expiration.GetExpireAt(fmt.Sprintf("leaderboard_from%dto%d", start.Unix(), start.Unix()))
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("has invalid duration 0"))
@@ -120,17 +120,17 @@ var _ = Describe("Expires Helper", func() {
 			if month < 10 {
 				monthS = fmt.Sprintf("0%s", monthS)
 			}
-			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%dmonth%s", year, monthS))
+			exp, err := expiration.GetExpireAt(fmt.Sprintf("leaderboard_year%dmonth%s", year, monthS))
 			Expect(err).NotTo(HaveOccurred())
 
 			startTime, _ := time.Parse("200601", fmt.Sprintf("%d%s", year, monthS))
-			end := util.MonthlyExpiration(startTime)
+			end := expiration.MonthlyExpiration(startTime)
 			ts := end.Unix()
 			Expect(exp).To(BeEquivalentTo(ts))
 		})
 
 		It("should return error for invalid timestamp", func() {
-			exp, err := util.GetExpireAt("leaderboard_year2016month99")
+			exp, err := expiration.GetExpireAt("leaderboard_year2016month99")
 			Expect(exp).To(BeEquivalentTo(-1))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("parsing time \"201699\": month out of range"))
@@ -144,10 +144,10 @@ var _ = Describe("Expires Helper", func() {
 			if week < 10 {
 				weekS = fmt.Sprintf("0%s", weekS)
 			}
-			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%dweek%s", year, weekS))
+			exp, err := expiration.GetExpireAt(fmt.Sprintf("leaderboard_year%dweek%s", year, weekS))
 			Expect(err).NotTo(HaveOccurred())
 
-			twoWeeksFromNow := util.WeeklyExpiration(int64(year), int64(week))
+			twoWeeksFromNow := expiration.WeeklyExpiration(int64(year), int64(week))
 			ts := twoWeeksFromNow.Unix()
 			Expect(exp).To(BeEquivalentTo(ts))
 		})
@@ -158,10 +158,10 @@ var _ = Describe("Expires Helper", func() {
 			now := time.Now().UTC()
 			year := now.Year()
 			quarter := int(now.Month())/3 + 1
-			exp, err := util.GetExpireAt(fmt.Sprintf("leaderboard_year%dquarter0%d", year, quarter))
+			exp, err := expiration.GetExpireAt(fmt.Sprintf("leaderboard_year%dquarter0%d", year, quarter))
 			Expect(err).NotTo(HaveOccurred())
 
-			end := util.QuarterlyExpiration(int64(year), int64(quarter))
+			end := expiration.QuarterlyExpiration(int64(year), int64(quarter))
 			ts := end.Unix()
 			Expect(exp).To(BeEquivalentTo(ts))
 		})
