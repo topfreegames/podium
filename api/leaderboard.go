@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/topfreegames/podium/leaderboard"
-	"github.com/topfreegames/podium/util"
+	"github.com/topfreegames/podium/leaderboard/expiration"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -61,7 +61,7 @@ func (app *App) BulkUpsertScores(ctx context.Context, req *api.BulkUpsertScoresR
 			lg.Error("Setting member scores failed.", zap.Error(err))
 			app.AddError()
 			//TODO: Turn all these LeaderboardExpiredError verifications into a middleware
-			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+			if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			return err
@@ -115,7 +115,7 @@ func (app *App) UpsertScore(ctx context.Context, req *api.UpsertScoreRequest) (*
 		if err != nil {
 			lg.Error("Setting member score failed.", zap.Error(err))
 			app.AddError()
-			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+			if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
 
@@ -161,7 +161,7 @@ func (app *App) IncrementScore(ctx context.Context, req *api.IncrementScoreReque
 		if err != nil {
 			lg.Error("Member score increment failed.", zap.Error(err))
 			app.AddError()
-			if _, ok := err.(*util.LeaderboardExpiredError); ok {
+			if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
 
