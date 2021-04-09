@@ -24,7 +24,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/topfreegames/podium/api"
-	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/leaderboard/v2"
 	"github.com/topfreegames/podium/log"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap/zapcore"
@@ -33,7 +33,7 @@ import (
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 
-	extredis "github.com/topfreegames/extensions/redis"
+	extredis "github.com/topfreegames/extensions/v9/redis"
 	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 

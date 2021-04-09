@@ -15,8 +15,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/topfreegames/podium/leaderboard"
-	"github.com/topfreegames/podium/leaderboard/expiration"
+	"github.com/topfreegames/podium/leaderboard/v2"
+	"github.com/topfreegames/podium/leaderboard/v2/expiration"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
