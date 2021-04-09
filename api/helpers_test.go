@@ -33,7 +33,7 @@ import (
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 
-	extredis "github.com/topfreegames/extensions/v9/redis"
+	extredis "github.com/topfreegames/extensions/redis"
 	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 

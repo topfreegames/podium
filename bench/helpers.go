@@ -17,7 +17,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis"
-	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/leaderboard/v2"
 )
 
 func getRedis() *redis.Client {

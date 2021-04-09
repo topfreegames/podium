@@ -3,11 +3,14 @@ module github.com/topfreegames/podium
 go 1.15
 
 require (
+	github.com/DataDog/datadog-go v4.5.1+incompatible // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20180315120708-ccb8e960c48f // indirect
 	github.com/bsm/redis-lock v6.0.0+incompatible // indirect
+	github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054 // indirect
 	github.com/codahale/hdrhistogram v0.9.1-0.20161010025455-3a0bb77429bd // indirect
 	github.com/getsentry/raven-go v0.0.0-20170918144728-1452f6376ddb
+	github.com/go-pg/pg v8.0.7+incompatible // indirect
 	github.com/go-redis/redis v6.13.2+incompatible
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/protobuf v1.3.1 // indirect
@@ -33,9 +36,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/topfreegames/extensions v8.0.2+incompatible
-	github.com/topfreegames/extensions/v9 v9.0.0
 	github.com/topfreegames/podium/leaderboard/v2 v2.0.0-00010101000000-000000000000
 	github.com/uber-go/atomic v1.0.0 // indirect
+	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
+	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v0.0.0-20161005094451-07f692d02d61
 	go.uber.org/zap v1.16.0
@@ -45,8 +49,7 @@ require (
 	google.golang.org/genproto v0.0.0-20200311144346-b662892dd51b
 	google.golang.org/grpc v1.28.0
 	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20180304133419-61bcb58a0752
+	mellium.im/sasl v0.2.1 // indirect
 )
 
 replace github.com/topfreegames/podium/leaderboard/v2 => ./leaderboard
-
-replace github.com/codahale/hdrhistogram => github.com/HdrHistogram/hdrhistogram-go v0.0.0-20200919145931-8dac23c8dac1

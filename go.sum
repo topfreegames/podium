@@ -20,6 +20,8 @@ github.com/DataDog/datadog-go v0.0.0-20170427165718-0ddda6bee211 h1:hOSWYZBOWXZw
 github.com/DataDog/datadog-go v0.0.0-20170427165718-0ddda6bee211/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go v2.2.0+incompatible h1:V5BKkxACZLjzHjSgBbr2gvLA2Ae49yhc6CSY7MLy5k4=
 github.com/DataDog/datadog-go v2.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
+github.com/DataDog/datadog-go v4.5.1+incompatible h1:LPLdXNXy4LPcHYxvalEyfRt45OmbIaOy4WaSFOL4veg=
+github.com/DataDog/datadog-go v4.5.1+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/HdrHistogram/hdrhistogram-go v0.0.0-20200919145931-8dac23c8dac1 h1:nEjGZtKHMK92888VT6XkzKwyiW14v5FFRGeWq2uV7N0=
 github.com/HdrHistogram/hdrhistogram-go v0.0.0-20200919145931-8dac23c8dac1/go.mod h1:nxrse8/Tzg2tg3DZcZjm6qEclQKK70g0KxO61gFFZD4=
 github.com/HdrHistogram/hdrhistogram-go v0.9.0/go.mod h1:nxrse8/Tzg2tg3DZcZjm6qEclQKK70g0KxO61gFFZD4=
@@ -54,6 +56,8 @@ github.com/certifi/gocertifi v0.0.0-20160926115448-a61bf5eafa3a h1:zmAIZ9hpjwOsx
 github.com/certifi/gocertifi v0.0.0-20160926115448-a61bf5eafa3a/go.mod h1:GJKEexRPVJrBSOjoqN5VNOIKJ5Q3RViH6eu3puDRwx4=
 github.com/certifi/gocertifi v0.0.0-20170727155124-3fd9e1adb12b h1:aKL6D1J3uESUIsImsFVtGA4/p9wlR4mNJ3lgRaxSXKs=
 github.com/certifi/gocertifi v0.0.0-20170727155124-3fd9e1adb12b/go.mod h1:GJKEexRPVJrBSOjoqN5VNOIKJ5Q3RViH6eu3puDRwx4=
+github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054 h1:uH66TXeswKn5PW5zdZ39xEwfS9an067BirqA+P4QaLI=
+github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054/go.mod h1:sGbDF6GwGcLpkNXPUTkMRoywsNa/ol15pxFe6ERfguA=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
@@ -108,6 +112,8 @@ github.com/go-pg/pg v6.12.0+incompatible h1:Hktu8qOMyimRsmuixG6aWeRqtou3oAzQL+5L
 github.com/go-pg/pg v6.12.0+incompatible/go.mod h1:a2oXow+aFOrvwcKs3eIA0lNFmMilrxK2sOkB5NWe0vA=
 github.com/go-pg/pg v6.15.1+incompatible h1:vO4P9WoCi+i4qomgcBXWlKgDk4GcHAqDAOIfkEpi7B4=
 github.com/go-pg/pg v6.15.1+incompatible/go.mod h1:a2oXow+aFOrvwcKs3eIA0lNFmMilrxK2sOkB5NWe0vA=
+github.com/go-pg/pg v8.0.7+incompatible h1:ty/sXL1OZLo+47KK9N8llRcmbA9tZasqbQ/OO4ld53g=
+github.com/go-pg/pg v8.0.7+incompatible/go.mod h1:a2oXow+aFOrvwcKs3eIA0lNFmMilrxK2sOkB5NWe0vA=
 github.com/go-redis/redis v6.12.0+incompatible h1:s+64XI+z/RXqGHz2fQSgRJOEwqqSXeX3dliF7iVkMbE=
 github.com/go-redis/redis v6.12.0+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
 github.com/go-redis/redis v6.13.2+incompatible h1:kfEWSpgBs4XmuzGg7nYPqhQejjzU9eKdIL0PmE2TtRY=
@@ -375,14 +381,18 @@ github.com/topfreegames/extensions/v9 v9.0.0 h1:ggPkQ32VlwHnwcrUD7L0A9vc2eK4aXOO
 github.com/topfreegames/extensions/v9 v9.0.0/go.mod h1:QECdo96zIuSzv/duYMNZkChop/Z26ddVCD0vFZLY4LE=
 github.com/uber-go/atomic v1.0.0 h1:yQsJHvJrBSc9oOPPtsGgukSmaboLPokUVCYPRDBC9g8=
 github.com/uber-go/atomic v1.0.0/go.mod h1:/Ct5t2lcmbJ4OSe/waGBoaVvVqtO0bmtfVNex1PFV8g=
+github.com/uber/jaeger-client-go v1.6.0 h1:3+zLlq+4npI5fg8IsgAje3YsP7TcEdNzJScyqFIzxEQ=
 github.com/uber/jaeger-client-go v2.11.2+incompatible h1:D2idO5gYBl+40qnsowJaqtwCV6z1rxYy2yhYBh3mVvI=
 github.com/uber/jaeger-client-go v2.11.2+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-client-go v2.25.0+incompatible h1:IxcNZ7WRY1Y3G4poYlx24szfsn/3LvK9QHCq9oQw8+U=
 github.com/uber/jaeger-client-go v2.25.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v1.4.0 h1:FiI99eCazm7u6tdv4Z+9sBXNrC9sHz43kfKIJaCDqCE=
 github.com/uber/jaeger-lib v1.4.0/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
+github.com/uber/jaeger-lib v1.5.0 h1:OHbgr8l656Ub3Fw5k9SWnBfIEwvoHQ+W2y+Aa9D1Uyo=
 github.com/uber/jaeger-lib v2.4.0+incompatible h1:fY7QsGQWiCt8pajv4r7JEvmATdCVaWxXbjwyYwsNaLQ=
 github.com/uber/jaeger-lib v2.4.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
+github.com/uber/jaeger-lib v2.4.1+incompatible h1:td4jdvLcExb4cBISKIpHuGoVXh+dVKhn2Um6rjCsSsg=
+github.com/uber/jaeger-lib v2.4.1+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
@@ -599,6 +609,7 @@ gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
 gopkg.in/inf.v0 v0.9.0/go.mod h1:cWUDdTG/fYaXco+Dcufb5Vnc6Gp2YChqWtbxRZE0mXw=
+gopkg.in/ini.v1 v1.51.0 h1:AQvPpx3LzTDM0AjnIRlVFwFFGC+npRopjZxLJj6gdno=
 gopkg.in/ini.v1 v1.51.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
 gopkg.in/ini.v1 v1.62.0 h1:duBzk771uxoUuOlyRLkHsygud9+5lrlGjdFBb4mSKDU=
 gopkg.in/ini.v1 v1.62.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
