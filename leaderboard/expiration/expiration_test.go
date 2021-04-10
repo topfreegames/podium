@@ -15,7 +15,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/topfreegames/podium/leaderboard/v2/expiration"
+	"github.com/topfreegames/podium/leaderboard/expiration"
 )
 
 var _ = Describe("Expires Helper", func() {

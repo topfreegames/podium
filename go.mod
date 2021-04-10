@@ -2,6 +2,8 @@ module github.com/topfreegames/podium
 
 go 1.15
 
+replace github.com/topfreegames/podium/leaderboard v0.0.0 => ./leaderboard
+
 require (
 	github.com/DataDog/datadog-go v4.5.1+incompatible // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7 // indirect
@@ -30,13 +32,14 @@ require (
 	github.com/newrelic/go-agent v1.11.0
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
+	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20180125231941-8732c616f529
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/topfreegames/extensions v8.0.2+incompatible
-	github.com/topfreegames/podium/leaderboard/v2 v2.0.0-00010101000000-000000000000
+	github.com/topfreegames/podium/leaderboard v0.0.0
 	github.com/uber-go/atomic v1.0.0 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
@@ -51,5 +54,3 @@ require (
 	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20180304133419-61bcb58a0752
 	mellium.im/sasl v0.2.1 // indirect
 )
-
-replace github.com/topfreegames/podium/leaderboard/v2 => ./leaderboard

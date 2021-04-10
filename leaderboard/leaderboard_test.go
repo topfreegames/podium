@@ -19,7 +19,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/topfreegames/podium/leaderboard/v2"
+	. "github.com/topfreegames/podium/leaderboard"
 
 	uuid "github.com/satori/go.uuid"
 	extredis "github.com/topfreegames/extensions/redis"

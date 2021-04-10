@@ -26,7 +26,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/jaeger"
-	"github.com/topfreegames/podium/leaderboard/v2"
+	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

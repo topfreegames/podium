@@ -23,7 +23,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis/interfaces"
-	"github.com/topfreegames/podium/leaderboard/v2/expiration"
+	"github.com/topfreegames/podium/leaderboard/expiration"
 
 	tfgredis "github.com/topfreegames/extensions/redis"
 )

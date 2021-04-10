@@ -297,6 +297,7 @@ github.com/topfreegames/extensions v8.5.0+incompatible h1:l3jQt6ufqC9BZzag/bCN69
 github.com/topfreegames/extensions v8.5.0+incompatible/go.mod h1:VbIAks7aNbkANieZyVShAV3FSxEbV6useS4r3neXVzc=
 github.com/topfreegames/extensions/v9 v9.0.0 h1:ggPkQ32VlwHnwcrUD7L0A9vc2eK4aXOOtaKmCjX+dz0=
 github.com/topfreegames/extensions/v9 v9.0.0/go.mod h1:QECdo96zIuSzv/duYMNZkChop/Z26ddVCD0vFZLY4LE=
+github.com/topfreegames/podium v9.0.1+incompatible h1:YKxcStk+/cbicKsCkAJybTuWsBQmMUnuXDMpKIzJOF4=
 github.com/uber/jaeger-client-go v2.25.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v2.4.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
