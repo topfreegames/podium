@@ -58,8 +58,14 @@ redis-shutdown:
 redis-clear:
 	@redis-cli -p 1212 FLUSHDB
 
+all-tests: test test-leaderboard
+
 test:
-	@ginkgo --cover -r .
+	@ginkgo --cover -r -nodes=1 -skipPackage=leaderboard ./
+
+test-leaderboard:
+	@cd leaderboard && ginkgo --cover -r -nodes=1 ./
+
 
 coverage:
 	@rm -rf _build

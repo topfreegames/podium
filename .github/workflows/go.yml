@@ -34,7 +34,7 @@ jobs:
       - name: Setup env
         run: make setup
       - name: Test
-        run: make test
+        run: make all-tests
       - name: Coverage
         run: make coverage
       - name: Install goveralls
