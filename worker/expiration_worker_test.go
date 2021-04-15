@@ -15,9 +15,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/worker"
 
 	. "github.com/onsi/ginkgo"
@@ -44,9 +44,17 @@ var _ = Describe("Scores Expirer Worker", func() {
 	BeforeEach(func() {
 		var err error
 
-		config := viper.New()
-		config.Set("redis.url", "redis://localhost:6379/0")
-		config.Set("redis.connectionTimeout", 200)
+		config, err := testing.GetDefaultConfig("../config/test.yaml")
+		Expect(err).NotTo(HaveOccurred())
+
+		redisHost := config.GetString("redis.host")
+		redisPort := config.GetInt("redis.port")
+		redisDB := config.GetInt("redis.db")
+
+		redisURL := fmt.Sprintf("redis://%s:%d/%d", redisHost, redisPort, redisDB)
+
+		config.SetDefault("redis.url", redisURL)
+		config.SetDefault("redis.connectionTimeout", 200)
 
 		redisClient, err = redis.NewClient("redis", config)
 		Expect(err).NotTo(HaveOccurred())
@@ -243,9 +251,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 	})
 
 	It("should create a valid expiration worker with external configuration", func() {
-		config := viper.New()
-		config.SetConfigFile("../config/test.yaml")
-		err := config.ReadInConfig()
+		config, err := testing.GetDefaultConfig("../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
 		expirationWorker, err = worker.NewExpirationWorker(config.GetString("redis.host"),

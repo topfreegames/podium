@@ -15,15 +15,24 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/spf13/viper"
+	. "github.com/onsi/gomega"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/testing"
 )
 
 func getRedis() *redis.Client {
-	config := viper.New()
-	config.Set("redis.url", "redis://localhost:6379/0")
-	config.Set("redis.connectionTimeout", 200)
+	config, err := testing.GetDefaultConfig("../config/default.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	redisHost := config.GetString("redis.host")
+	redisPort := config.GetInt("redis.port")
+	redisDB := config.GetInt("redis.db")
+
+	redisURL := fmt.Sprintf("redis://%s:%d/%d", redisHost, redisPort, redisDB)
+
+	config.SetDefault("redis.url", redisURL)
+	config.SetDefault("redis.connectionTimeout", 200)
 
 	redisClient, err := redis.NewClient("redis", config)
 	if err != nil {

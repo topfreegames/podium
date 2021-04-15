@@ -5,6 +5,7 @@ redis:
   host: localhost
   port: 6379
   connectionTimeout: 200
+  db: 0
 
 api:
   maxReturnedMembers: 2000

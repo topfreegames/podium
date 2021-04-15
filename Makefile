@@ -15,6 +15,8 @@ LOCAL_REDIS_PORT=6379
 LOCAL_TEST_REDIS_PORT=6379
 PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
 
+.PHONY: build
+
 setup-hooks:
 	@cd .git/hooks && ln -sf ../../hooks/pre-commit.sh pre-commit
 
