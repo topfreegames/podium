@@ -62,7 +62,7 @@ services:
       - "PODIUM_REDIS_HOST=redis-standalone"
     volumes:
       - "../:/podium"
-      - "/Users/arthur.nogueira/.asdf/installs/golang/1.15.2/packages/pkg/mod:/go/pkg/mod"
+      - "<<LOCAL_GO_MODCACHE>>:/go/pkg/mod"
     networks:
       - podium
 

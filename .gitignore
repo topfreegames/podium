@@ -30,3 +30,4 @@ bench-data/
 .venv
 *.swp
 .idea/
+deployments/docker-compose.yaml

@@ -6,4 +6,4 @@ COPY . /podium
 
 WORKDIR /podium
 
-ENTRYPOINT [ "/bin/sh", "-c", "make setup all-tests" ]
+ENTRYPOINT [ "/bin/sh", "-c", "make setup test" ]

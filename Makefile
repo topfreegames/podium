@@ -11,6 +11,7 @@ GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegame
 MYIP = $(shell ifconfig | egrep inet | egrep -v inet6 | egrep -v 127.0.0.1 | awk ' { print $$2 } ')
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
 PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
+LOCAL_GO_MODCACHE = $(shell go env | grep GOMODCACHE | cut -d "=" -f 2 | sed 's/"//g')
 
 .PHONY: build proto
 
@@ -63,6 +64,17 @@ docker-run-redis:
 
 docker-run-basic-auth:
 	@docker run -i -t --rm -e BASICAUTH_USERNAME=admin -e BASICAUTH_PASSWORD=12345 -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=6379 -p 8080:80 podium
+
+compose-up-dependencies:
+	@sed "s%<<LOCAL_GO_MODCACHE>>%${LOCAL_GO_MODCACHE}%g" deployments/docker-compose-model.yaml > deployments/docker-compose.yaml
+	@docker-compose -f deployments/docker-compose.yaml up -d redis-node-0 redis-node-1 redis-node-2 redis-standalone initialize-cluster
+
+compose-test:
+	@sed "s%<<LOCAL_GO_MODCACHE>>%${LOCAL_GO_MODCACHE}%g" deployments/docker-compose-model.yaml > deployments/docker-compose.yaml
+	@docker-compose -f deployments/docker-compose.yaml up --build podium-test
+
+compose-down:
+	@docker-compose -f deployments/docker-compose.yaml down
 
 bench-podium-app: build bench-podium-app-run
 
