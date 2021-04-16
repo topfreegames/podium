@@ -10,12 +10,10 @@
 GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/podium@.@g | egrep -v "^[.]$$")
 MYIP = $(shell ifconfig | egrep inet | egrep -v inet6 | egrep -v 127.0.0.1 | awk ' { print $$2 } ')
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
-REDIS_CONF_PATH=./scripts/redis.conf
-LOCAL_REDIS_PORT=6379
-LOCAL_TEST_REDIS_PORT=6379
 PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
+LOCAL_GO_MODCACHE = $(shell go env | grep GOMODCACHE | cut -d "=" -f 2 | sed 's/"//g')
 
-.PHONY: build
+.PHONY: build proto
 
 setup-hooks:
 	@cd .git/hooks && ln -sf ../../hooks/pre-commit.sh pre-commit
@@ -35,39 +33,16 @@ setup-docs:
 build:
 	@go build -o ./bin/podium ./main.go
 
-# run app
-run: redis
+run:
 	@go run main.go start
 
-# run app
-run-prod: redis build
-	@./bin/podium start -q -c ./config/local.yaml
+test: test-podium test-leaderboard
 
-# get a redis instance up (localhost:1212)
-redis: redis-shutdown
-	@if [ -z "$$REDIS_PORT" ]; then \
-		redis-server $(REDIS_CONF_PATH) && sleep 1 &&  \
-		redis-cli -p $(LOCAL_REDIS_PORT) info > /dev/null && \
-		echo "REDIS running locally at localhost:$(LOCAL_REDIS_PORT)."; \
-	else \
-		echo "REDIS running at $$REDIS_PORT"; \
-	fi
-
-# kill this redis instance (localhost:1212)
-redis-shutdown:
-	@-redis-cli -p 1212 shutdown
-
-redis-clear:
-	@redis-cli -p 1212 FLUSHDB
-
-all-tests: test test-leaderboard
-
-test:
+test-podium:
 	@ginkgo --cover -r -nodes=1 -skipPackage=leaderboard ./
 
 test-leaderboard:
 	@cd leaderboard && ginkgo --cover -r -nodes=1 ./
-
 
 coverage:
 	@rm -rf _build
@@ -78,52 +53,29 @@ coverage:
 test-coverage-html: test coverage
 	@go tool cover -html=_build/test-coverage-all.out
 
-# get a redis instance up (localhost:1234)
-test-redis:
-	@redis-server --port ${LOCAL_TEST_REDIS_PORT} --daemonize yes; sleep 1
-	@redis-cli -p ${LOCAL_TEST_REDIS_PORT} info > /dev/null
-
-# kill this redis instance (localhost:1234)
-test-redis-kill:
-	@-redis-cli -p ${LOCAL_TEST_REDIS_PORT} shutdown
-
-cross: cross-linux cross-darwin
-
-cross-linux:
-	@mkdir -p ./bin
-	@echo "Building for linux-x86_64..."
-	@env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/podium-linux-x86_64 ./main.go
-	@$(MAKE) cross-exec
-
-cross-darwin:
-	@mkdir -p ./bin
-	@echo "Building for darwin-x86_64..."
-	@env GOOS=darwin GOARCH=amd64 go build -o ./bin/podium-darwin-x86_64 ./main.go
-	@$(MAKE) cross-exec
-
-cross-exec:
-	@chmod +x bin/*
-
 docker-build:
-	@docker build -t podium .
+	@docker build -f ./build/Dockerfile -t podium .
 
 docker-run:
-	@docker run -i -t --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:80 podium
+	@docker run -i -t --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=6379 -p 8080:80 podium
 
 docker-run-redis:
-	@docker run --name=redis -d -p 6379:$(LOCAL_REDIS_PORT) redis:6.0.9-alpine
+	@docker run --name=redis -d -p 6379:6379 redis:6.0.9-alpine
 
 docker-run-basic-auth:
-	@docker run -i -t --rm -e BASICAUTH_USERNAME=admin -e BASICAUTH_PASSWORD=12345 -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) -p 8080:80 podium
+	@docker run -i -t --rm -e BASICAUTH_USERNAME=admin -e BASICAUTH_PASSWORD=12345 -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=6379 -p 8080:80 podium
 
-docker-shell:
-	@docker run -it --rm -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=$(LOCAL_REDIS_PORT) --entrypoint "/bin/bash" podium
+deployments/docker-compose.yaml: deployments/docker-compose-model.yaml
+	@sed "s%<<LOCAL_GO_MODCACHE>>%${LOCAL_GO_MODCACHE}%g" $< > $@
 
-docker-dev-build:
-	@docker build -t podium-dev -f ./DevDockerfile .
+compose-up-dependencies: deployments/docker-compose.yaml
+	@docker-compose -f $< up -d redis-node-0 redis-node-1 redis-node-2 redis-standalone initialize-cluster
 
-docker-dev-run:
-	@docker run -i -t --rm -p 8080:8080 podium-dev
+compose-test: deployments/docker-compose.yaml compose-up-dependencies
+	@docker-compose -f $< up --build podium-test
+
+compose-down: deployments/docker-compose.yaml
+	@docker-compose -f $< down
 
 bench-podium-app: build bench-podium-app-run
 
@@ -135,35 +87,6 @@ bench-podium-app-run: bench-podium-app-kill
 bench-podium-app-kill:
 	@-ps aux | egrep 'podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
 
-# get a redis instance up (localhost:1224)
-bench-redis: bench-redis-kill
-	@redis-server --port 1224 --daemonize yes; sleep 1
-	@redis-cli -p 1224 info > /dev/null
-
-# kill this redis instance (localhost:1224)
-bench-redis-kill:
-	@-redis-cli -p 1224 shutdown
-
-bench-run:
-	@go test -benchmem -bench . -benchtime 5s ./bench/...
-
-bench-seed:
-	@go run bench/seed/main.go
-
-ci-bench-run:
-	@mkdir -p ./bench-data
-	@if [ -f "./bench-data/new.txt" ]; then \
-		mv ./bench-data/new.txt ./bench-data/old.txt; \
-	fi
-	@go test -benchmem -bench . -benchtime 5s ./bench/... > ./bench-data/new.txt
-	@echo "Benchmark Results:"
-	@cat ./bench-data/new.txt
-	@echo
-	@-if [ -f "./bench-data/old.txt" ]; then \
-		echo "Comparison to previous build:" && \
-		benchcmp ./bench-data/old.txt ./bench-data/new.txt; \
-	fi
-
 rtfd:
 	@rm -rf docs/_build
 	@sphinx-build -b html -d ./docs/_build/doctrees ./docs/ docs/_build/html
@@ -172,8 +95,6 @@ rtfd:
 mock-lib:
 	@mockgen github.com/topfreegames/podium/lib PodiumInterface | sed 's/mock_lib/mocks/' > lib/mocks/podium.go
 
-.PHONY: proto
 proto:
 	@rm proto/podium/api/v1/*.go > /dev/null 2>&1 || true
 	@${PROTOTOOL} generate
-
