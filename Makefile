@@ -64,6 +64,16 @@ docker-run-redis:
 docker-run-basic-auth:
 	@docker run -i -t --rm -e BASICAUTH_USERNAME=admin -e BASICAUTH_PASSWORD=12345 -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=6379 -p 8080:80 podium
 
+bench-podium-app: build bench-podium-app-run
+
+bench-podium-app-run: bench-podium-app-kill
+	@rm -rf /tmp/podium-bench.log
+	@./bin/podium start -p 8888 -g 8889 -q -c ./config/perf.yaml 2>&1 > /tmp/podium-bench.log &
+	@echo "Podium started at http://localhost:8888. GRPC at 8889."
+
+bench-podium-app-kill:
+	@-ps aux | egrep 'podium.+perf.yaml' | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
+
 rtfd:
 	@rm -rf docs/_build
 	@sphinx-build -b html -d ./docs/_build/doctrees ./docs/ docs/_build/html
