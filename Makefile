@@ -65,16 +65,17 @@ docker-run-redis:
 docker-run-basic-auth:
 	@docker run -i -t --rm -e BASICAUTH_USERNAME=admin -e BASICAUTH_PASSWORD=12345 -e PODIUM_REDIS_HOST=$(MYIP) -e PODIUM_REDIS_PORT=6379 -p 8080:80 podium
 
-compose-up-dependencies:
-	@sed "s%<<LOCAL_GO_MODCACHE>>%${LOCAL_GO_MODCACHE}%g" deployments/docker-compose-model.yaml > deployments/docker-compose.yaml
-	@docker-compose -f deployments/docker-compose.yaml up -d redis-node-0 redis-node-1 redis-node-2 redis-standalone initialize-cluster
+deployments/docker-compose.yaml: deployments/docker-compose-model.yaml
+	@sed "s%<<LOCAL_GO_MODCACHE>>%${LOCAL_GO_MODCACHE}%g" $< > $@
 
-compose-test:
-	@sed "s%<<LOCAL_GO_MODCACHE>>%${LOCAL_GO_MODCACHE}%g" deployments/docker-compose-model.yaml > deployments/docker-compose.yaml
-	@docker-compose -f deployments/docker-compose.yaml up --build podium-test
+compose-up-dependencies: deployments/docker-compose.yaml
+	@docker-compose -f $< up -d redis-node-0 redis-node-1 redis-node-2 redis-standalone initialize-cluster
 
-compose-down:
-	@docker-compose -f deployments/docker-compose.yaml down
+compose-test: deployments/docker-compose.yaml compose-up-dependencies
+	@docker-compose -f $< up --build podium-test
+
+compose-down: deployments/docker-compose.yaml
+	@docker-compose -f $< down
 
 bench-podium-app: build bench-podium-app-run
 
