@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/spf13/viper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/leaderboard/testing"
 
 	uuid "github.com/satori/go.uuid"
 	extredis "github.com/topfreegames/extensions/redis"
@@ -34,14 +34,16 @@ var _ = Describe("Leaderboard Model", func() {
 
 	BeforeEach(func() {
 		var err error
-		const host = "localhost"
-		const port = 6379
-		const db = 0
-		const connectionTimeout = 200
+		config, err := testing.GetDefaultConfig("../config/test.yaml")
+		Expect(err).NotTo(HaveOccurred())
 
-		config := viper.New()
-		config.Set("redis.url", fmt.Sprintf("redis://%s:%d/%d", host, port, db))
-		config.Set("redis.connectionTimeout", connectionTimeout)
+		host := config.GetString("redis.host")
+		port := config.GetInt("redis.port")
+		db := config.GetInt("redis.db")
+		connectionTimeout := 200
+
+		config.SetDefault("redis.url", fmt.Sprintf("redis://%s:%d/%d", host, port, db))
+		config.SetDefault("redis.connectionTimeout", connectionTimeout)
 
 		redisClient, err = extredis.NewClient("redis", config)
 		Expect(err).NotTo(HaveOccurred())
