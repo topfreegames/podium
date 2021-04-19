@@ -2,6 +2,7 @@ healthcheck:
   workingText: WORKING
 
 redis:
+  addrs: "localhost:5000"
   host: localhost
   port: 6379
   connectionTimeout: 200
