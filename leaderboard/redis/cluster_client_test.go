@@ -25,7 +25,7 @@ var _ = Describe("Leaderboard Model", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		clusterClient = redis.NewClusterClient(redis.ClusterOptions{
-			Hosts:    config.GetStringSlice("redis.addrs"),
+			Addrs:    config.GetStringSlice("redis.addrs"),
 			Password: config.GetString("redis.password"),
 		})
 
@@ -53,8 +53,8 @@ var _ = Describe("Leaderboard Model", func() {
 			ttl, err := goRedis.TTL(context.Background(), testKey).Result()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(ttl).NotTo(Equal(-2)) // -2 = Key doesnt exists
-			Expect(ttl).NotTo(Equal(-1)) // -1  = Key exists but has no associated expire
+			Expect(ttl).NotTo(Equal(redis.TTLKeyNotFound))
+			Expect(ttl).NotTo(Equal(redis.TTLNotFoundToKey))
 
 			Expect(ttl).Should(BeNumerically("~", 10*time.Minute, time.Minute))
 		})

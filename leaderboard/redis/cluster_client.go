@@ -13,14 +13,14 @@ type clusterClient struct {
 }
 
 type ClusterOptions struct {
-	Hosts    []string
+	Addrs    []string
 	Password string
 }
 
 // NewClusterClient returns a new redis instance
 func NewClusterClient(clusterOptions ClusterOptions) *clusterClient {
 	goRedisClient := goredis.NewClusterClient(&goredis.ClusterOptions{
-		Addrs:    clusterOptions.Hosts,
+		Addrs:    clusterOptions.Addrs,
 		Password: clusterOptions.Password,
 	})
 
@@ -66,11 +66,11 @@ func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, er
 		return -1, err
 	}
 
-	if result == -2 {
+	if result == TTLKeyNotFound {
 		return -1, NewKeyNotFoundError(key)
 	}
 
-	if result == -1 {
+	if result == TTLNotFoundToKey {
 		return -1, NewTTLNotFoundError(key)
 	}
 

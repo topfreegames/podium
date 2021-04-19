@@ -71,11 +71,11 @@ func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, 
 		return -1, err
 	}
 
-	if result == -2 {
+	if result == TTLKeyNotFound {
 		return -1, NewKeyNotFoundError(key)
 	}
 
-	if result == -1 {
+	if result == TTLNotFoundToKey {
 		return -1, NewTTLNotFoundError(key)
 	}
 

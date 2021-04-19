@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+const (
+	// TTLKeyNotFound is redis return status to TTL command that simbolize a key not found
+	TTLKeyNotFound = -2
+	// TTLNotFoundToKey is redis return status to TTL command that simbolize a key without TTL set
+	TTLNotFoundToKey = -1
+)
+
 // Redis interface define wich redis methods will be used by leaderboard module
 type Redis interface {
 	ExpireAt(ctx context.Context, key string, time time.Time) error
