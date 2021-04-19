@@ -46,19 +46,13 @@ func (c *standaloneClient) ExpireAt(ctx context.Context, key string, time time.T
 // Ping call redis PING function
 func (c *standaloneClient) Ping(ctx context.Context) error {
 	err := c.Client.Ping(ctx).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // SAdd call redis SADD function
 func (c *standaloneClient) SAdd(ctx context.Context, key, member string) error {
 	err := c.Client.SAdd(ctx, key, member).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // SRem call redis SREM function
@@ -91,11 +85,7 @@ func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, 
 // ZAdd call redis ZADD function
 func (c *standaloneClient) ZAdd(ctx context.Context, key, member string, score float64) error {
 	err := c.Client.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // ZCard call redis ZCARD function
@@ -115,11 +105,7 @@ func (c *standaloneClient) ZCard(ctx context.Context, key string) (int64, error)
 // ZIncrBy call redis ZINCRBY function
 func (c *standaloneClient) ZIncrBy(ctx context.Context, key, member string, increment float64) error {
 	err := c.Client.ZIncrBy(ctx, key, increment, member).Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // ZRange call redis ZRANGE function it is inclusive it returns start and stop element
@@ -157,10 +143,7 @@ func (c *standaloneClient) ZRank(ctx context.Context, key, member string) (int64
 // ZRem call redis ZREM function
 func (c *standaloneClient) ZRem(ctx context.Context, key, member string) error {
 	err := c.Client.ZRem(ctx, key, member).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // ZRevRange call redis ZREVRANGE function it is inclusive it returns start and stop element

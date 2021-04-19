@@ -60,6 +60,7 @@ services:
       - redis-standalone
     environment:
       - "PODIUM_REDIS_HOST=redis-standalone"
+      - "PODIUM_REDIS_ADDRS=redis-node-0:6379"
     volumes:
       - "../:/podium"
       - "<<LOCAL_GO_MODCACHE>>:/go/pkg/mod"

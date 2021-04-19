@@ -44,28 +44,19 @@ func (cc *clusterClient) ExpireAt(ctx context.Context, key string, time time.Tim
 // Ping call redis PING function
 func (cc *clusterClient) Ping(ctx context.Context) error {
 	err := cc.ClusterClient.Ping(ctx).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // SAdd call redis SADD function
 func (cc *clusterClient) SAdd(ctx context.Context, key, member string) error {
 	_, err := cc.ClusterClient.SAdd(ctx, key, member).Result()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // SRem call redis SREM function
 func (cc *clusterClient) SRem(ctx context.Context, key, member string) error {
 	err := cc.ClusterClient.SRem(ctx, key, member).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // TTL call redis TTL function
@@ -89,11 +80,7 @@ func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, er
 // ZAdd call redis ZADD function
 func (cc *clusterClient) ZAdd(ctx context.Context, key, member string, score float64) error {
 	_, err := cc.ClusterClient.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Result()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // ZCard call redis ZCARD function
@@ -113,11 +100,7 @@ func (cc *clusterClient) ZCard(ctx context.Context, key string) (int64, error) {
 // ZIncrBy call redis ZINCRBY function
 func (cc *clusterClient) ZIncrBy(ctx context.Context, key, member string, increment float64) error {
 	_, err := cc.ClusterClient.ZIncrBy(ctx, key, increment, member).Result()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // ZRange call redis ZRANGE function it is inclusive it returns start and stop element
@@ -155,10 +138,7 @@ func (cc *clusterClient) ZRank(ctx context.Context, key, member string) (int64, 
 // ZRem call redis ZREM function
 func (cc *clusterClient) ZRem(ctx context.Context, key, member string) error {
 	err := cc.ClusterClient.ZRem(ctx, key, member).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // ZRevRange call redis ZREVRANGE function it is inclusive it returns start and stop element
