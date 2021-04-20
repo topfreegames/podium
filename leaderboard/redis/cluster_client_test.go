@@ -54,7 +54,7 @@ var _ = Describe("Cluster Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(ttl).NotTo(Equal(redis.TTLKeyNotFound))
-			Expect(ttl).NotTo(Equal(redis.TTLNotFoundToKey))
+			Expect(ttl).NotTo(Equal(redis.KeyWithoutTTL))
 
 			Expect(ttl).Should(BeNumerically("~", 10*time.Minute, time.Minute))
 		})
@@ -114,8 +114,8 @@ var _ = Describe("Cluster Client", func() {
 			ttl, err := clusterClient.TTL(context.Background(), testKey)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(ttl).NotTo(Equal(-2)) // -2 = Key doesnt exists
-			Expect(ttl).NotTo(Equal(-1)) // -1  = Key exists but has no associated expire
+			Expect(ttl).NotTo(Equal(redis.TTLKeyNotFound))
+			Expect(ttl).NotTo(Equal(redis.KeyWithoutTTL))
 
 			Expect(ttl).Should(BeNumerically("~", 10*time.Minute, time.Minute))
 		})

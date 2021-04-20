@@ -80,7 +80,7 @@ func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, er
 		return -1, NewKeyNotFoundError(key)
 	}
 
-	if result == TTLNotFoundToKey {
+	if result == KeyWithoutTTL {
 		return -1, NewTTLNotFoundError(key)
 	}
 

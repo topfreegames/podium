@@ -82,7 +82,7 @@ func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, 
 		return -1, NewKeyNotFoundError(key)
 	}
 
-	if result == TTLNotFoundToKey {
+	if result == KeyWithoutTTL {
 		return -1, NewTTLNotFoundError(key)
 	}
 
