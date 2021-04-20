@@ -71,9 +71,10 @@ var _ = Describe("Standalone Client", func() {
 	})
 
 	Describe("Ping", func() {
-		It("Should return nil if redis is OK", func() {
-			err := standaloneClient.Ping(context.Background())
+		It("Should return PONG, nil if redis is OK", func() {
+			result, err := standaloneClient.Ping(context.Background())
 			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal("PONG"))
 		})
 	})
 

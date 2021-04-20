@@ -43,12 +43,12 @@ func (cc *clusterClient) ExpireAt(ctx context.Context, key string, time time.Tim
 }
 
 // Ping call redis PING function
-func (cc *clusterClient) Ping(ctx context.Context) error {
-	err := cc.ClusterClient.Ping(ctx).Err()
+func (cc *clusterClient) Ping(ctx context.Context) (string, error) {
+	result, err := cc.ClusterClient.Ping(ctx).Result()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return "", NewUnknownError(err.Error())
 	}
-	return nil
+	return result, nil
 }
 
 // SAdd call redis SADD function

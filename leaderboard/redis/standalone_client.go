@@ -45,12 +45,12 @@ func (c *standaloneClient) ExpireAt(ctx context.Context, key string, time time.T
 }
 
 // Ping call redis PING function
-func (c *standaloneClient) Ping(ctx context.Context) error {
-	err := c.Client.Ping(ctx).Err()
+func (c *standaloneClient) Ping(ctx context.Context) (string, error) {
+	result, err := c.Client.Ping(ctx).Result()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return "", NewUnknownError(err.Error())
 	}
-	return nil
+	return result, nil
 }
 
 // SAdd call redis SADD function

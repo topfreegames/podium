@@ -69,8 +69,10 @@ var _ = Describe("Cluster Client", func() {
 
 	Describe("Ping", func() {
 		It("Should return nil if redis is OK", func() {
-			err := clusterClient.Ping(context.Background())
+			result, err := clusterClient.Ping(context.Background())
 			Expect(err).NotTo(HaveOccurred())
+
+			Expect(result).To(Equal("PONG"))
 		})
 	})
 
