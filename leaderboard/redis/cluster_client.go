@@ -12,13 +12,14 @@ type clusterClient struct {
 	*goredis.ClusterClient
 }
 
+// ClusterOptions define configuration parameters to instantiate a new ClusterClient
 type ClusterOptions struct {
 	Addrs    []string
 	Password string
 }
 
-// NewClusterClient returns a new redis instance
-func NewClusterClient(clusterOptions ClusterOptions) *clusterClient {
+// NewClusterClient returns a new redis cluster client instance
+func NewClusterClient(clusterOptions ClusterOptions) Redis {
 	goRedisClient := goredis.NewClusterClient(&goredis.ClusterOptions{
 		Addrs:    clusterOptions.Addrs,
 		Password: clusterOptions.Password,
@@ -31,7 +32,7 @@ func NewClusterClient(clusterOptions ClusterOptions) *clusterClient {
 func (cc *clusterClient) ExpireAt(ctx context.Context, key string, time time.Time) error {
 	result, err := cc.ClusterClient.ExpireAt(ctx, key, time).Result()
 	if err != nil {
-		return err
+		return NewUnknowError(err.Error())
 	}
 
 	if result != true {
@@ -44,26 +45,35 @@ func (cc *clusterClient) ExpireAt(ctx context.Context, key string, time time.Tim
 // Ping call redis PING function
 func (cc *clusterClient) Ping(ctx context.Context) error {
 	err := cc.ClusterClient.Ping(ctx).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // SAdd call redis SADD function
 func (cc *clusterClient) SAdd(ctx context.Context, key, member string) error {
-	_, err := cc.ClusterClient.SAdd(ctx, key, member).Result()
-	return err
+	err := cc.ClusterClient.SAdd(ctx, key, member).Err()
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // SRem call redis SREM function
 func (cc *clusterClient) SRem(ctx context.Context, key, member string) error {
 	err := cc.ClusterClient.SRem(ctx, key, member).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // TTL call redis TTL function
 func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, error) {
 	result, err := cc.ClusterClient.TTL(ctx, key).Result()
 	if err != nil {
-		return -1, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	if result == TTLKeyNotFound {
@@ -79,15 +89,18 @@ func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, er
 
 // ZAdd call redis ZADD function
 func (cc *clusterClient) ZAdd(ctx context.Context, key, member string, score float64) error {
-	_, err := cc.ClusterClient.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Result()
-	return err
+	err := cc.ClusterClient.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Err()
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // ZCard call redis ZCARD function
 func (cc *clusterClient) ZCard(ctx context.Context, key string) (int64, error) {
 	result, err := cc.ClusterClient.ZCard(ctx, key).Result()
 	if err != nil {
-		return -1, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	if result == 0 {
@@ -100,14 +113,17 @@ func (cc *clusterClient) ZCard(ctx context.Context, key string) (int64, error) {
 // ZIncrBy call redis ZINCRBY function
 func (cc *clusterClient) ZIncrBy(ctx context.Context, key, member string, increment float64) error {
 	_, err := cc.ClusterClient.ZIncrBy(ctx, key, increment, member).Result()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // ZRange call redis ZRANGE function it is inclusive it returns start and stop element
 func (cc *clusterClient) ZRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := cc.ClusterClient.ZRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return []*Member{}, err
+		return nil, NewUnknowError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -126,10 +142,10 @@ func (cc *clusterClient) ZRank(ctx context.Context, key, member string) (int64, 
 	result, err := cc.ClusterClient.ZRank(ctx, key, member).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			return 0, NewMemberNotFoundError(key)
+			return -1, NewMemberNotFoundError(key)
 		}
 
-		return 0, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	return result, nil
@@ -138,14 +154,17 @@ func (cc *clusterClient) ZRank(ctx context.Context, key, member string) (int64, 
 // ZRem call redis ZREM function
 func (cc *clusterClient) ZRem(ctx context.Context, key, member string) error {
 	err := cc.ClusterClient.ZRem(ctx, key, member).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // ZRevRange call redis ZREVRANGE function it is inclusive it returns start and stop element
 func (cc *clusterClient) ZRevRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := cc.ClusterClient.ZRevRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return []*Member{}, err
+		return nil, NewUnknowError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -164,10 +183,10 @@ func (cc *clusterClient) ZRevRank(ctx context.Context, key, member string) (int6
 	result, err := cc.ClusterClient.ZRevRank(ctx, key, member).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			return 0, NewMemberNotFoundError(key)
+			return -1, NewMemberNotFoundError(key)
 		}
 
-		return 0, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	return result, nil
@@ -178,10 +197,10 @@ func (cc *clusterClient) ZScore(ctx context.Context, key, member string) (float6
 	result, err := cc.ClusterClient.ZScore(ctx, key, member).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			return 0, NewMemberNotFoundError(key)
+			return -1, NewMemberNotFoundError(key)
 		}
 
-		return 0, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	return result, nil

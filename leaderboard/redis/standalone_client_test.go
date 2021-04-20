@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Leaderboard Model", func() {
+var _ = Describe("Standalone Client", func() {
 	const testKey string = "testKey"
 	const member string = "member"
 

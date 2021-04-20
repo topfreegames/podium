@@ -12,6 +12,7 @@ type standaloneClient struct {
 	*goredis.Client
 }
 
+// StandaloneOptions define configuration parameters to instantiate a new StandaloneClient
 type StandaloneOptions struct {
 	Host     string
 	Port     int
@@ -19,8 +20,8 @@ type StandaloneOptions struct {
 	DB       int
 }
 
-// NewStandaloneClient returns a new redis instance
-func NewStandaloneClient(options StandaloneOptions) *standaloneClient {
+// NewStandaloneClient returns a new redis standalone client instance
+func NewStandaloneClient(options StandaloneOptions) Redis {
 	goRedisClient := goredis.NewClient(&goredis.Options{
 		Addr:     fmt.Sprintf("%s:%d", options.Host, options.Port),
 		Password: options.Password,
@@ -34,7 +35,7 @@ func NewStandaloneClient(options StandaloneOptions) *standaloneClient {
 func (c *standaloneClient) ExpireAt(ctx context.Context, key string, time time.Time) error {
 	result, err := c.Client.ExpireAt(ctx, key, time).Result()
 	if err != nil {
-		return err
+		return NewUnknowError(err.Error())
 	}
 
 	if result != true {
@@ -46,20 +47,26 @@ func (c *standaloneClient) ExpireAt(ctx context.Context, key string, time time.T
 // Ping call redis PING function
 func (c *standaloneClient) Ping(ctx context.Context) error {
 	err := c.Client.Ping(ctx).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // SAdd call redis SADD function
 func (c *standaloneClient) SAdd(ctx context.Context, key, member string) error {
 	err := c.Client.SAdd(ctx, key, member).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // SRem call redis SREM function
 func (c *standaloneClient) SRem(ctx context.Context, key, member string) error {
 	err := c.Client.SRem(ctx, key, member).Err()
 	if err != nil {
-		return err
+		return NewUnknowError(err.Error())
 	}
 	return nil
 }
@@ -68,7 +75,7 @@ func (c *standaloneClient) SRem(ctx context.Context, key, member string) error {
 func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, error) {
 	result, err := c.Client.TTL(ctx, key).Result()
 	if err != nil {
-		return -1, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	if result == TTLKeyNotFound {
@@ -85,14 +92,17 @@ func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, 
 // ZAdd call redis ZADD function
 func (c *standaloneClient) ZAdd(ctx context.Context, key, member string, score float64) error {
 	err := c.Client.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // ZCard call redis ZCARD function
 func (c *standaloneClient) ZCard(ctx context.Context, key string) (int64, error) {
 	result, err := c.Client.ZCard(ctx, key).Result()
 	if err != nil {
-		return -1, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	if result == 0 {
@@ -105,14 +115,17 @@ func (c *standaloneClient) ZCard(ctx context.Context, key string) (int64, error)
 // ZIncrBy call redis ZINCRBY function
 func (c *standaloneClient) ZIncrBy(ctx context.Context, key, member string, increment float64) error {
 	err := c.Client.ZIncrBy(ctx, key, increment, member).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // ZRange call redis ZRANGE function it is inclusive it returns start and stop element
 func (c *standaloneClient) ZRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := c.Client.ZRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return []*Member{}, err
+		return nil, NewUnknowError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -131,10 +144,10 @@ func (c *standaloneClient) ZRank(ctx context.Context, key, member string) (int64
 	result, err := c.Client.ZRank(ctx, key, member).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			return 0, NewMemberNotFoundError(key)
+			return -1, NewMemberNotFoundError(key)
 		}
 
-		return 0, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	return result, nil
@@ -143,14 +156,17 @@ func (c *standaloneClient) ZRank(ctx context.Context, key, member string) (int64
 // ZRem call redis ZREM function
 func (c *standaloneClient) ZRem(ctx context.Context, key, member string) error {
 	err := c.Client.ZRem(ctx, key, member).Err()
-	return err
+	if err != nil {
+		return NewUnknowError(err.Error())
+	}
+	return nil
 }
 
 // ZRevRange call redis ZREVRANGE function it is inclusive it returns start and stop element
 func (c *standaloneClient) ZRevRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := c.Client.ZRevRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return []*Member{}, err
+		return nil, NewUnknowError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -172,7 +188,7 @@ func (c *standaloneClient) ZRevRank(ctx context.Context, key, member string) (in
 			return 0, NewMemberNotFoundError(key)
 		}
 
-		return 0, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	return result, nil
@@ -186,7 +202,7 @@ func (c *standaloneClient) ZScore(ctx context.Context, key, member string) (floa
 			return 0, NewMemberNotFoundError(key)
 		}
 
-		return 0, err
+		return -1, NewUnknowError(err.Error())
 	}
 
 	return result, nil
