@@ -49,3 +49,17 @@ func NewMemberNotFoundError(key string) *MemberNotFoundError {
 func (mnfe *MemberNotFoundError) Error() string {
 	return fmt.Sprintf("redis key %s not found", mnfe.key)
 }
+
+// UnknownError create a redis error that is not handled
+type UnknownError struct {
+	msg string
+}
+
+func (ue *UnknownError) Error() string {
+	return fmt.Sprintf("redis unknow error: %s", ue.msg)
+}
+
+// NewUnknownError create a new redis error that isnt handled
+func NewUnknownError(msg string) *UnknownError {
+	return &UnknownError{msg: msg}
+}

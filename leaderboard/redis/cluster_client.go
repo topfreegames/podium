@@ -32,7 +32,7 @@ func NewClusterClient(clusterOptions ClusterOptions) Redis {
 func (cc *clusterClient) ExpireAt(ctx context.Context, key string, time time.Time) error {
 	result, err := cc.ClusterClient.ExpireAt(ctx, key, time).Result()
 	if err != nil {
-		return NewUnknowError(err.Error())
+		return NewUnknownError(err.Error())
 	}
 
 	if result != true {
@@ -46,7 +46,7 @@ func (cc *clusterClient) ExpireAt(ctx context.Context, key string, time time.Tim
 func (cc *clusterClient) Ping(ctx context.Context) error {
 	err := cc.ClusterClient.Ping(ctx).Err()
 	if err != nil {
-		return NewUnknowError(err.Error())
+		return NewUnknownError(err.Error())
 	}
 	return nil
 }
@@ -55,7 +55,7 @@ func (cc *clusterClient) Ping(ctx context.Context) error {
 func (cc *clusterClient) SAdd(ctx context.Context, key, member string) error {
 	err := cc.ClusterClient.SAdd(ctx, key, member).Err()
 	if err != nil {
-		return NewUnknowError(err.Error())
+		return NewUnknownError(err.Error())
 	}
 	return nil
 }
@@ -64,7 +64,7 @@ func (cc *clusterClient) SAdd(ctx context.Context, key, member string) error {
 func (cc *clusterClient) SRem(ctx context.Context, key, member string) error {
 	err := cc.ClusterClient.SRem(ctx, key, member).Err()
 	if err != nil {
-		return NewUnknowError(err.Error())
+		return NewUnknownError(err.Error())
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ func (cc *clusterClient) SRem(ctx context.Context, key, member string) error {
 func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, error) {
 	result, err := cc.ClusterClient.TTL(ctx, key).Result()
 	if err != nil {
-		return -1, NewUnknowError(err.Error())
+		return -1, NewUnknownError(err.Error())
 	}
 
 	if result == TTLKeyNotFound {
@@ -91,7 +91,7 @@ func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, er
 func (cc *clusterClient) ZAdd(ctx context.Context, key, member string, score float64) error {
 	err := cc.ClusterClient.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Err()
 	if err != nil {
-		return NewUnknowError(err.Error())
+		return NewUnknownError(err.Error())
 	}
 	return nil
 }
@@ -100,7 +100,7 @@ func (cc *clusterClient) ZAdd(ctx context.Context, key, member string, score flo
 func (cc *clusterClient) ZCard(ctx context.Context, key string) (int64, error) {
 	result, err := cc.ClusterClient.ZCard(ctx, key).Result()
 	if err != nil {
-		return -1, NewUnknowError(err.Error())
+		return -1, NewUnknownError(err.Error())
 	}
 
 	if result == 0 {
@@ -114,7 +114,7 @@ func (cc *clusterClient) ZCard(ctx context.Context, key string) (int64, error) {
 func (cc *clusterClient) ZIncrBy(ctx context.Context, key, member string, increment float64) error {
 	_, err := cc.ClusterClient.ZIncrBy(ctx, key, increment, member).Result()
 	if err != nil {
-		return NewUnknowError(err.Error())
+		return NewUnknownError(err.Error())
 	}
 	return nil
 }
@@ -123,7 +123,7 @@ func (cc *clusterClient) ZIncrBy(ctx context.Context, key, member string, increm
 func (cc *clusterClient) ZRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := cc.ClusterClient.ZRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return nil, NewUnknowError(err.Error())
+		return nil, NewUnknownError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -145,7 +145,7 @@ func (cc *clusterClient) ZRank(ctx context.Context, key, member string) (int64, 
 			return -1, NewMemberNotFoundError(key)
 		}
 
-		return -1, NewUnknowError(err.Error())
+		return -1, NewUnknownError(err.Error())
 	}
 
 	return result, nil
@@ -155,7 +155,7 @@ func (cc *clusterClient) ZRank(ctx context.Context, key, member string) (int64, 
 func (cc *clusterClient) ZRem(ctx context.Context, key, member string) error {
 	err := cc.ClusterClient.ZRem(ctx, key, member).Err()
 	if err != nil {
-		return NewUnknowError(err.Error())
+		return NewUnknownError(err.Error())
 	}
 	return nil
 }
@@ -164,7 +164,7 @@ func (cc *clusterClient) ZRem(ctx context.Context, key, member string) error {
 func (cc *clusterClient) ZRevRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := cc.ClusterClient.ZRevRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return nil, NewUnknowError(err.Error())
+		return nil, NewUnknownError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -186,7 +186,7 @@ func (cc *clusterClient) ZRevRank(ctx context.Context, key, member string) (int6
 			return -1, NewMemberNotFoundError(key)
 		}
 
-		return -1, NewUnknowError(err.Error())
+		return -1, NewUnknownError(err.Error())
 	}
 
 	return result, nil
@@ -200,7 +200,7 @@ func (cc *clusterClient) ZScore(ctx context.Context, key, member string) (float6
 			return -1, NewMemberNotFoundError(key)
 		}
 
-		return -1, NewUnknowError(err.Error())
+		return -1, NewUnknownError(err.Error())
 	}
 
 	return result, nil
