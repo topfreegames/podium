@@ -14,6 +14,7 @@ const (
 
 // Redis interface define wich redis methods will be used by leaderboard module
 type Redis interface {
+	Del(ctx context.Context, key string) error
 	ExpireAt(ctx context.Context, key string, time time.Time) error
 	Ping(ctx context.Context) (string, error)
 	SAdd(ctx context.Context, key, member string) error
@@ -24,8 +25,9 @@ type Redis interface {
 	ZIncrBy(ctx context.Context, key, member string, increment float64) error
 	ZRange(ctx context.Context, key string, start, stop int64) ([]*Member, error)
 	ZRank(ctx context.Context, key, member string) (int64, error)
-	ZRem(ctx context.Context, key string, member string) error
+	ZRem(ctx context.Context, key string, members ...string) error
 	ZRevRange(ctx context.Context, key string, start, stop int64) ([]*Member, error)
+	ZRevRangeByScore(ctx context.Context, key string, min, max string, offset, count int64) ([]string, error)
 	ZRevRank(ctx context.Context, key, member string) (int64, error)
 	ZScore(ctx context.Context, key, member string) (float64, error)
 }

@@ -12,6 +12,8 @@ type standaloneClient struct {
 	*goredis.Client
 }
 
+var _ Redis = &standaloneClient{}
+
 // StandaloneOptions define configuration parameters to instantiate a new StandaloneClient
 type StandaloneOptions struct {
 	Host     string
@@ -31,11 +33,21 @@ func NewStandaloneClient(options StandaloneOptions) Redis {
 	return &standaloneClient{goRedisClient}
 }
 
+// Del call redis DEL function
+func (c *standaloneClient) Del(ctx context.Context, key string) error {
+	err := c.Client.Del(ctx, key).Err()
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+
+	return nil
+}
+
 // ExpireAt call redis EXPIREAT function
 func (c *standaloneClient) ExpireAt(ctx context.Context, key string, time time.Time) error {
 	result, err := c.Client.ExpireAt(ctx, key, time).Result()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return NewGeneralError(err.Error())
 	}
 
 	if result != true {
@@ -48,7 +60,7 @@ func (c *standaloneClient) ExpireAt(ctx context.Context, key string, time time.T
 func (c *standaloneClient) Ping(ctx context.Context) (string, error) {
 	result, err := c.Client.Ping(ctx).Result()
 	if err != nil {
-		return "", NewUnknownError(err.Error())
+		return "", NewGeneralError(err.Error())
 	}
 	return result, nil
 }
@@ -57,7 +69,7 @@ func (c *standaloneClient) Ping(ctx context.Context) (string, error) {
 func (c *standaloneClient) SAdd(ctx context.Context, key, member string) error {
 	err := c.Client.SAdd(ctx, key, member).Err()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return NewGeneralError(err.Error())
 	}
 	return nil
 }
@@ -66,7 +78,7 @@ func (c *standaloneClient) SAdd(ctx context.Context, key, member string) error {
 func (c *standaloneClient) SRem(ctx context.Context, key, member string) error {
 	err := c.Client.SRem(ctx, key, member).Err()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return NewGeneralError(err.Error())
 	}
 	return nil
 }
@@ -75,7 +87,7 @@ func (c *standaloneClient) SRem(ctx context.Context, key, member string) error {
 func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, error) {
 	result, err := c.Client.TTL(ctx, key).Result()
 	if err != nil {
-		return -1, NewUnknownError(err.Error())
+		return -1, NewGeneralError(err.Error())
 	}
 
 	if result == TTLKeyNotFound {
@@ -93,7 +105,7 @@ func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, 
 func (c *standaloneClient) ZAdd(ctx context.Context, key, member string, score float64) error {
 	err := c.Client.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Err()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return NewGeneralError(err.Error())
 	}
 	return nil
 }
@@ -102,7 +114,7 @@ func (c *standaloneClient) ZAdd(ctx context.Context, key, member string, score f
 func (c *standaloneClient) ZCard(ctx context.Context, key string) (int64, error) {
 	result, err := c.Client.ZCard(ctx, key).Result()
 	if err != nil {
-		return -1, NewUnknownError(err.Error())
+		return -1, NewGeneralError(err.Error())
 	}
 
 	if result == 0 {
@@ -116,7 +128,7 @@ func (c *standaloneClient) ZCard(ctx context.Context, key string) (int64, error)
 func (c *standaloneClient) ZIncrBy(ctx context.Context, key, member string, increment float64) error {
 	err := c.Client.ZIncrBy(ctx, key, increment, member).Err()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return NewGeneralError(err.Error())
 	}
 	return nil
 }
@@ -125,7 +137,7 @@ func (c *standaloneClient) ZIncrBy(ctx context.Context, key, member string, incr
 func (c *standaloneClient) ZRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := c.Client.ZRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return nil, NewUnknownError(err.Error())
+		return nil, NewGeneralError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -144,20 +156,20 @@ func (c *standaloneClient) ZRank(ctx context.Context, key, member string) (int64
 	result, err := c.Client.ZRank(ctx, key, member).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			return -1, NewMemberNotFoundError(key)
+			return -1, NewMemberNotFoundError(key, member)
 		}
 
-		return -1, NewUnknownError(err.Error())
+		return -1, NewGeneralError(err.Error())
 	}
 
 	return result, nil
 }
 
 // ZRem call redis ZREM function
-func (c *standaloneClient) ZRem(ctx context.Context, key, member string) error {
-	err := c.Client.ZRem(ctx, key, member).Err()
+func (c *standaloneClient) ZRem(ctx context.Context, key string, members ...string) error {
+	err := c.Client.ZRem(ctx, key, members).Err()
 	if err != nil {
-		return NewUnknownError(err.Error())
+		return NewGeneralError(err.Error())
 	}
 	return nil
 }
@@ -166,7 +178,7 @@ func (c *standaloneClient) ZRem(ctx context.Context, key, member string) error {
 func (c *standaloneClient) ZRevRange(ctx context.Context, key string, start, stop int64) ([]*Member, error) {
 	result, err := c.Client.ZRevRangeWithScores(ctx, key, start, stop).Result()
 	if err != nil {
-		return nil, NewUnknownError(err.Error())
+		return nil, NewGeneralError(err.Error())
 	}
 
 	var members []*Member = make([]*Member, 0, len(result))
@@ -180,15 +192,24 @@ func (c *standaloneClient) ZRevRange(ctx context.Context, key string, start, sto
 	return members, nil
 }
 
+// ZRevRangeByScore call redis ZREVRANGEBYSCORE command
+func (c *standaloneClient) ZRevRangeByScore(ctx context.Context, key string, min, max string, offset, count int64) ([]string, error) {
+	result, err := c.Client.ZRevRangeByScore(ctx, key, &goredis.ZRangeBy{Min: min, Max: max, Offset: offset, Count: count}).Result()
+	if err != nil {
+		return nil, NewGeneralError(err.Error())
+	}
+	return result, nil
+}
+
 // ZRevRank call redis ZREVRANK function
 func (c *standaloneClient) ZRevRank(ctx context.Context, key, member string) (int64, error) {
 	result, err := c.Client.ZRevRank(ctx, key, member).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			return 0, NewMemberNotFoundError(key)
+			return -1, NewMemberNotFoundError(key, member)
 		}
 
-		return -1, NewUnknownError(err.Error())
+		return -1, NewGeneralError(err.Error())
 	}
 
 	return result, nil
@@ -199,10 +220,10 @@ func (c *standaloneClient) ZScore(ctx context.Context, key, member string) (floa
 	result, err := c.Client.ZScore(ctx, key, member).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			return 0, NewMemberNotFoundError(key)
+			return -1, NewMemberNotFoundError(key, member)
 		}
 
-		return -1, NewUnknownError(err.Error())
+		return -1, NewGeneralError(err.Error())
 	}
 
 	return result, nil
