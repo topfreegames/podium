@@ -432,14 +432,17 @@ var _ = Describe("Redis Database", func() {
 					&database.Member{
 						Member: "member1",
 						Score:  float64(1),
+						Rank:   int64(start + 0),
 					},
 					&database.Member{
 						Member: "member2",
 						Score:  float64(2),
+						Rank:   int64(start + 1),
 					},
 					&database.Member{
 						Member: "member3",
 						Score:  float64(3),
+						Rank:   int64(start + 2),
 					},
 				}
 
@@ -481,14 +484,17 @@ var _ = Describe("Redis Database", func() {
 					&database.Member{
 						Member: "member3",
 						Score:  float64(3),
+						Rank:   int64(start + 0),
 					},
 					&database.Member{
 						Member: "member2",
 						Score:  float64(2),
+						Rank:   int64(start + 1),
 					},
 					&database.Member{
 						Member: "member1",
 						Score:  float64(1),
+						Rank:   int64(start + 2),
 					},
 				}
 

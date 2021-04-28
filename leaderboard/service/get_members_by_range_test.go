@@ -38,10 +38,12 @@ var _ = Describe("Service GetMembersByRange", func() {
 			&database.Member{
 				Member: "member1",
 				Score:  float64(1),
+				Rank:   0,
 			},
 			&database.Member{
 				Member: "member2",
 				Score:  float64(2),
+				Rank:   1,
 			},
 		}
 

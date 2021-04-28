@@ -7,11 +7,10 @@ import (
 	"github.com/topfreegames/podium/leaderboard/model"
 )
 
-func convertDatabaseMembersIntoModelMembers(databaseMembers []*database.Member, offset int) []*model.Member {
+func convertDatabaseMembersIntoModelMembers(databaseMembers []*database.Member) []*model.Member {
 	members := make([]*model.Member, 0, len(databaseMembers))
-	for i, member := range databaseMembers {
+	for _, member := range databaseMembers {
 		modelMember := convertDatabaseMemberIntoModelMember(member)
-		modelMember.Rank = int(offset + i + 1)
 		members = append(members, modelMember)
 	}
 

@@ -15,6 +15,6 @@ func (s *Service) GetMembersByRange(ctx context.Context, leaderboard string, sta
 		return nil, NewGeneralError(getMembersByRangeServiceLabel, err.Error())
 	}
 
-	members := convertDatabaseMembersIntoModelMembers(databaseMembers, start)
+	members := convertDatabaseMembersIntoModelMembers(databaseMembers)
 	return members, nil
 }

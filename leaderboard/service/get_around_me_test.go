@@ -195,17 +195,17 @@ var _ = Describe("Service GetAroundMe", func() {
 				&model.Member{
 					PublicID: "member1",
 					Score:    1,
-					Rank:     5 + 1,
+					Rank:     6,
 				},
 				&model.Member{
 					PublicID: "member2",
 					Score:    2,
-					Rank:     6 + 1,
+					Rank:     7,
 				},
 				&model.Member{
 					PublicID: "member3",
 					Score:    3,
-					Rank:     7 + 1,
+					Rank:     8,
 				},
 			}
 
@@ -244,17 +244,17 @@ var _ = Describe("Service GetAroundMe", func() {
 				&model.Member{
 					PublicID: "member1",
 					Score:    1,
-					Rank:     10 + 1,
+					Rank:     11,
 				},
 				&model.Member{
 					PublicID: "member2",
 					Score:    2,
-					Rank:     9 + 1,
+					Rank:     10,
 				},
 				&model.Member{
 					PublicID: "member3",
 					Score:    3,
-					Rank:     8 + 1,
+					Rank:     9,
 				},
 			}
 

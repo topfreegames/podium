@@ -43,14 +43,17 @@ var _ = Describe("Service GetLeaders", func() {
 			&database.Member{
 				Member: "member1",
 				Score:  float64(1),
+				Rank:   0,
 			},
 			&database.Member{
 				Member: "member2",
 				Score:  float64(2),
+				Rank:   1,
 			},
 			&database.Member{
 				Member: "member3",
 				Score:  float64(3),
+				Rank:   2,
 			},
 		}
 
