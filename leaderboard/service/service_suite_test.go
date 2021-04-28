@@ -14,13 +14,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/topfreegames/podium/leaderboard"
-	"github.com/topfreegames/podium/leaderboard/service"
 )
 
 func TestLeaderboard(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Service Suite")
 }
-
-var _ leaderboard.Leaderboard = &service.Service{}
