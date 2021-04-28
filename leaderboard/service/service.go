@@ -10,7 +10,7 @@ type Service struct {
 	database.Database
 }
 
-var _ leaderboard.Leaderboard = &service.Service{}
+var _ leaderboard.Leaderboard = &Service{}
 
 // NewService instantiate a new Service
 func NewService(database database.Database) *Service {
