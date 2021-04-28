@@ -136,10 +136,11 @@ func (r *Redis) GetOrderedMembers(ctx context.Context, leaderboard string, start
 	}
 
 	var members []*Member = make([]*Member, 0, len(redisMembers))
-	for _, member := range redisMembers {
+	for i, member := range redisMembers {
 		members = append(members, &Member{
 			Member: member.Member,
 			Score:  member.Score,
+			Rank:   int64(start + i),
 		})
 	}
 

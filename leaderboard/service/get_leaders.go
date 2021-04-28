@@ -16,14 +16,14 @@ func (s *Service) GetLeaders(ctx context.Context, leaderboard string, pageSize, 
 		return nil, err
 	}
 
-	start, stop := getIndexes(pageSize, page)
+	index := getIndexesByPage(pageSize, page)
 
-	databaseMembers, err := s.Database.GetOrderedMembers(ctx, leaderboard, start, stop, order)
+	databaseMembers, err := s.Database.GetOrderedMembers(ctx, leaderboard, index.Start, index.Stop, order)
 	if err != nil {
 		return nil, NewGeneralError(getLeadersServiceLabel, err.Error())
 	}
 
-	members := convertDatabaseMembersIntoModelMembers(databaseMembers, start)
+	members := convertDatabaseMembersIntoModelMembers(databaseMembers)
 	return members, nil
 }
 
@@ -40,11 +40,4 @@ func (s *Service) ensureValidPage(ctx context.Context, leaderboard string, pageS
 	}
 
 	return nil
-}
-
-func getIndexes(pageSize, page int) (int, int) {
-	start := (page - 1) * pageSize
-	stop := start + pageSize - 1
-
-	return start, stop
 }
