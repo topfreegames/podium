@@ -36,30 +36,31 @@ func (knfe *TTLNotFoundError) Error() string {
 
 // MemberNotFoundError is an error throw when key has not Member
 type MemberNotFoundError struct {
-	key string
+	key    string
+	member string
 }
 
 // NewMemberNotFoundError create a new KeyNotFoundError
-func NewMemberNotFoundError(key string) *MemberNotFoundError {
+func NewMemberNotFoundError(key, member string) *MemberNotFoundError {
 	return &MemberNotFoundError{
 		key: key,
 	}
 }
 
 func (mnfe *MemberNotFoundError) Error() string {
-	return fmt.Sprintf("redis key %s not found", mnfe.key)
+	return fmt.Sprintf("redis key %s not have member %s found", mnfe.key, mnfe.member)
 }
 
-// UnknownError create a redis error that is not handled
-type UnknownError struct {
+// GeneralError create a redis error that is not handled
+type GeneralError struct {
 	msg string
 }
 
-func (ue *UnknownError) Error() string {
-	return fmt.Sprintf("redis unknow error: %s", ue.msg)
+func (ue *GeneralError) Error() string {
+	return fmt.Sprintf("redis error: %s", ue.msg)
 }
 
-// NewUnknownError create a new redis error that isnt handled
-func NewUnknownError(msg string) *UnknownError {
-	return &UnknownError{msg: msg}
+// NewGeneralError create a new redis error that isnt handled
+func NewGeneralError(msg string) *GeneralError {
+	return &GeneralError{msg: msg}
 }

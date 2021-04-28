@@ -2,11 +2,10 @@ package redis_test
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	goredis "github.com/go-redis/redis/v8"
-	"github.com/topfreegames/podium/leaderboard/redis"
+	"github.com/topfreegames/podium/leaderboard/database/redis"
 	"github.com/topfreegames/podium/leaderboard/testing"
 
 	. "github.com/onsi/ginkgo"
@@ -21,7 +20,7 @@ var _ = Describe("Cluster Client", func() {
 	var goRedis *goredis.ClusterClient
 
 	BeforeEach(func() {
-		config, err := testing.GetDefaultConfig("../../config/test.yaml")
+		config, err := testing.GetDefaultConfig("../../../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
 		clusterClient = redis.NewClusterClient(redis.ClusterOptions{
@@ -38,6 +37,26 @@ var _ = Describe("Cluster Client", func() {
 	AfterEach(func() {
 		err := goRedis.Del(context.Background(), testKey).Err()
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	Describe("Del", func() {
+		It("Should return nil if key is removed", func() {
+			err := goRedis.ZAdd(context.Background(), testKey, &goredis.Z{Member: member, Score: 1.0}).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = clusterClient.Del(context.Background(), testKey)
+			Expect(err).NotTo(HaveOccurred())
+
+			keys, err := goRedis.Keys(context.Background(), testKey).Result()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(keys).To(BeEmpty())
+		})
+
+		It("Should return nil if set doesnt exists", func() {
+			err := clusterClient.Del(context.Background(), testKey)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
 	Describe("ExpireAt", func() {
@@ -219,7 +238,7 @@ var _ = Describe("Cluster Client", func() {
 
 		It("Should return error MemberNotFounderror if sorted set is empty", func() {
 			_, err := clusterClient.ZRank(context.Background(), testKey, member)
-			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey)))
+			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey, member)))
 		})
 
 		It("Should return error MemberNotFounderror if sorted set doesn't have member", func() {
@@ -229,7 +248,7 @@ var _ = Describe("Cluster Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = clusterClient.ZRank(context.Background(), testKey, "member not found")
-			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey)))
+			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey, "member not found")))
 		})
 	})
 
@@ -244,6 +263,23 @@ var _ = Describe("Cluster Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = goRedis.ZRank(context.Background(), testKey, member).Result()
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("Should return nil if multiple members is removed from set", func() {
+			score := 1.0
+			secondMember := "member2"
+
+			err := goRedis.ZAdd(context.Background(), testKey, &goredis.Z{Member: member, Score: score}, &goredis.Z{Member: secondMember, Score: score * 2.0}).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = clusterClient.ZRem(context.Background(), testKey, member, secondMember)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = goRedis.ZRank(context.Background(), testKey, member).Result()
+			Expect(err).To(HaveOccurred())
+
+			_, err = goRedis.ZRank(context.Background(), testKey, secondMember).Result()
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -266,13 +302,28 @@ var _ = Describe("Cluster Client", func() {
 			members, err := clusterClient.ZRevRange(context.Background(), testKey, 0, -1)
 			Expect(err).NotTo(HaveOccurred())
 
-			fmt.Printf("\n\n\n%+v\n\n", members)
-
 			Expect(members[0].Member).To(Equal(member2))
 			Expect(members[0].Score).To(Equal(score2))
 
 			Expect(members[1].Member).To(Equal(member))
 			Expect(members[1].Score).To(Equal(score))
+		})
+	})
+
+	Describe("ZRevRangeByScore", func() {
+		It("Should return members closest members ordered by score", func() {
+			member2 := "member2"
+
+			score := 1.0
+			score2 := 2.0
+
+			err := goRedis.ZAdd(context.Background(), testKey, &goredis.Z{Member: member, Score: score}, &goredis.Z{Member: member2, Score: score2}).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			members, err := clusterClient.ZRevRangeByScore(context.Background(), testKey, "-inf", "1", 0, 1)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(members[0]).To(Equal(member))
 		})
 	})
 
@@ -302,7 +353,7 @@ var _ = Describe("Cluster Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = clusterClient.ZRevRank(context.Background(), testKey, "wrongKey")
-			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey)))
+			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey, "wrongKey")))
 		})
 	})
 
@@ -326,7 +377,7 @@ var _ = Describe("Cluster Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = clusterClient.ZScore(context.Background(), testKey, "wrongKey")
-			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey)))
+			Expect(err).To(Equal(redis.NewMemberNotFoundError(testKey, "wrongKey")))
 		})
 	})
 })
