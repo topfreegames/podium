@@ -31,5 +31,5 @@ type Leaderboard interface {
 
 	GetAroundMe(ctx context.Context, leaderboard string, pageSize int, member string, order string, getLastIfNotFound bool) ([]*model.Member, error)
 
-	// GetAroundScore(ctx context.Context, leaderboardID string, pageSize int, score int64, order string) ([]*model.Member, error)
+	GetAroundScore(ctx context.Context, leaderboardID string, pageSize int, score int64, order string) ([]*model.Member, error)
 }
