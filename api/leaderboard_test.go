@@ -86,8 +86,8 @@ var _ = Describe("Leaderboard Handler", func() {
 				fmt.Sprintf("testkey-year%dweek%s", year, maybePrefixWithZero(week)),
 				fmt.Sprintf(
 					"testkey-year%dmonth%s",
-					time.Now().UTC().AddDate(0, -2, 0).Year(),
-					maybePrefixWithZero(int(time.Now().UTC().AddDate(0, -2, 0).Month())),
+					time.Now().UTC().AddDate(0, -3, 0).Year(),
+					maybePrefixWithZero(int(time.Now().UTC().AddDate(0, -3, 0).Month())),
 				),
 				fmt.Sprintf(
 					"testkey-year%dquarter0%d",
