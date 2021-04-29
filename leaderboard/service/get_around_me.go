@@ -11,20 +11,13 @@ const getAroundMeServiceLabel = "get around me"
 
 // GetAroundMe find users around a certain member
 func (s *Service) GetAroundMe(ctx context.Context, leaderboard string, pageSize int, member string, order string, getLastIfNotFound bool) ([]*model.Member, error) {
-	memberRank, err := s.Database.GetRank(ctx, leaderboard, member, order)
+	memberRank, err := s.fetchMemberRank(ctx, leaderboard, member, order, getLastIfNotFound)
 	if err != nil {
 		if _, ok := err.(*database.MemberNotFoundError); ok {
-			if !getLastIfNotFound {
-				return nil, NewMemberNotFoundError(leaderboard, member)
-			}
-
-			memberRank, err = s.Database.GetTotalMembers(ctx, leaderboard)
-			if err != nil {
-				return nil, NewGeneralError(getAroundMeServiceLabel, err.Error())
-			}
-		} else {
-			return nil, NewGeneralError(getAroundMeServiceLabel, err.Error())
+			return nil, NewMemberNotFoundError(leaderboard, member)
 		}
+
+		return nil, NewGeneralError(getAroundMeServiceLabel, err.Error())
 	}
 
 	indexes, err := s.calculateIndexesAroundMemberRank(ctx, leaderboard, memberRank, pageSize)
