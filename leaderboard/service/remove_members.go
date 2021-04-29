@@ -4,7 +4,7 @@ import "context"
 
 const removeMembersServiceLabel = "remove members"
 
-// RemoveMembers reurn how many members have in a leaderboard
+// RemoveMembers remove members from a certain leaderboard
 func (s *Service) RemoveMembers(ctx context.Context, leaderboard string, members []string) error {
 	err := s.Database.RemoveMembers(ctx, leaderboard, members...)
 	if err != nil {

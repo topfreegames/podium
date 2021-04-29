@@ -7,7 +7,7 @@ import (
 
 const totalPagesServiceLabel = "total pages"
 
-// TotalPages reurn how many pages members have in a leaderboard according to pageSize
+// TotalPages return how many pages members have in a leaderboard according to pageSize
 func (s *Service) TotalPages(ctx context.Context, leaderboard string, pageSize int) (int, error) {
 	totalMembers, err := s.Database.GetTotalMembers(ctx, leaderboard)
 	if err != nil {

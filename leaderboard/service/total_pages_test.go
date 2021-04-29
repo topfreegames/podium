@@ -3,7 +3,6 @@ package service_test
 import (
 	"context"
 	"fmt"
-	"math"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -40,14 +39,14 @@ var _ = Describe("Service TotalPages", func() {
 		pages, err := svc.TotalPages(context.Background(), leaderboard, pageSize)
 		Expect(err).NotTo(HaveOccurred())
 
-		calculatedPages := int(math.Ceil(float64(totalMembers) / float64(pageSize)))
+		calculatedPages := 2
 
 		Expect(pages).To(Equal(calculatedPages))
 
 		pages, err = svc.TotalPages(context.Background(), leaderboard, pageSize2)
 		Expect(err).NotTo(HaveOccurred())
 
-		calculatedPages = int(math.Ceil(float64(totalMembers) / float64(pageSize2)))
+		calculatedPages = 4
 
 		Expect(pages).To(Equal(calculatedPages))
 	})

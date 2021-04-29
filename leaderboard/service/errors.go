@@ -8,8 +8,8 @@ type GeneralError struct {
 	msg     string
 }
 
-func (ue *GeneralError) Error() string {
-	return fmt.Sprintf("error on service %s: %s", ue.service, ue.msg)
+func (ge *GeneralError) Error() string {
+	return fmt.Sprintf("error on service %s: %s", ge.service, ge.msg)
 }
 
 // NewGeneralError create a new GeneralError

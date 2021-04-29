@@ -49,12 +49,12 @@ var _ = Describe("Service GetMembersByRange", func() {
 			&model.Member{
 				PublicID: "member1",
 				Score:    1,
-				Rank:     0 + 0 + 1,
+				Rank:     1,
 			},
 			&model.Member{
 				PublicID: "member2",
 				Score:    2,
-				Rank:     0 + 1 + 1,
+				Rank:     2,
 			},
 		}
 

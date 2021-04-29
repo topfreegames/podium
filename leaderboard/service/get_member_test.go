@@ -12,7 +12,7 @@ import (
 	"github.com/topfreegames/podium/leaderboard/service"
 )
 
-var _ = Describe("Service GetMembersByRange", func() {
+var _ = Describe("Service GetMember", func() {
 	var ctrl *gomock.Controller
 	var mock *database.MockDatabase
 	var svc *service.Service
@@ -46,7 +46,7 @@ var _ = Describe("Service GetMembersByRange", func() {
 		membersReturn := &model.Member{
 			PublicID: "member1",
 			Score:    1,
-			Rank:     0 + 0 + 1,
+			Rank:     1,
 			ExpireAt: 10000,
 		}
 
