@@ -10,11 +10,7 @@ func convertDatabaseMembersIntoModelMembers(databaseMembers []*database.Member, 
 	for i, member := range databaseMembers {
 		modelMember := convertDatabaseMemberIntoModelMember(member)
 		modelMember.Rank = int(offset + i + 1)
-		members = append(members, &model.Member{
-			PublicID: member.Member,
-			Score:    int64(member.Score),
-			Rank:     int(offset + i + 1),
-		})
+		members = append(members, modelMember)
 	}
 
 	return members
