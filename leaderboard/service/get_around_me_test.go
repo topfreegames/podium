@@ -38,6 +38,9 @@ var _ = Describe("Service GetAroundMe", func() {
 		var getLastIfNotFound = false
 		It("Should return members slice if all is OK", func() {
 			rank := 6
+			start := 5
+			stop := 7
+
 			membersDatabaseReturn := []*database.Member{
 				&database.Member{
 					Member: "member1",
@@ -60,21 +63,19 @@ var _ = Describe("Service GetAroundMe", func() {
 				&model.Member{
 					PublicID: "member1",
 					Score:    1,
-					Rank:     5 + 1,
+					Rank:     6,
 				},
 				&model.Member{
 					PublicID: "member2",
 					Score:    2,
-					Rank:     6 + 1,
+					Rank:     7,
 				},
 				&model.Member{
 					PublicID: "member3",
 					Score:    3,
-					Rank:     7 + 1,
+					Rank:     8,
 				},
 			}
-
-			start, stop := calculateIndexes(totalMembers, pageSize, rank)
 
 			mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(rank, nil)
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
@@ -112,7 +113,8 @@ var _ = Describe("Service GetAroundMe", func() {
 
 		It("Should return error if GetOrderedMembers return in error", func() {
 			rank := 6
-			start, stop := calculateIndexes(totalMembers, pageSize, rank)
+			start := 5
+			stop := 7
 
 			mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(rank, nil)
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
@@ -131,10 +133,9 @@ var _ = Describe("Service GetAroundMe", func() {
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 
 			//this is the assertation relevant to this test
-			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Return(nil, fmt.Errorf("database error"))
+			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Times(1).Return(nil, fmt.Errorf("database error"))
 
-			_, err := svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
-			Expect(err).To(Equal(service.NewGeneralError("get around me", "database error")))
+			svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
 		})
 
 		It("Should ask for last members if user is the last one", func() {
@@ -146,10 +147,9 @@ var _ = Describe("Service GetAroundMe", func() {
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 
 			//this is the assertation relevant to this test
-			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Return(nil, fmt.Errorf("database error"))
+			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Times(1).Return(nil, fmt.Errorf("database error"))
 
-			_, err := svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
-			Expect(err).To(Equal(service.NewGeneralError("get around me", "database error")))
+			svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
 		})
 
 		It("Should ask for all members if totalMembers is less than pageSize", func() {
@@ -162,10 +162,9 @@ var _ = Describe("Service GetAroundMe", func() {
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 
 			//this is the assertation relevant to this test
-			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Return(nil, fmt.Errorf("database error"))
+			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Times(1).Return(nil, fmt.Errorf("database error"))
 
-			_, err := svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
-			Expect(err).To(Equal(service.NewGeneralError("get around me", "database error")))
+			svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
 		})
 	})
 
@@ -173,6 +172,9 @@ var _ = Describe("Service GetAroundMe", func() {
 		var getLastIfNotFound = true
 		It("Should return members slice if all is OK", func() {
 			rank := 6
+			start := 5
+			stop := 7
+
 			membersDatabaseReturn := []*database.Member{
 				&database.Member{
 					Member: "member1",
@@ -209,8 +211,6 @@ var _ = Describe("Service GetAroundMe", func() {
 				},
 			}
 
-			start, stop := calculateIndexes(totalMembers, pageSize, rank)
-
 			mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(rank, nil)
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Return(membersDatabaseReturn, nil)
@@ -222,6 +222,8 @@ var _ = Describe("Service GetAroundMe", func() {
 		})
 
 		It("Should return last members if getRank return member not found", func() {
+			start := 8
+			stop := 10
 			membersDatabaseReturn := []*database.Member{
 				&database.Member{
 					Member: "member1",
@@ -258,8 +260,6 @@ var _ = Describe("Service GetAroundMe", func() {
 				},
 			}
 
-			start, stop := calculateIndexes(totalMembers, pageSize, totalMembers)
-
 			mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(-1, database.NewMemberNotFoundError(leaderboard, member))
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
@@ -287,7 +287,8 @@ var _ = Describe("Service GetAroundMe", func() {
 		})
 
 		It("Should return error if GetOrderedMembers return in error", func() {
-			start, stop := calculateIndexes(totalMembers, pageSize, totalMembers)
+			start := 8
+			stop := 10
 
 			mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(-1, database.NewMemberNotFoundError(leaderboard, member))
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
@@ -307,29 +308,9 @@ var _ = Describe("Service GetAroundMe", func() {
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 
-			//this is the assertation relevant to this test
-			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Return(nil, fmt.Errorf("database error"))
+			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Times(1).Return(nil, fmt.Errorf("database error"))
 
-			_, err := svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
-			Expect(err).To(Equal(service.NewGeneralError("get around me", "database error")))
+			svc.GetAroundMe(context.Background(), leaderboard, pageSize, member, order, getLastIfNotFound)
 		})
 	})
 })
-
-func calculateIndexes(totalMembers, pageSize, rank int) (int, int) {
-	start := rank - (pageSize / 2)
-	if start < 0 {
-		start = 0
-	}
-
-	stop := start + pageSize - 1
-	if stop > totalMembers {
-		stop = totalMembers
-		start = stop - pageSize + 1
-		if start < 0 {
-			start = 0
-		}
-	}
-
-	return start, stop
-}

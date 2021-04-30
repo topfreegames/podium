@@ -432,7 +432,7 @@ var _ = Describe("Redis Database", func() {
 					&database.Member{
 						Member: "member1",
 						Score:  float64(1),
-						Rank:   int64(start + 0),
+						Rank:   int64(start),
 					},
 					&database.Member{
 						Member: "member2",
