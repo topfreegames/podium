@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/database"
 )
 
@@ -10,7 +9,7 @@ type Service struct {
 	database.Database
 }
 
-var _ leaderboard.Leaderboard = &Service{}
+var _ Leaderboard = &Service{}
 
 // NewService instantiate a new Service
 func NewService(database database.Database) *Service {
