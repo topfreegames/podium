@@ -116,9 +116,18 @@ var _ = Describe("Service GetTopPercentage", func() {
 		})
 	})
 
+	It("Should return InvalidOrderError when order is invalid", func() {
+		order = "not_valid_order"
+
+		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
+		Expect(err).Should(HaveOccurred())
+		Expect(err.Error()).To(Equal("invalid order: not_valid_order"))
+	})
+
 	It("Should return no members when percentage is small", func() {
 		amount = 1
 		maxMembers = 10
+		order = "desc"
 
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(10, nil)
 		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Eq(0), gomock.Eq(order)).Return([]*database.Member{}, nil)
@@ -131,6 +140,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 	It("Should return maxMembers if more members are returned by the database", func() {
 		amount = 20
 		maxMembers = 3
+		order = "desc"
 
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(1000, nil)
 		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Any(), gomock.Eq(order)).Return(membersReturnedByDatabase, nil)
@@ -142,6 +152,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 
 	It("Should return error if amount is smaller than one", func() {
 		amount = 0
+		order = "desc"
 
 		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
 		Expect(err).Should(HaveOccurred())
@@ -149,6 +160,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 
 	It("Should return error if amount is greater than 100", func() {
 		amount = 101
+		order = "desc"
 
 		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
 		Expect(err).Should(HaveOccurred())
@@ -157,6 +169,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 	It("Should return error when GetTotalMembers return error", func() {
 		amount = 10
 		maxMembers = 3
+		order = "desc"
 
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(0, errors.New("Database error example"))
 		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
@@ -168,6 +181,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 	It("Should return error when GetOrderedMembers return error", func() {
 		amount = 10
 		maxMembers = 3
+		order = "desc"
 
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(100, nil)
 		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Eq(2), gomock.Eq(order)).Return([]*database.Member{}, errors.New("Database error example"))

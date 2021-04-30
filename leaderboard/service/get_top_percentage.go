@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/topfreegames/podium/leaderboard/model"
@@ -13,11 +12,11 @@ const getTopPercentageServiceLabel = "get top percentage"
 // GetTopPercentage retrieves top x% members from the leaderboard.
 func (s *Service) GetTopPercentage(ctx context.Context, leaderboardID string, pageSize, amount, maxMembers int, order string) ([]*model.Member, error) {
 	if amount < 1 || amount > 100 {
-		return nil, fmt.Errorf("Percentage must be a valid integer between 1 and 100.")
+		return nil, NewGeneralError(getTopPercentageServiceLabel, "Percentage must be a valid integer between 1 and 100")
 	}
 
 	if order != "desc" && order != "asc" {
-		order = "desc"
+		return nil, NewInvalidOrderError(order)
 	}
 
 	amountInPercentage := float64(amount) / 100.0
