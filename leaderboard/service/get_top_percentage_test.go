@@ -90,7 +90,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 	Describe("With order = asc", func() {
 		order = "asc"
 
-		It("Should return bottom percentage members if everything is OK", func() {
+		It("Should return percentage members if everything is OK", func() {
 			amount = 3
 			maxMembers = 10
 
