@@ -116,16 +116,16 @@ var _ = Describe("Service GetTopPercentage", func() {
 		})
 	})
 
-	It("Should return one member if percentage is zero", func() {
-		amount = 0
-		membersDatabaseWillReturn := []*database.Member{membersReturnedByDatabase[0]}
+	It("Should return no members when percentage is small", func() {
+		amount = 1
+		maxMembers = 10
 
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(10, nil)
-		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Any(), gomock.Eq(order)).Return(membersDatabaseWillReturn, nil)
+		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Eq(0), gomock.Eq(order)).Return([]*database.Member{}, nil)
 
 		members, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(members).To(HaveLen(1))
+		Expect(members).To(HaveLen(0))
 	})
 
 	It("Should return maxMembers if more members are returned by the database", func() {
@@ -140,16 +140,37 @@ var _ = Describe("Service GetTopPercentage", func() {
 		Expect(members).To(HaveLen(maxMembers))
 	})
 
+	It("Should return error if amount is smaller than one", func() {
+		amount = 0
+
+		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should return error if amount is greater than 100", func() {
+		amount = 101
+
+		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
+		Expect(err).Should(HaveOccurred())
+	})
+
 	It("Should return error when GetTotalMembers return error", func() {
+		amount = 10
+		maxMembers = 3
+
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(0, errors.New("Database error example"))
+		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
 		Expect(err).Should(HaveOccurred())
 	})
 
 	It("Should return error when GetOrderedMembers return error", func() {
+		amount = 10
+		maxMembers = 3
+
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(100, nil)
-		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Any(), gomock.Eq(order)).Return([]*database.Member{}, errors.New("Database error example"))
+		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Eq(2), gomock.Eq(order)).Return([]*database.Member{}, errors.New("Database error example"))
 
 		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
 		Expect(err).Should(HaveOccurred())
