@@ -95,8 +95,10 @@ func GetDefaultTestAppWithFaultyRedis() *api.App {
 	faultyRedisClient, err := GetConnectedRedis(app)
 	Expect(err).NotTo(HaveOccurred())
 	faultyRedisClient.Client = GetFaultyRedis()
-	app.Leaderboards = leaderboard.NewClientWithRedis(faultyRedisClient)
+	leaderboard, err = leaderboard.NewClientWithRedis(faultyRedisClient)
+	Expect(err).NotTo(HaveOccurred())
 
+	app.Leaderboards = leaderboard
 	defaultFaultyRedisApp = app
 	return app
 }

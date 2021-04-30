@@ -106,8 +106,11 @@ func validateResp(statusCode int, body string, err error) {
 	}
 }
 
-func generateNMembers(amount int) string {
-	client := leaderboard.NewClientWithRedis(getRedis())
+func generateNMembers(amount int) (string, error) {
+	client, err := leaderboard.NewClientWithRedis(getRedis())
+	if err != nil {
+		return "", err
+	}
 
 	lbID := "leaderboard-0"
 

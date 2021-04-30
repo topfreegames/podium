@@ -59,7 +59,8 @@ var _ = Describe("Scores Expirer Worker", func() {
 		redisClient, err = redis.NewClient("redis", config)
 		Expect(err).NotTo(HaveOccurred())
 
-		leaderboards = leaderboard.NewClientWithRedis(redisClient)
+		leaderboards, err = leaderboard.NewClientWithRedis(redisClient)
+		Expect(err).NotTo(HaveOccurred())
 
 		p := redisClient.Client.TxPipeline()
 		p.FlushAll()

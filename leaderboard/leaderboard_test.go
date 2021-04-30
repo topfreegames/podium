@@ -62,7 +62,7 @@ var _ = Describe("Leaderboard Model", func() {
 			DB:       0,
 		})
 
-		faultyLeaderboards = NewClientWithRedis(faultyRedisClient)
+		faultyLeaderboards, err = NewClientWithRedis(faultyRedisClient)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = leaderboards.RemoveLeaderboard(NewEmptyCtx(), testLeaderboardID)
