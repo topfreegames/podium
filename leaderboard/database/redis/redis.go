@@ -20,7 +20,7 @@ type Redis interface {
 	SAdd(ctx context.Context, key, member string) error
 	SRem(ctx context.Context, key, member string) error
 	TTL(ctx context.Context, key string) (time.Duration, error)
-	ZAdd(ctx context.Context, key, member string, score float64) error
+	ZAdd(ctx context.Context, key string, members ...*Member) error
 	ZCard(ctx context.Context, key string) (int64, error)
 	ZIncrBy(ctx context.Context, key, member string, increment float64) error
 	ZRange(ctx context.Context, key string, start, stop int64) ([]*Member, error)

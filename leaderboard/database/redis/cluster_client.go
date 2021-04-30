@@ -99,8 +99,16 @@ func (cc *clusterClient) TTL(ctx context.Context, key string) (time.Duration, er
 }
 
 // ZAdd call redis ZADD function
-func (cc *clusterClient) ZAdd(ctx context.Context, key, member string, score float64) error {
-	err := cc.ClusterClient.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Err()
+func (cc *clusterClient) ZAdd(ctx context.Context, key string, members ...*Member) error {
+	goRedisMembers := make([]*goredis.Z, 0, len(members))
+	for _, member := range members {
+		goRedisMembers = append(goRedisMembers, &goredis.Z{
+			Member: member.Member,
+			Score:  member.Score,
+		})
+	}
+
+	err := cc.ClusterClient.ZAdd(ctx, key, goRedisMembers...).Err()
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}

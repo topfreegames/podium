@@ -158,7 +158,17 @@ var _ = Describe("Cluster Client", func() {
 	Describe("ZAdd", func() {
 		It("Should return nil if member is add to set", func() {
 			score := 1.0
-			err := clusterClient.ZAdd(context.Background(), testKey, member, score)
+			members := []*redis.Member{
+				&redis.Member{
+					Member: member,
+					Score:  score,
+				},
+				&redis.Member{
+					Member: "member2",
+					Score:  2.0,
+				},
+			}
+			err := clusterClient.ZAdd(context.Background(), testKey, members...)
 			Expect(err).NotTo(HaveOccurred())
 
 			returnedScore, err := goRedis.ZScore(context.Background(), testKey, member).Result()
