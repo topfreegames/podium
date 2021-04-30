@@ -75,6 +75,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 
 		It("Should return top percentage members if everything is OK", func() {
 			amount = 3
+			maxMembers = 10
 
 			mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(100, nil)
 			mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Eq(2), gomock.Eq(order)).Return(membersReturnedByDatabase, nil)
@@ -91,6 +92,7 @@ var _ = Describe("Service GetTopPercentage", func() {
 
 		It("Should return bottom percentage members if everything is OK", func() {
 			amount = 3
+			maxMembers = 10
 
 			membersDatabaseWillReturn := []*database.Member{
 				membersReturnedByDatabase[2],
