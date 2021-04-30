@@ -1,6 +1,9 @@
 package database
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Database interface standardize database calls
 type Database interface {
@@ -19,5 +22,5 @@ type Member struct {
 	Member string
 	Score  float64
 	Rank   int64
-	TTL    float64
+	TTL    time.Time
 }

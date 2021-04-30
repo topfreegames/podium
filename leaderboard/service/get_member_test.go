@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -39,7 +40,7 @@ var _ = Describe("Service GetMember", func() {
 				Member: "member1",
 				Score:  float64(1),
 				Rank:   int64(0),
-				TTL:    float64(10000),
+				TTL:    time.Unix(10000, 0),
 			},
 		}
 

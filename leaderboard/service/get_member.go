@@ -23,6 +23,6 @@ func (s *Service) GetMember(ctx context.Context, leaderboard, member string, ord
 		PublicID: databaseMembers[0].Member,
 		Score:    int64(databaseMembers[0].Score),
 		Rank:     int(databaseMembers[0].Rank) + 1,
-		ExpireAt: int(databaseMembers[0].TTL),
+		ExpireAt: int(databaseMembers[0].TTL.Unix()),
 	}, nil
 }

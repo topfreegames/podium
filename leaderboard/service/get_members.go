@@ -25,7 +25,7 @@ func (s *Service) GetMembers(ctx context.Context, leaderboard string, members []
 			PublicID: member.Member,
 			Score:    int64(member.Score),
 			Rank:     int(member.Rank) + 1,
-			ExpireAt: int(member.TTL),
+			ExpireAt: int(member.TTL.Unix()),
 		}
 		membersToReturn = append(membersToReturn, newMember)
 

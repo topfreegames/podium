@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 )
@@ -13,6 +14,8 @@ type Redis struct {
 }
 
 var _ Database = &Redis{}
+
+const ExpirationSet string = "expiration-sets"
 
 // RedisOptions is a struct to create a new redis client
 type RedisOptions struct {
@@ -71,7 +74,7 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 			return nil, NewGeneralError(err.Error())
 		}
 
-		var ttl float64 = 0
+		var ttl time.Time
 		if includeTTL {
 			ttl, err = r.getMemberTTL(ctx, leaderboard, member)
 			if err != nil {
@@ -79,7 +82,7 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 					return nil, NewGeneralError(err.Error())
 				}
 
-				ttl = float64(0)
+				ttl = time.Time{}
 			}
 		}
 
@@ -94,17 +97,17 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 	return membersToReturn, nil
 }
 
-func (r *Redis) getMemberTTL(ctx context.Context, leaderboard, member string) (float64, error) {
+func (r *Redis) getMemberTTL(ctx context.Context, leaderboard, member string) (time.Time, error) {
 	leaderboardTTL := fmt.Sprintf("%s:ttl", leaderboard)
 	ttl, err := r.Redis.ZScore(ctx, leaderboardTTL, member)
 	if err != nil {
 		if _, ok := err.(*redis.MemberNotFoundError); ok {
-			return float64(0), NewMemberNotFoundError(leaderboardTTL, member)
+			return time.Time{}, NewMemberNotFoundError(leaderboardTTL, member)
 		}
-		return float64(0), NewGeneralError(err.Error())
+		return time.Time{}, NewGeneralError(err.Error())
 	}
 
-	return ttl, nil
+	return time.Unix(int64(ttl), 0), nil
 }
 
 // GetMemberIDsWithScoreInsideRange find members with score close to

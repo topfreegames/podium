@@ -3,6 +3,7 @@ package database_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ var _ = Describe("Redis Database", func() {
 	var leaderboard string = "leaderboardTest"
 	var leaderboardTTL string = "leaderboardTest:ttl"
 	var member string = "memberTest"
+	var score float64 = 1.0
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -44,13 +46,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -75,13 +77,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -107,7 +109,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 					}
 
@@ -142,13 +144,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -164,19 +166,19 @@ var _ = Describe("Redis Database", func() {
 					Expect(members).To(Equal(expectedMembers))
 				})
 
-				It("Should return member list with TTL equals zero if redis return ok", func() {
+				It("Should return member list with empty TTL if redis return ok", func() {
 					expectedMembers := []*database.Member{
 						&database.Member{
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -199,7 +201,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -236,13 +238,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(2),
 							Rank:   int64(0),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(1),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -268,7 +270,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 					}
 
@@ -303,13 +305,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(2),
 							Rank:   int64(0),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(1),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -332,7 +334,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -607,7 +609,7 @@ var _ = Describe("Redis Database", func() {
 	})
 
 	Describe("RemoveLeaderboard", func() {
-		It("Should return nil if no error occur", func() {
+		It("Should return nil if no error happended", func() {
 			mock.EXPECT().Del(gomock.Any(), gomock.Eq(leaderboard)).Return(nil)
 
 			err := redisDatabase.RemoveLeaderboard(context.Background(), leaderboard)
