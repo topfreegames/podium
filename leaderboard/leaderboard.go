@@ -14,70 +14,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/redis/interfaces"
 	"github.com/topfreegames/podium/leaderboard/expiration"
 
 	tfgredis "github.com/topfreegames/extensions/redis"
 )
-
-//MemberNotFoundError indicates member was not found in Redis
-type MemberNotFoundError struct {
-	LeaderboardID string
-	MemberID      string
-}
-
-func (e *MemberNotFoundError) Error() string {
-	return fmt.Sprintf("Could not find data for member %s in leaderboard %s.", e.MemberID, e.LeaderboardID)
-}
-
-//NewMemberNotFound returns a new error for member not found
-func NewMemberNotFound(leaderboardID, memberID string) *MemberNotFoundError {
-	return &MemberNotFoundError{
-		LeaderboardID: leaderboardID,
-		MemberID:      memberID,
-	}
-}
-
-// Member maps an member identified by their publicID to their score and rank
-type Member struct {
-	PublicID     string `json:"publicID"`
-	Score        int64  `json:"score"`
-	Rank         int    `json:"rank"`
-	PreviousRank int    `json:"previousRank"`
-	ExpireAt     int    `json:"expireAt"`
-}
-
-//Members are a list of member
-type Members []*Member
-
-func (slice Members) Len() int {
-	return len(slice)
-}
-
-func (slice Members) Less(i, j int) bool {
-	return slice[i].Rank < slice[j].Rank
-}
-
-func (slice Members) Swap(i, j int) {
-	slice[i], slice[j] = slice[j], slice[i]
-}
-
-// Client represents the leaderboard manager object. Capable of managing multiple leaderboards.
-type Client struct {
-	redisClient *tfgredis.Client
-}
-
-func (c *Client) redisWithTracing(ctx context.Context) interfaces.RedisClient {
-	return c.redisClient.Trace(ctx)
-}
 
 func getSetScoreScript(operation string) *redis.Script {
 	return redis.NewScript(fmt.Sprintf(`
@@ -191,27 +138,6 @@ func getMemberIDWithClosestScore(redisClient interfaces.RedisClient, leaderboard
 	}
 
 	return values[0], nil
-}
-
-// NewClient creates a leaderboard prepared to receive commands (host, port, password, db and connectionTimeout are used for connecting to Redis)
-func NewClient(host string, port int, password string, db int, connectionTimeout int) (*Client, error) {
-	redisURL := url.URL{
-		Scheme: "redis",
-		User:   url.UserPassword("", password),
-		Host:   fmt.Sprintf("%s:%d", host, port),
-		Path:   fmt.Sprint(db),
-	}
-
-	config := viper.New()
-	config.Set("redis.url", redisURL.String())
-	config.Set("redis.connectionTimeout", fmt.Sprint(connectionTimeout))
-
-	cli, err := tfgredis.NewClient("redis", config)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{redisClient: cli}, nil
 }
 
 //NewClientWithRedis creates a leaderboard using an already connected tfg Redis
@@ -653,6 +579,7 @@ func (c *Client) RemoveLeaderboard(ctx context.Context, leaderboardID string) er
 	return nil
 }
 
+// Ping checks if the application is working properly
 func (c *Client) Ping(ctx context.Context) (string, error) {
 	return c.redisWithTracing(ctx).Ping().Result()
 }
