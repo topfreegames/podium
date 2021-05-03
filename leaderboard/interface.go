@@ -27,7 +27,7 @@ type Leaderboard interface {
 	TotalPages(ctx context.Context, leaderboard string, pageSize int) (int, error)
 
 	GetLeaders(ctx context.Context, leaderboard string, pageSize, page int, order string) ([]*model.Member, error)
-	// GetTopPercentage(ctx context.Context, leaderboard string, pageSize, amount, maxMembers int, order string) ([]*model.Member, error)
+	GetTopPercentage(ctx context.Context, leaderboard string, pageSize, amount, maxMembers int, order string) ([]*model.Member, error)
 
 	GetAroundMe(ctx context.Context, leaderboard string, pageSize int, member string, order string, getLastIfNotFound bool) ([]*model.Member, error)
 
