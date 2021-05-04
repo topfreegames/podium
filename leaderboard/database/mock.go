@@ -144,6 +144,20 @@ func (mr *MockDatabaseMockRecorder) Healthcheck(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Healthcheck", reflect.TypeOf((*MockDatabase)(nil).Healthcheck), ctx)
 }
 
+// IncrementMemberScore mocks base method.
+func (m *MockDatabase) IncrementMemberScore(ctx context.Context, leaderboard, member string, increment float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementMemberScore", ctx, leaderboard, member, increment)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementMemberScore indicates an expected call of IncrementMemberScore.
+func (mr *MockDatabaseMockRecorder) IncrementMemberScore(ctx, leaderboard, member, increment interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementMemberScore", reflect.TypeOf((*MockDatabase)(nil).IncrementMemberScore), ctx, leaderboard, member, increment)
+}
+
 // RemoveLeaderboard mocks base method.
 func (m *MockDatabase) RemoveLeaderboard(ctx context.Context, leaderboard string) error {
 	m.ctrl.T.Helper()

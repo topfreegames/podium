@@ -10,7 +10,7 @@ import (
 type Leaderboard interface {
 	Healthcheck(ctx context.Context) error
 
-	// IncrementMemberScore(ctx context.Context, leaderboard string, member string, increment int, scoreTTL string) (*model.Member, error)
+	IncrementMemberScore(ctx context.Context, leaderboard string, member string, increment int, scoreTTL string) (*model.Member, error)
 	SetMemberScore(ctx context.Context, leaderboard, member string, score int64, prevRank bool, scoreTTL string) (*model.Member, error)
 	SetMembersScore(ctx context.Context, leaderboard string, members []*model.Member, prevRank bool, scoreTTL string) error
 

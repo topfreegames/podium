@@ -92,20 +92,6 @@ func (s *Service) setMembersRank(ctx context.Context, leaderboard string, member
 	return nil
 }
 
-func (s *Service) getDatabaseMembers(ctx context.Context, leaderboard string, members []*model.Member, order string) ([]*database.Member, error) {
-	memberIDs := make([]string, 0, len(members))
-	for _, member := range members {
-		memberIDs = append(memberIDs, member.PublicID)
-	}
-
-	databaseMembers, err := s.Database.GetMembers(ctx, leaderboard, order, true, memberIDs...)
-	if err != nil {
-		return nil, err
-	}
-
-	return databaseMembers, nil
-}
-
 func (s *Service) persistMembersTTL(ctx context.Context, leaderboard string, members []*model.Member, scoreTTL string) error {
 	ttl, err := strconv.ParseInt(scoreTTL, 10, 64)
 	if err != nil {
@@ -130,4 +116,18 @@ func (s *Service) persistMembersTTL(ctx context.Context, leaderboard string, mem
 
 	return nil
 
+}
+
+func (s *Service) getDatabaseMembers(ctx context.Context, leaderboard string, members []*model.Member, order string) ([]*database.Member, error) {
+	memberIDs := make([]string, 0, len(members))
+	for _, member := range members {
+		memberIDs = append(memberIDs, member.PublicID)
+	}
+
+	databaseMembers, err := s.Database.GetMembers(ctx, leaderboard, order, true, memberIDs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return databaseMembers, nil
 }

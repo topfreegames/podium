@@ -14,6 +14,7 @@ type Database interface {
 	GetRank(ctx context.Context, leaderboard, member, order string) (int, error)
 	GetTotalMembers(ctx context.Context, leaderboard string) (int, error)
 	Healthcheck(ctx context.Context) error
+	IncrementMemberScore(ctx context.Context, leaderboard, member string, increment float64) error
 	RemoveLeaderboard(ctx context.Context, leaderboard string) error
 	RemoveMembers(ctx context.Context, leaderboard string, members ...string) error
 	SetLeaderboardExpiration(ctx context.Context, leaderboard string, expireAt time.Time) error

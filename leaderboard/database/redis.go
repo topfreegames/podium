@@ -207,6 +207,15 @@ func (r *Redis) Healthcheck(ctx context.Context) error {
 	return nil
 }
 
+// IncrementMemberScore add to member score the value in parameter
+func (r *Redis) IncrementMemberScore(ctx context.Context, leaderboard, member string, increment float64) error {
+	err := r.ZIncrBy(ctx, leaderboard, member, increment)
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+	return nil
+}
+
 // RemoveLeaderboard delete leaderboard key from redis
 func (r *Redis) RemoveLeaderboard(ctx context.Context, leaderboard string) error {
 	err := r.Redis.Del(ctx, leaderboard)
