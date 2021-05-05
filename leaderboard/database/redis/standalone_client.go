@@ -102,8 +102,15 @@ func (c *standaloneClient) TTL(ctx context.Context, key string) (time.Duration, 
 }
 
 // ZAdd call redis ZADD function
-func (c *standaloneClient) ZAdd(ctx context.Context, key, member string, score float64) error {
-	err := c.Client.ZAdd(ctx, key, &goredis.Z{Score: score, Member: member}).Err()
+func (c *standaloneClient) ZAdd(ctx context.Context, key string, members ...*Member) error {
+	goRedisMembers := make([]*goredis.Z, 0, len(members))
+	for _, member := range members {
+		goRedisMembers = append(goRedisMembers, &goredis.Z{
+			Member: member.Member,
+			Score:  member.Score,
+		})
+	}
+	err := c.Client.ZAdd(ctx, key, goRedisMembers...).Err()
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}

@@ -10,9 +10,9 @@ import (
 type Leaderboard interface {
 	Healthcheck(ctx context.Context) error
 
-	// IncrementMemberScore(ctx context.Context, leaderboard string, member string, increment int, scoreTTL string) (*model.Member, error)
-	// SetMemberScore(ctx context.Context, leadeboard, member string, score int64, prevRank bool, scoreTTL string) (*model.Member, error)
-	// SetMembersScore(ctx context.Context, leaderboardID string, members []*model.Member, prevRank bool, scoreTTL string) error
+	IncrementMemberScore(ctx context.Context, leaderboard string, member string, increment int, scoreTTL string) (*model.Member, error)
+	SetMemberScore(ctx context.Context, leaderboard, member string, score int64, prevRank bool, scoreTTL string) (*model.Member, error)
+	SetMembersScore(ctx context.Context, leaderboard string, members []*model.Member, prevRank bool, scoreTTL string) error
 
 	RemoveLeaderboard(ctx context.Context, leaderboard string) error
 	RemoveMember(ctx context.Context, leaderboard, member string) error
@@ -31,5 +31,5 @@ type Leaderboard interface {
 
 	GetAroundMe(ctx context.Context, leaderboard string, pageSize int, member string, order string, getLastIfNotFound bool) ([]*model.Member, error)
 
-	GetAroundScore(ctx context.Context, leaderboardID string, pageSize int, score int64, order string) ([]*model.Member, error)
+	GetAroundScore(ctx context.Context, leaderboard string, pageSize int, score int64, order string) ([]*model.Member, error)
 }

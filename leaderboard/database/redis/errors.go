@@ -31,7 +31,7 @@ func NewTTLNotFoundError(key string) *TTLNotFoundError {
 }
 
 func (knfe *TTLNotFoundError) Error() string {
-	return fmt.Sprintf("redis key %s not found", knfe.key)
+	return fmt.Sprintf("redis ttl to key %s not found", knfe.key)
 }
 
 // MemberNotFoundError is an error throw when key has not Member

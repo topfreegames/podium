@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 )
@@ -13,6 +14,8 @@ type Redis struct {
 }
 
 var _ Database = &Redis{}
+
+const ExpirationSet string = "expiration-sets"
 
 // RedisOptions is a struct to create a new redis client
 type RedisOptions struct {
@@ -39,6 +42,19 @@ func NewRedisDatabase(options RedisOptions) Database {
 		Password: options.Password,
 		DB:       options.DB,
 	})}
+}
+
+// GetLeaderboardExpiration return leaderboard expiration time
+func (r *Redis) GetLeaderboardExpiration(ctx context.Context, leaderboard string) (int64, error) {
+	duration, err := r.Redis.TTL(ctx, leaderboard)
+	if err != nil {
+		if _, ok := err.(*redis.TTLNotFoundError); ok {
+			return int64(-1), NewTTLNotFoundError(leaderboard)
+		}
+		return int64(-1), NewGeneralError(err.Error())
+	}
+
+	return int64(duration), nil
 }
 
 // GetMembers return members from leaderboard
@@ -71,7 +87,7 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 			return nil, NewGeneralError(err.Error())
 		}
 
-		var ttl float64 = 0
+		var ttl time.Time
 		if includeTTL {
 			ttl, err = r.getMemberTTL(ctx, leaderboard, member)
 			if err != nil {
@@ -79,7 +95,7 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 					return nil, NewGeneralError(err.Error())
 				}
 
-				ttl = float64(0)
+				ttl = time.Time{}
 			}
 		}
 
@@ -94,17 +110,17 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 	return membersToReturn, nil
 }
 
-func (r *Redis) getMemberTTL(ctx context.Context, leaderboard, member string) (float64, error) {
+func (r *Redis) getMemberTTL(ctx context.Context, leaderboard, member string) (time.Time, error) {
 	leaderboardTTL := fmt.Sprintf("%s:ttl", leaderboard)
 	ttl, err := r.Redis.ZScore(ctx, leaderboardTTL, member)
 	if err != nil {
 		if _, ok := err.(*redis.MemberNotFoundError); ok {
-			return float64(0), NewMemberNotFoundError(leaderboardTTL, member)
+			return time.Time{}, NewMemberNotFoundError(leaderboardTTL, member)
 		}
-		return float64(0), NewGeneralError(err.Error())
+		return time.Time{}, NewGeneralError(err.Error())
 	}
 
-	return ttl, nil
+	return time.Unix(int64(ttl), 0), nil
 }
 
 // GetMemberIDsWithScoreInsideRange find members with score close to
@@ -191,6 +207,15 @@ func (r *Redis) Healthcheck(ctx context.Context) error {
 	return nil
 }
 
+// IncrementMemberScore add to member score the value in parameter
+func (r *Redis) IncrementMemberScore(ctx context.Context, leaderboard, member string, increment float64) error {
+	err := r.ZIncrBy(ctx, leaderboard, member, increment)
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+	return nil
+}
+
 // RemoveLeaderboard delete leaderboard key from redis
 func (r *Redis) RemoveLeaderboard(ctx context.Context, leaderboard string) error {
 	err := r.Redis.Del(ctx, leaderboard)
@@ -206,5 +231,56 @@ func (r *Redis) RemoveMembers(ctx context.Context, leaderboard string, members .
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
+	return nil
+}
+
+// SetLeaderboardExpiration will set leaderboard expiration time
+func (r *Redis) SetLeaderboardExpiration(ctx context.Context, leaderboard string, expireAt time.Time) error {
+	err := r.Redis.ExpireAt(ctx, leaderboard, expireAt)
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+	return nil
+}
+
+// SetMembers will set member score and ttl
+func (r *Redis) SetMembers(ctx context.Context, leaderboard string, databaseMembers []*Member) error {
+	redisMembers := make([]*redis.Member, 0, len(databaseMembers))
+	for _, member := range databaseMembers {
+		redisMembers = append(redisMembers, &redis.Member{
+			Member: member.Member,
+			Score:  member.Score,
+		})
+	}
+	err := r.Redis.ZAdd(ctx, leaderboard, redisMembers...)
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+	return nil
+}
+
+// SetMembersTTL set member ttl in an OrderedSet and add this to expiration_worker set
+//		The TTL is a different ordered set than the original leaderboard, with key being
+//		leaderboard name and suffix ":ttl", for example to a leaderboard named test your
+//		orederedset with time to expire will be "test:ttl"
+//
+//		Note: the worker expiration set is expiration_set
+func (r *Redis) SetMembersTTL(ctx context.Context, leaderboard string, databaseMembers []*Member) error {
+	redisMembers := make([]*redis.Member, 0, len(databaseMembers))
+	for _, member := range databaseMembers {
+		redisMembers = append(redisMembers, &redis.Member{
+			Member: member.Member,
+			Score:  float64(member.TTL.Unix()),
+		})
+	}
+
+	expirationKey := fmt.Sprintf("%s:ttl", leaderboard)
+	err := r.Redis.ZAdd(ctx, expirationKey, redisMembers...)
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+
+	r.Redis.SAdd(ctx, ExpirationSet, expirationKey)
+
 	return nil
 }

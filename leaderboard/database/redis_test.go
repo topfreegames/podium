@@ -3,6 +3,7 @@ package database_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ var _ = Describe("Redis Database", func() {
 	var leaderboard string = "leaderboardTest"
 	var leaderboardTTL string = "leaderboardTest:ttl"
 	var member string = "memberTest"
+	var score float64 = 1.0
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -28,6 +30,36 @@ var _ = Describe("Redis Database", func() {
 
 	AfterEach(func() {
 		ctrl.Finish()
+	})
+
+	Describe("GetLeaderboardExpiration", func() {
+		It("Should return leaderboard expiration time if all is OK", func() {
+			expiration, err := time.ParseDuration("10h")
+			Expect(err).NotTo(HaveOccurred())
+
+			mock.EXPECT().TTL(gomock.Any(), gomock.Eq(leaderboard)).Return(expiration, nil)
+
+			ttl, err := redisDatabase.GetLeaderboardExpiration(context.Background(), leaderboard)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(ttl).To(Equal(int64(expiration)))
+		})
+
+		It("Should return TTLNotFoundError if redis redis return TTLNotFoundError", func() {
+			mock.EXPECT().TTL(gomock.Any(), gomock.Eq(leaderboard)).Return(time.Duration(-1), redis.NewTTLNotFoundError(leaderboard))
+
+			_, err := redisDatabase.GetLeaderboardExpiration(context.Background(), leaderboard)
+			Expect(err).To(Equal(database.NewTTLNotFoundError(leaderboard)))
+
+		})
+
+		It("Should return GeneralError if redis redis return any other error", func() {
+			mock.EXPECT().TTL(gomock.Any(), gomock.Eq(leaderboard)).Return(time.Duration(-1), fmt.Errorf("redis error"))
+
+			_, err := redisDatabase.GetLeaderboardExpiration(context.Background(), leaderboard)
+			Expect(err).To(Equal(database.NewGeneralError("redis error")))
+
+		})
 	})
 
 	Describe("GetMembers", func() {
@@ -44,13 +76,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -75,13 +107,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -107,7 +139,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 					}
 
@@ -142,13 +174,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -164,19 +196,19 @@ var _ = Describe("Redis Database", func() {
 					Expect(members).To(Equal(expectedMembers))
 				})
 
-				It("Should return member list with TTL equals zero if redis return ok", func() {
+				It("Should return member list with empty TTL if redis return ok", func() {
 					expectedMembers := []*database.Member{
 						&database.Member{
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -199,7 +231,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -236,13 +268,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(2),
 							Rank:   int64(0),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(1),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -268,7 +300,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(10000),
+							TTL:    time.Unix(10000, 0),
 						},
 					}
 
@@ -303,13 +335,13 @@ var _ = Describe("Redis Database", func() {
 							Member: "member1",
 							Score:  float64(2),
 							Rank:   int64(0),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 						&database.Member{
 							Member: "member2",
 							Score:  float64(1),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -332,7 +364,7 @@ var _ = Describe("Redis Database", func() {
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
-							TTL:    float64(0),
+							TTL:    time.Time{},
 						},
 					}
 
@@ -607,7 +639,7 @@ var _ = Describe("Redis Database", func() {
 	})
 
 	Describe("RemoveLeaderboard", func() {
-		It("Should return nil if no error occur", func() {
+		It("Should return nil if no error happended", func() {
 			mock.EXPECT().Del(gomock.Any(), gomock.Eq(leaderboard)).Return(nil)
 
 			err := redisDatabase.RemoveLeaderboard(context.Background(), leaderboard)
@@ -619,6 +651,102 @@ var _ = Describe("Redis Database", func() {
 
 			err := redisDatabase.RemoveLeaderboard(context.Background(), leaderboard)
 			Expect(err).To(Equal(database.NewGeneralError(redis.NewGeneralError("New redis error").Error())))
+		})
+	})
+
+	Describe("SetLeaderboardExpiration", func() {
+		It("Should return nil if all is ok", func() {
+			expireTime := time.Unix(123456, 0)
+			mock.EXPECT().ExpireAt(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(expireTime)).Return(nil)
+
+			err := redisDatabase.SetLeaderboardExpiration(context.Background(), leaderboard, expireTime)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should return GeneralError if redis return in error", func() {
+			expireTime := time.Unix(123456, 0)
+			mock.EXPECT().ExpireAt(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(expireTime)).Return(fmt.Errorf("New redis error"))
+
+			err := redisDatabase.SetLeaderboardExpiration(context.Background(), leaderboard, expireTime)
+			Expect(err).To(Equal(database.NewGeneralError("New redis error")))
+		})
+	})
+
+	Describe("SetMembersScore", func() {
+		redisMembers := []*redis.Member{
+			&redis.Member{
+				Member: member,
+				Score:  score,
+			},
+			&redis.Member{
+				Member: "member2",
+				Score:  2.0,
+			},
+		}
+
+		databaseMembers := []*database.Member{
+			&database.Member{
+				Member: member,
+				Score:  score,
+			},
+			&database.Member{
+				Member: "member2",
+				Score:  2.0,
+			},
+		}
+		It("Should return nil if all is ok", func() {
+			mock.EXPECT().ZAdd(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(redisMembers[0]), gomock.Eq(redisMembers[1])).Return(nil)
+
+			err := redisDatabase.SetMembers(context.Background(), leaderboard, databaseMembers)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should return GeneralError if redis return in error", func() {
+			mock.EXPECT().ZAdd(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(redisMembers[0]), gomock.Eq(redisMembers[1])).Return(fmt.Errorf("New redis error"))
+
+			err := redisDatabase.SetMembers(context.Background(), leaderboard, databaseMembers)
+			Expect(err).To(Equal(database.NewGeneralError("New redis error")))
+		})
+	})
+
+	Describe("SetMembersTTL", func() {
+		time1 := time.Now().Add(-2 * time.Hour)
+		time2 := time.Now().Add(-12 * time.Hour)
+		leaderboardTTL := fmt.Sprintf("%s:ttl", leaderboard)
+		redisMembers := []*redis.Member{
+			&redis.Member{
+				Member: member,
+				Score:  float64(time1.Unix()),
+			},
+			&redis.Member{
+				Member: "member2",
+				Score:  float64(time2.Unix()),
+			},
+		}
+
+		databaseMembers := []*database.Member{
+			&database.Member{
+				Member: member,
+				TTL:    time1,
+			},
+			&database.Member{
+				Member: "member2",
+				TTL:    time2,
+			},
+		}
+		It("Should return nil if all is ok", func() {
+			mock.EXPECT().ZAdd(gomock.Any(), gomock.Eq(leaderboardTTL), gomock.Eq(redisMembers[0]), gomock.Eq(redisMembers[1])).Return(nil)
+			mock.EXPECT().SAdd(gomock.Any(), gomock.Eq(database.ExpirationSet), gomock.Eq(leaderboardTTL)).Return(nil)
+
+			err := redisDatabase.SetMembersTTL(context.Background(), leaderboard, databaseMembers)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should return GeneralError if redis return in error", func() {
+			mock.EXPECT().ZAdd(gomock.Any(), gomock.Eq(leaderboardTTL), gomock.Eq(redisMembers[0]), gomock.Eq(redisMembers[1])).Return(fmt.Errorf("New redis error"))
+
+			err := redisDatabase.SetMembersTTL(context.Background(), leaderboard, databaseMembers)
+			Expect(err).To(Equal(database.NewGeneralError("New redis error")))
 		})
 	})
 })

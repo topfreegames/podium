@@ -122,17 +122,22 @@ func (mr *MockRedisMockRecorder) TTL(ctx, key interface{}) *gomock.Call {
 }
 
 // ZAdd mocks base method.
-func (m *MockRedis) ZAdd(ctx context.Context, key, member string, score float64) error {
+func (m *MockRedis) ZAdd(ctx context.Context, key string, members ...*Member) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ZAdd", ctx, key, member, score)
+	varargs := []interface{}{ctx, key}
+	for _, a := range members {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ZAdd", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ZAdd indicates an expected call of ZAdd.
-func (mr *MockRedisMockRecorder) ZAdd(ctx, key, member, score interface{}) *gomock.Call {
+func (mr *MockRedisMockRecorder) ZAdd(ctx, key interface{}, members ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZAdd", reflect.TypeOf((*MockRedis)(nil).ZAdd), ctx, key, member, score)
+	varargs := append([]interface{}{ctx, key}, members...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZAdd", reflect.TypeOf((*MockRedis)(nil).ZAdd), varargs...)
 }
 
 // ZCard mocks base method.

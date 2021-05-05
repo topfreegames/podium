@@ -7,6 +7,7 @@ package database
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -32,6 +33,21 @@ func NewMockDatabase(ctrl *gomock.Controller) *MockDatabase {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 	return m.recorder
+}
+
+// GetLeaderboardExpiration mocks base method.
+func (m *MockDatabase) GetLeaderboardExpiration(ctx context.Context, leaderboard string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLeaderboardExpiration", ctx, leaderboard)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLeaderboardExpiration indicates an expected call of GetLeaderboardExpiration.
+func (mr *MockDatabaseMockRecorder) GetLeaderboardExpiration(ctx, leaderboard interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLeaderboardExpiration", reflect.TypeOf((*MockDatabase)(nil).GetLeaderboardExpiration), ctx, leaderboard)
 }
 
 // GetMemberIDsWithScoreInsideRange mocks base method.
@@ -128,6 +144,20 @@ func (mr *MockDatabaseMockRecorder) Healthcheck(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Healthcheck", reflect.TypeOf((*MockDatabase)(nil).Healthcheck), ctx)
 }
 
+// IncrementMemberScore mocks base method.
+func (m *MockDatabase) IncrementMemberScore(ctx context.Context, leaderboard, member string, increment float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementMemberScore", ctx, leaderboard, member, increment)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementMemberScore indicates an expected call of IncrementMemberScore.
+func (mr *MockDatabaseMockRecorder) IncrementMemberScore(ctx, leaderboard, member, increment interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementMemberScore", reflect.TypeOf((*MockDatabase)(nil).IncrementMemberScore), ctx, leaderboard, member, increment)
+}
+
 // RemoveLeaderboard mocks base method.
 func (m *MockDatabase) RemoveLeaderboard(ctx context.Context, leaderboard string) error {
 	m.ctrl.T.Helper()
@@ -159,4 +189,46 @@ func (mr *MockDatabaseMockRecorder) RemoveMembers(ctx, leaderboard interface{}, 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, leaderboard}, members...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveMembers", reflect.TypeOf((*MockDatabase)(nil).RemoveMembers), varargs...)
+}
+
+// SetLeaderboardExpiration mocks base method.
+func (m *MockDatabase) SetLeaderboardExpiration(ctx context.Context, leaderboard string, expireAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetLeaderboardExpiration", ctx, leaderboard, expireAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetLeaderboardExpiration indicates an expected call of SetLeaderboardExpiration.
+func (mr *MockDatabaseMockRecorder) SetLeaderboardExpiration(ctx, leaderboard, expireAt interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLeaderboardExpiration", reflect.TypeOf((*MockDatabase)(nil).SetLeaderboardExpiration), ctx, leaderboard, expireAt)
+}
+
+// SetMembers mocks base method.
+func (m *MockDatabase) SetMembers(ctx context.Context, leaderboard string, databaseMembers []*Member) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetMembers", ctx, leaderboard, databaseMembers)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetMembers indicates an expected call of SetMembers.
+func (mr *MockDatabaseMockRecorder) SetMembers(ctx, leaderboard, databaseMembers interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMembers", reflect.TypeOf((*MockDatabase)(nil).SetMembers), ctx, leaderboard, databaseMembers)
+}
+
+// SetMembersTTL mocks base method.
+func (m *MockDatabase) SetMembersTTL(ctx context.Context, leaderboard string, databaseMembers []*Member) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetMembersTTL", ctx, leaderboard, databaseMembers)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetMembersTTL indicates an expected call of SetMembersTTL.
+func (mr *MockDatabaseMockRecorder) SetMembersTTL(ctx, leaderboard, databaseMembers interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMembersTTL", reflect.TypeOf((*MockDatabase)(nil).SetMembersTTL), ctx, leaderboard, databaseMembers)
 }

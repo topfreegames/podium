@@ -49,3 +49,19 @@ func NewMemberNotFoundError(leaderboard, member string) *MemberNotFoundError {
 		member:      member,
 	}
 }
+
+// TTLNotFoundError is an error throw when key has not TTL
+type TTLNotFoundError struct {
+	leaderboard string
+}
+
+// NewTTLNotFoundError create a new KeyNotFoundError
+func NewTTLNotFoundError(leaderboard string) *TTLNotFoundError {
+	return &TTLNotFoundError{
+		leaderboard: leaderboard,
+	}
+}
+
+func (tnfe *TTLNotFoundError) Error() string {
+	return fmt.Sprintf("ttl to leaderboard %s not found", tnfe.leaderboard)
+}
