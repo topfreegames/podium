@@ -159,11 +159,11 @@ var _ = Describe("Cluster Client", func() {
 		It("Should return nil if member is add to set", func() {
 			score := 1.0
 			members := []*redis.Member{
-				&redis.Member{
+				{
 					Member: member,
 					Score:  score,
 				},
-				&redis.Member{
+				{
 					Member: "member2",
 					Score:  2.0,
 				},
