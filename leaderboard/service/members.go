@@ -44,7 +44,7 @@ func (s *Service) fetchMemberRank(ctx context.Context, leaderboard, member, orde
 		}
 	}
 
-	return memberRank, nil
+	return memberRank + 1, nil
 }
 
 func (s *Service) setMembersPreviousRank(ctx context.Context, leaderboard string, members []*model.Member, order string) error {
@@ -56,7 +56,10 @@ func (s *Service) setMembersPreviousRank(ctx context.Context, leaderboard string
 	for i, member := range members {
 		if databaseMembers[i] != nil {
 			member.PreviousRank = int(databaseMembers[i].Rank + 1)
+			continue
 		}
+
+		member.PreviousRank = -1
 	}
 
 	return nil
@@ -79,7 +82,7 @@ func (s *Service) persistMembers(ctx context.Context, leaderboard string, member
 	return nil
 }
 
-func (s *Service) setMembersRank(ctx context.Context, leaderboard string, members []*model.Member, order string) error {
+func (s *Service) setMembersValues(ctx context.Context, leaderboard string, members []*model.Member, order string) error {
 	databaseMembers, err := s.getDatabaseMembers(ctx, leaderboard, members, order)
 	if err != nil {
 		return err
@@ -87,6 +90,7 @@ func (s *Service) setMembersRank(ctx context.Context, leaderboard string, member
 
 	for i, member := range databaseMembers {
 		members[i].Rank = int(member.Rank + 1)
+		members[i].Score = int64(member.Score)
 	}
 
 	return nil

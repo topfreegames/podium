@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -28,4 +29,8 @@ type Member struct {
 	Score  float64
 	Rank   int64
 	TTL    time.Time
+}
+
+func (m *Member) String() string {
+	return fmt.Sprintf("{Member: %s, Score: %f, Rank: %d, TTL: %v}", m.Member, m.Score, m.Rank, m.TTL)
 }

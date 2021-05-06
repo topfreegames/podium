@@ -47,7 +47,7 @@ var _ = Describe("Service GetMembers", func() {
 				Member: "member3",
 				Score:  float64(3),
 				Rank:   int64(1),
-				TTL:    time.Unix(10001, 0),
+				TTL:    time.Time{},
 			},
 		}
 
@@ -63,7 +63,7 @@ var _ = Describe("Service GetMembers", func() {
 				PublicID: "member3",
 				Score:    3,
 				Rank:     0 + 1 + 1,
-				ExpireAt: 10001,
+				ExpireAt: 0,
 			},
 		}
 

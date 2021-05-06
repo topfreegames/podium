@@ -37,8 +37,8 @@ var _ = Describe("Service GetAroundScore", func() {
 
 	It("Should return members slice if all is OK", func() {
 		rank := 6
-		start := 5
-		stop := 7
+		start := 6
+		stop := 8
 
 		membersDatabaseReturn := []*database.Member{
 			&database.Member{
@@ -130,8 +130,8 @@ var _ = Describe("Service GetAroundScore", func() {
 
 	It("Should return error if GetOrderedMembers return in error", func() {
 		rank := 6
-		start := 5
-		stop := 7
+		start := 6
+		stop := 8
 
 		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{member}, nil)
 		mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(rank, nil)
@@ -160,7 +160,7 @@ var _ = Describe("Service GetAroundScore", func() {
 
 	It("Should ask for last members if user is the last one", func() {
 		rank := 10
-		start := 8
+		start := 7
 		stop := 10
 
 		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{member}, nil)

@@ -14,7 +14,7 @@ import (
 	"github.com/topfreegames/podium/leaderboard/service"
 )
 
-var _ = Describe("Service SetMemberScore", func() {
+var _ = Describe("Service IncrementMemberScore", func() {
 	var ctrl *gomock.Controller
 	var mock *database.MockDatabase
 	var svc *service.Service
@@ -27,7 +27,7 @@ var _ = Describe("Service SetMemberScore", func() {
 	databaseMembersReturned := []*database.Member{
 		{
 			Member: "member1",
-			Score:  1.0,
+			Score:  2.0,
 			Rank:   int64(1),
 		},
 	}
@@ -43,11 +43,35 @@ var _ = Describe("Service SetMemberScore", func() {
 		ctrl.Finish()
 	})
 
+	It("Should increment member score if all is ok", func() {
+		expectedMember := &model.Member{
+			PublicID:     "member1",
+			Score:        2,
+			PreviousRank: 0,
+			Rank:         2,
+		}
+
+		mock.EXPECT().IncrementMemberScore(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(float64(score))).Return(nil)
+
+		mock.EXPECT().GetMembers(
+			gomock.Any(),
+			gomock.Eq(leaderboard),
+			gomock.Eq("desc"),
+			gomock.Eq(true),
+			gomock.Eq(member),
+		).Return(databaseMembersReturned, nil)
+
+		member, err := svc.IncrementMemberScore(context.Background(), leaderboard, member, score, scoreTTL)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(member).To(Equal(expectedMember))
+	})
+
 	Describe("When scoreTTL is empty", func() {
 		It("Should SetMembers without filling expire ordered set", func() {
 			expectedMember := &model.Member{
 				PublicID:     "member1",
-				Score:        1,
+				Score:        2,
 				PreviousRank: 0,
 				Rank:         2,
 			}
@@ -60,7 +84,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(member),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			member, err := svc.IncrementMemberScore(context.Background(), leaderboard, member, score, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -81,7 +104,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(member),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			mock.EXPECT().SetMembersTTL(gomock.Any(), gomock.Eq(leaderboard), gomock.Any()).Times(1).Return(nil)
 
@@ -104,7 +126,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(member),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			_, err := svc.IncrementMemberScore(context.Background(), leaderboard, member, score, scoreTTL)
 			Expect(err).To(MatchError(service.NewGeneralError("increment member score", "strconv.ParseInt: parsing \"invalid\": invalid syntax")))
@@ -132,6 +153,29 @@ var _ = Describe("Service SetMemberScore", func() {
 		_, err := svc.IncrementMemberScore(context.Background(), leaderboard, member, score, scoreTTL)
 		Expect(err).To(MatchError(service.NewGeneralError("increment member score", "New database error")))
 
+	})
+
+	It("Should not call database GetLeaderboardExpiration and SetLeaderboardExpiration if leaderboard isn't formatted to have an expiration", func() {
+		expectedMember := &model.Member{
+			PublicID:     "member1",
+			Score:        2,
+			PreviousRank: 0,
+			Rank:         2,
+		}
+
+		mock.EXPECT().IncrementMemberScore(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(float64(score))).Return(nil)
+		mock.EXPECT().GetMembers(
+			gomock.Any(),
+			gomock.Eq(leaderboard),
+			gomock.Eq("desc"),
+			gomock.Eq(true),
+			gomock.Eq(member),
+		).Return(databaseMembersReturned, nil)
+
+		member, err := svc.IncrementMemberScore(context.Background(), leaderboard, member, score, scoreTTL)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(member).To(Equal(expectedMember))
 	})
 
 	It("Should set leaderboard expiration if GetLeaderboardExpiration return TTLNotFoundError", func() {

@@ -15,7 +15,7 @@ func NewKeyNotFoundError(key string) *KeyNotFoundError {
 }
 
 func (knfe *KeyNotFoundError) Error() string {
-	return fmt.Sprintf("redis key %s not found", knfe.key)
+	return fmt.Sprintf("redis: key %s not found", knfe.key)
 }
 
 // TTLNotFoundError is an error throw when key has not TTL
@@ -31,7 +31,7 @@ func NewTTLNotFoundError(key string) *TTLNotFoundError {
 }
 
 func (knfe *TTLNotFoundError) Error() string {
-	return fmt.Sprintf("redis ttl to key %s not found", knfe.key)
+	return fmt.Sprintf("redis: ttl to key %s not found", knfe.key)
 }
 
 // MemberNotFoundError is an error throw when key has not Member
@@ -48,7 +48,7 @@ func NewMemberNotFoundError(key, member string) *MemberNotFoundError {
 }
 
 func (mnfe *MemberNotFoundError) Error() string {
-	return fmt.Sprintf("redis key %s not have member %s found", mnfe.key, mnfe.member)
+	return fmt.Sprintf("redis: key %s not have member %s found", mnfe.key, mnfe.member)
 }
 
 // GeneralError create a redis error that is not handled
@@ -57,7 +57,7 @@ type GeneralError struct {
 }
 
 func (ue *GeneralError) Error() string {
-	return fmt.Sprintf("redis error: %s", ue.msg)
+	return fmt.Sprintf("redis: error: %s", ue.msg)
 }
 
 // NewGeneralError create a new redis error that isnt handled
