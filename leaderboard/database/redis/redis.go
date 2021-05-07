@@ -15,9 +15,11 @@ const (
 // Redis interface define wich redis methods will be used by leaderboard module
 type Redis interface {
 	Del(ctx context.Context, key string) error
+	Exists(ctx context.Context, key string) error
 	ExpireAt(ctx context.Context, key string, time time.Time) error
 	Ping(ctx context.Context) (string, error)
 	SAdd(ctx context.Context, key, member string) error
+	SMembers(ctx context.Context, key string) ([]string, error)
 	SRem(ctx context.Context, key, member string) error
 	TTL(ctx context.Context, key string) (time.Duration, error)
 	ZAdd(ctx context.Context, key string, members ...*Member) error

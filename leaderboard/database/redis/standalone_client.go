@@ -43,6 +43,19 @@ func (c *standaloneClient) Del(ctx context.Context, key string) error {
 	return nil
 }
 
+// Exists return if a key exists on redis
+func (c *standaloneClient) Exists(ctx context.Context, key string) error {
+	value, err := c.Client.Exists(ctx, key).Result()
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+	if value != 1 {
+		return NewKeyNotFoundError(key)
+	}
+
+	return nil
+}
+
 // ExpireAt call redis EXPIREAT function
 func (c *standaloneClient) ExpireAt(ctx context.Context, key string, time time.Time) error {
 	result, err := c.Client.ExpireAt(ctx, key, time).Result()
@@ -72,6 +85,15 @@ func (c *standaloneClient) SAdd(ctx context.Context, key, member string) error {
 		return NewGeneralError(err.Error())
 	}
 	return nil
+}
+
+// SMembers return all members in a set
+func (c *standaloneClient) SMembers(ctx context.Context, key string) ([]string, error) {
+	result, err := c.Client.SMembers(ctx, key).Result()
+	if err != nil {
+		return nil, NewGeneralError(err.Error())
+	}
+	return result, nil
 }
 
 // SRem call redis SREM function

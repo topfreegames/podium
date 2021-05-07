@@ -39,6 +39,19 @@ func (cc *clusterClient) Del(ctx context.Context, key string) error {
 	return nil
 }
 
+func (cc *clusterClient) Exists(ctx context.Context, key string) error {
+	value, err := cc.ClusterClient.Exists(ctx, key).Result()
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
+
+	if value != 1 {
+		return NewKeyNotFoundError(key)
+	}
+
+	return nil
+}
+
 // ExpireAt call redis EXPIREAT function
 func (cc *clusterClient) ExpireAt(ctx context.Context, key string, time time.Time) error {
 	result, err := cc.ClusterClient.ExpireAt(ctx, key, time).Result()
@@ -69,6 +82,15 @@ func (cc *clusterClient) SAdd(ctx context.Context, key, member string) error {
 		return NewGeneralError(err.Error())
 	}
 	return nil
+}
+
+// SMembers return all members in a set
+func (cc *clusterClient) SMembers(ctx context.Context, key string) ([]string, error) {
+	result, err := cc.ClusterClient.SMembers(ctx, key).Result()
+	if err != nil {
+		return nil, NewGeneralError(err.Error())
+	}
+	return result, nil
 }
 
 // SRem call redis SREM function

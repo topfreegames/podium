@@ -15,6 +15,7 @@ type Redis struct {
 
 var _ Database = &Redis{}
 
+// ExpirationSet is used to list expirations set that worker will use to remove members
 const ExpirationSet string = "expiration-sets"
 
 // RedisOptions is a struct to create a new redis client
