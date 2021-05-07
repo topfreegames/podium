@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/topfreegames/podium/leaderboard/model"
 )
@@ -19,10 +20,15 @@ func (s *Service) GetMember(ctx context.Context, leaderboard, member string, ord
 		return nil, NewMemberNotFoundError(leaderboard, member)
 	}
 
+	var ttl int64 = 0
+	if (databaseMembers[0].TTL != time.Time{}) {
+		ttl = databaseMembers[0].TTL.Unix()
+	}
+
 	return &model.Member{
 		PublicID: databaseMembers[0].Member,
 		Score:    int64(databaseMembers[0].Score),
 		Rank:     int(databaseMembers[0].Rank) + 1,
-		ExpireAt: int(databaseMembers[0].TTL.Unix()),
+		ExpireAt: int(ttl),
 	}, nil
 }
