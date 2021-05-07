@@ -11,8 +11,12 @@ const getLeadersServiceLabel = "get leaders"
 
 // GetLeaders reurn leaders
 func (s *Service) GetLeaders(ctx context.Context, leaderboard string, pageSize, page int, order string) ([]*model.Member, error) {
-	err := s.ensureValidPage(ctx, leaderboard, pageSize, page)
+	page, err := s.ensureValidPage(ctx, leaderboard, pageSize, page)
 	if err != nil {
+		if _, ok := err.(*PageOutOfRangeError); ok {
+			return []*model.Member{}, nil
+		}
+
 		return nil, err
 	}
 
@@ -27,17 +31,21 @@ func (s *Service) GetLeaders(ctx context.Context, leaderboard string, pageSize, 
 	return members, nil
 }
 
-func (s *Service) ensureValidPage(ctx context.Context, leaderboard string, pageSize int, page int) error {
+func (s *Service) ensureValidPage(ctx context.Context, leaderboard string, pageSize int, page int) (int, error) {
 	totalMembers, err := s.Database.GetTotalMembers(ctx, leaderboard)
 	if err != nil {
-		return NewGeneralError(getLeadersServiceLabel, err.Error())
+		return -1, NewGeneralError(getLeadersServiceLabel, err.Error())
 	}
 
 	totalPages := int(math.Ceil(float64(totalMembers) / float64(pageSize)))
 
-	if page > totalPages || page < 1 {
-		return NewPageOutOfRangeError(page, totalPages)
+	if page < 1 {
+		return 1, nil
 	}
 
-	return nil
+	if page > totalPages {
+		return -1, NewPageOutOfRangeError(page, totalPages)
+	}
+
+	return page, nil
 }
