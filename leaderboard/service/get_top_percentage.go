@@ -16,7 +16,7 @@ func (s *Service) GetTopPercentage(ctx context.Context, leaderboardID string, pa
 	}
 
 	if order != "desc" && order != "asc" {
-		return nil, NewInvalidOrderError(order)
+		order = "desc"
 	}
 
 	amountInPercentage := float64(amount) / 100.0
