@@ -2,9 +2,8 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 
-	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/model"
 )
 
@@ -21,12 +20,8 @@ func (s *Service) GetAroundScore(ctx context.Context, leaderboard string, pageSi
 		return nil, err
 	}
 
-	memberRank, err := s.fetchMemberRank(ctx, leaderboard, member, order, false)
+	memberRank, err := s.fetchMemberRank(ctx, leaderboard, member, order, true)
 	if err != nil {
-		if _, ok := err.(*database.MemberNotFoundError); ok {
-			return nil, NewMemberNotFoundError(leaderboard, member)
-		}
-
 		return nil, NewGeneralError(getAroundScoreServiceLabel, err.Error())
 	}
 
@@ -46,12 +41,12 @@ func (s *Service) GetAroundScore(ctx context.Context, leaderboard string, pageSi
 }
 
 func (s *Service) getMemberIDWithClosestScore(ctx context.Context, leaderboard string, score int64) (string, error) {
-	memberSlice, err := s.Database.GetMemberIDsWithScoreInsideRange(ctx, leaderboard, "-inf", fmt.Sprint(score), 0, 1)
+	memberSlice, err := s.Database.GetMemberIDsWithScoreInsideRange(ctx, leaderboard, "-inf", strconv.FormatInt(score, 10), 0, 1)
 	if err != nil {
 		return "", NewGeneralError(getAroundScoreServiceLabel, err.Error())
 	}
 	if len(memberSlice) == 0 {
-		return "", NewMemberNotFoundError(leaderboard, fmt.Sprint(score))
+		return "", nil
 	}
 
 	return memberSlice[0], nil

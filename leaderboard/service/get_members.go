@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"sort"
+	"time"
 
 	"github.com/topfreegames/podium/leaderboard/model"
 )
@@ -18,18 +20,24 @@ func (s *Service) GetMembers(ctx context.Context, leaderboard string, members []
 	membersToReturn := make([]*model.Member, 0, len(databaseMembers))
 	for _, member := range databaseMembers {
 		if member == nil {
-			membersToReturn = append(membersToReturn, nil)
 			continue
+		}
+
+		var ttl int64
+		if (member.TTL != time.Time{}) {
+			ttl = member.TTL.Unix()
 		}
 		newMember := &model.Member{
 			PublicID: member.Member,
 			Score:    int64(member.Score),
 			Rank:     int(member.Rank) + 1,
-			ExpireAt: int(member.TTL.Unix()),
+			ExpireAt: int(ttl),
 		}
 		membersToReturn = append(membersToReturn, newMember)
 
 	}
+
+	sort.SliceStable(membersToReturn, func(i, j int) bool { return membersToReturn[i].Rank < membersToReturn[j].Rank })
 
 	return membersToReturn, nil
 }

@@ -26,11 +26,10 @@ func (s *Service) calculateIndexesAroundMemberRank(ctx context.Context, leaderbo
 	if start < 0 {
 		start = 0
 	}
-
-	stop := start + pageSize - 1
+	stop := (start + pageSize) - 1
 	if stop > totalMembers {
 		stop = totalMembers
-		start = stop - pageSize + 1
+		start = stop - pageSize
 		if start < 0 {
 			start = 0
 		}

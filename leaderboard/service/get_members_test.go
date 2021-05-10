@@ -36,34 +36,85 @@ var _ = Describe("Service GetMembers", func() {
 
 	It("Should return members slice if all is OK", func() {
 		membersDatabaseReturn := []*database.Member{
-			&database.Member{
+			{
 				Member: "member1",
 				Score:  float64(1),
 				Rank:   int64(0),
 				TTL:    time.Unix(10000, 0),
 			},
 			nil,
-			&database.Member{
+			{
 				Member: "member3",
 				Score:  float64(3),
 				Rank:   int64(1),
-				TTL:    time.Unix(10001, 0),
+				TTL:    time.Time{},
 			},
 		}
 
 		membersReturn := []*model.Member{
-			&model.Member{
+			{
 				PublicID: "member1",
 				Score:    1,
-				Rank:     0 + 0 + 1,
+				Rank:     1,
 				ExpireAt: 10000,
 			},
-			nil,
-			&model.Member{
+			{
 				PublicID: "member3",
 				Score:    3,
-				Rank:     0 + 1 + 1,
-				ExpireAt: 10001,
+				Rank:     2,
+				ExpireAt: 0,
+			},
+		}
+
+		mock.EXPECT().GetMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(order), gomock.Eq(includeTTL), gomock.Eq("member1"), gomock.Eq("member2"), gomock.Eq("member3")).Return(membersDatabaseReturn, nil)
+
+		membersFromService, err := svc.GetMembers(context.Background(), leaderboard, members, order, includeTTL)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(membersFromService).To(Equal(membersReturn))
+	})
+
+	It("Should order members", func() {
+		membersDatabaseReturn := []*database.Member{
+			{
+				Member: "member1",
+				Score:  float64(1),
+				Rank:   int64(0),
+				TTL:    time.Unix(10000, 0),
+			},
+			{
+				Member: "member3",
+				Score:  float64(3),
+				Rank:   int64(2),
+				TTL:    time.Unix(10000, 0),
+			},
+			nil,
+			{
+				Member: "member2",
+				Score:  float64(2),
+				Rank:   int64(1),
+				TTL:    time.Time{},
+			},
+		}
+
+		membersReturn := []*model.Member{
+			{
+				PublicID: "member1",
+				Score:    1,
+				Rank:     1,
+				ExpireAt: 10000,
+			},
+			{
+				PublicID: "member2",
+				Score:    2,
+				Rank:     2,
+				ExpireAt: 0,
+			},
+			{
+				PublicID: "member3",
+				Score:    3,
+				Rank:     3,
+				ExpireAt: 10000,
 			},
 		}
 
