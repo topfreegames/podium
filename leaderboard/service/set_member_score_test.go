@@ -224,6 +224,29 @@ var _ = Describe("Service SetMemberScore", func() {
 
 	})
 
+	It("Should not call database GetLeaderboardExpiration and SetLeaderboardExpiration if leaderboard isn't formatted to have an expiration", func() {
+		expectedMember := &model.Member{
+			PublicID:     "member1",
+			Score:        1,
+			PreviousRank: 0,
+			Rank:         2,
+		}
+
+		mock.EXPECT().SetMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(databaseMembersToInsert)).Times(1).Return(nil)
+		mock.EXPECT().GetMembers(
+			gomock.Any(),
+			gomock.Eq(leaderboard),
+			gomock.Eq("desc"),
+			gomock.Eq(true),
+			gomock.Eq(databaseMembersToGetRank[0]),
+		).Return(databaseMembersReturned, nil)
+
+		member, err := svc.SetMemberScore(context.Background(), leaderboard, member, score, previousRank, scoreTTL)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(member).To(Equal(expectedMember))
+	})
+
 	It("Should set leaderboard expiration if GetLeaderboardExpiration return TTLNotFoundError", func() {
 		leaderboardExpiration := fmt.Sprintf("year%d", time.Now().UTC().Year())
 		expireAt, err := expiration.GetExpireAt(leaderboardExpiration)
