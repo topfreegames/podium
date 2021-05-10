@@ -35,7 +35,7 @@ func NewMemberNotFoundError(leaderboard, member string) *MemberNotFoundError {
 }
 
 func (mnfe *MemberNotFoundError) Error() string {
-	return fmt.Sprintf("leaderboard member %s not found in leaderboard %s", mnfe.member, mnfe.leaderboard)
+	return fmt.Sprintf("Could not find data for member %s in leaderboard %s.", mnfe.member, mnfe.leaderboard)
 }
 
 // PageOutOfRangeError is an error threw when a page if out of permited range
