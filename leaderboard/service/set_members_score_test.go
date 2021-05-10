@@ -113,7 +113,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -170,7 +169,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -240,7 +238,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -273,7 +270,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			mock.EXPECT().SetMembersTTL(gomock.Any(), gomock.Eq(leaderboard), gomock.Any()).Times(1).Return(nil)
 
@@ -309,7 +305,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).To(MatchError(service.NewGeneralError("set members score", "strconv.ParseInt: parsing \"invalid\": invalid syntax")))

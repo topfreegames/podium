@@ -80,7 +80,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(databaseMembersToGetRank[0]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			member, err := svc.SetMemberScore(context.Background(), leaderboard, member, score, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -116,7 +115,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(databaseMembersToGetRank[0]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			member, err := svc.SetMemberScore(context.Background(), leaderboard, member, score, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -155,7 +153,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(databaseMembersToGetRank[0]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			member, err := svc.SetMemberScore(context.Background(), leaderboard, member, score, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -176,7 +173,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(databaseMembersToGetRank[0]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			mock.EXPECT().SetMembersTTL(gomock.Any(), gomock.Eq(leaderboard), gomock.Any()).Times(1).Return(nil)
 
@@ -199,7 +195,6 @@ var _ = Describe("Service SetMemberScore", func() {
 				gomock.Eq(true),
 				gomock.Eq(databaseMembersToGetRank[0]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			_, err := svc.SetMemberScore(context.Background(), leaderboard, member, score, previousRank, scoreTTL)
 			Expect(err).To(MatchError(service.NewGeneralError("set member score", "strconv.ParseInt: parsing \"invalid\": invalid syntax")))
