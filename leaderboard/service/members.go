@@ -79,7 +79,7 @@ func (s *Service) persistMembers(ctx context.Context, leaderboard string, member
 	return nil
 }
 
-func (s *Service) setMembersRank(ctx context.Context, leaderboard string, members []*model.Member, order string) error {
+func (s *Service) setMembersValues(ctx context.Context, leaderboard string, members []*model.Member, order string) error {
 	databaseMembers, err := s.getDatabaseMembers(ctx, leaderboard, members, order)
 	if err != nil {
 		return err
@@ -87,6 +87,7 @@ func (s *Service) setMembersRank(ctx context.Context, leaderboard string, member
 
 	for i, member := range databaseMembers {
 		members[i].Rank = int(member.Rank + 1)
+		members[i].Score = int64(member.Score)
 	}
 
 	return nil

@@ -113,7 +113,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -170,7 +169,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -240,7 +238,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).NotTo(HaveOccurred())
@@ -273,7 +270,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			mock.EXPECT().SetMembersTTL(gomock.Any(), gomock.Eq(leaderboard), gomock.Any()).Times(1).Return(nil)
 
@@ -309,7 +305,6 @@ var _ = Describe("Service SetMembersScore", func() {
 				gomock.Eq(databaseMembersToGetRank[0]),
 				gomock.Eq(databaseMembersToGetRank[1]),
 			).Return(databaseMembersReturned, nil)
-			mock.EXPECT().GetLeaderboardExpiration(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(1234), nil)
 
 			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 			Expect(err).To(MatchError(service.NewGeneralError("set members score", "strconv.ParseInt: parsing \"invalid\": invalid syntax")))
@@ -360,6 +355,49 @@ var _ = Describe("Service SetMembersScore", func() {
 		err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
 		Expect(err).To(MatchError(service.NewGeneralError("set members score", "New database error")))
 
+	})
+
+	It("Should not call database GetLeaderboardExpiration and SetLeaderboardExpiration if leaderboard isn't formatted to have an expiration", func() {
+		members := []*model.Member{
+			{
+				PublicID: "member1",
+				Score:    1,
+			},
+			{
+				PublicID: "member2",
+				Score:    2,
+			},
+		}
+
+		expectedMembers := []*model.Member{
+			{
+				PublicID:     "member1",
+				Score:        1,
+				PreviousRank: 0,
+				Rank:         2,
+			},
+			{
+				PublicID:     "member2",
+				Score:        2,
+				PreviousRank: 0,
+				Rank:         1,
+			},
+		}
+
+		mock.EXPECT().SetMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(databaseMembersToInsert)).Times(1).Return(nil)
+		mock.EXPECT().GetMembers(
+			gomock.Any(),
+			gomock.Eq(leaderboard),
+			gomock.Eq("desc"),
+			gomock.Eq(true),
+			gomock.Eq(databaseMembersToGetRank[0]),
+			gomock.Eq(databaseMembersToGetRank[1]),
+		).Return(databaseMembersReturned, nil)
+
+		err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(members).To(Equal(expectedMembers))
 	})
 
 	It("Should set leaderboard expiration if GetLeaderboardExpiration return TTLNotFoundError", func() {
