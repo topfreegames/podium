@@ -40,17 +40,17 @@ var _ = Describe("Service GetLeaders", func() {
 
 	It("Should return members slice if all is OK", func() {
 		membersDatabaseReturn := []*database.Member{
-			&database.Member{
+			{
 				Member: "member1",
 				Score:  float64(1),
 				Rank:   0,
 			},
-			&database.Member{
+			{
 				Member: "member2",
 				Score:  float64(2),
 				Rank:   1,
 			},
-			&database.Member{
+			{
 				Member: "member3",
 				Score:  float64(3),
 				Rank:   2,
@@ -58,17 +58,17 @@ var _ = Describe("Service GetLeaders", func() {
 		}
 
 		membersReturn := []*model.Member{
-			&model.Member{
+			{
 				PublicID: "member1",
 				Score:    1,
 				Rank:     1,
 			},
-			&model.Member{
+			{
 				PublicID: "member2",
 				Score:    2,
 				Rank:     2,
 			},
-			&model.Member{
+			{
 				PublicID: "member3",
 				Score:    3,
 				Rank:     3,
@@ -84,22 +84,61 @@ var _ = Describe("Service GetLeaders", func() {
 		Expect(membersFromService).To(Equal(membersReturn))
 	})
 
-	It("Should return error if page is less than 1", func() {
+	It("Should return first page if page is less than 1", func() {
+		membersDatabaseReturn := []*database.Member{
+			{
+				Member: "member1",
+				Score:  float64(1),
+				Rank:   0,
+			},
+			{
+				Member: "member2",
+				Score:  float64(2),
+				Rank:   1,
+			},
+			{
+				Member: "member3",
+				Score:  float64(3),
+				Rank:   2,
+			},
+		}
+
+		membersReturn := []*model.Member{
+			{
+				PublicID: "member1",
+				Score:    1,
+				Rank:     1,
+			},
+			{
+				PublicID: "member2",
+				Score:    2,
+				Rank:     2,
+			},
+			{
+				PublicID: "member3",
+				Score:    3,
+				Rank:     3,
+			},
+		}
+
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
+		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Return(membersDatabaseReturn, nil)
 
-		totalPages := int(math.Ceil(float64(totalMembers) / float64(pageSize)))
+		membersFromService, err := svc.GetLeaders(context.Background(), leaderboard, pageSize, -1, order)
+		Expect(err).NotTo(HaveOccurred())
 
-		_, err := svc.GetLeaders(context.Background(), leaderboard, pageSize, -1, order)
-		Expect(err).To(Equal(service.NewPageOutOfRangeError(-1, totalPages)))
+		Expect(membersFromService).To(Equal(membersReturn))
 	})
 
-	It("Should return error if page is more than totalPages", func() {
+	It("Should return empty array if page is more than totalPages", func() {
 		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(totalMembers, nil)
 
 		totalPages := int(math.Ceil(float64(totalMembers) / float64(pageSize)))
 
-		_, err := svc.GetLeaders(context.Background(), leaderboard, pageSize, totalPages+1, order)
-		Expect(err).To(Equal(service.NewPageOutOfRangeError(totalPages+1, totalPages)))
+		membersFromService, err := svc.GetLeaders(context.Background(), leaderboard, pageSize, totalPages+1, order)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(membersFromService).To(BeEmpty())
 	})
 
 	It("Should return error if database return in error on GetTotalPages", func() {
