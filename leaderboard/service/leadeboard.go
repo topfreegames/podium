@@ -14,6 +14,10 @@ func (s *Service) persistLeaderboardExpirationTime(ctx context.Context, leaderbo
 		return err
 	}
 
+	if expireAt == -1 {
+		return nil
+	}
+
 	_, err = s.Database.GetLeaderboardExpiration(ctx, leaderboard)
 	if err != nil {
 		if _, ok := err.(*database.TTLNotFoundError); ok {
