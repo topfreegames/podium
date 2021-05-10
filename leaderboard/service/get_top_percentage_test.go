@@ -116,12 +116,16 @@ var _ = Describe("Service GetTopPercentage", func() {
 		})
 	})
 
-	It("Should return InvalidOrderError when order is invalid", func() {
+	It("Should use desc when order is invalid", func() {
 		order = "not_valid_order"
 
-		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
-		Expect(err).Should(HaveOccurred())
-		Expect(err.Error()).To(Equal("invalid order: not_valid_order"))
+		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Return(100, nil)
+		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(0), gomock.Eq(2), gomock.Eq("desc")).Return(membersReturnedByDatabase, nil)
+
+		members, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, amount, maxMembers, order)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(members).To(HaveLen(3))
+		Expect(members).To(Equal(expectedMembersToReturn))
 	})
 
 	It("Should return no members when percentage is small", func() {

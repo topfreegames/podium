@@ -55,19 +55,3 @@ func NewPageOutOfRangeError(page, totalPage int) *PageOutOfRangeError {
 func (poor *PageOutOfRangeError) Error() string {
 	return fmt.Sprintf("page %d out of range (1, %d)", poor.page, poor.totalPage)
 }
-
-// InvalidOrderError is an error when an invalid order was gave
-type InvalidOrderError struct {
-	order string
-}
-
-func (ioe *InvalidOrderError) Error() string {
-	return fmt.Sprintf("invalid order: %s", ioe.order)
-}
-
-// NewInvalidOrderError create a new InvalidOrderError
-func NewInvalidOrderError(order string) *InvalidOrderError {
-	return &InvalidOrderError{
-		order: order,
-	}
-}
