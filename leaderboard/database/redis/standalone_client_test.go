@@ -63,6 +63,21 @@ var _ = Describe("Standalone Client", func() {
 		})
 	})
 
+	Describe("Exists", func() {
+		It("Should return nil if key exists", func() {
+			err := goRedis.Set(context.Background(), testKey, "testValue", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = standaloneClient.Exists(context.Background(), testKey)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should return KeyNotFoundError if key doesn't exists", func() {
+			err := standaloneClient.Exists(context.Background(), testKey)
+			Expect(err).To(MatchError(redis.NewKeyNotFoundError(testKey)))
+		})
+	})
+
 	Describe("ExpireAt", func() {
 		It("Should return nil if timeout is set", func() {
 			expirationTime := time.Now().Add(10 * time.Minute)
@@ -107,6 +122,22 @@ var _ = Describe("Standalone Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(isMember).To(Equal(true))
+		})
+	})
+
+	Describe("SMembers", func() {
+		It("Should return all members in a set", func() {
+			member2 := "member2"
+			err := goRedis.SAdd(context.Background(), testKey, member).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = goRedis.SAdd(context.Background(), testKey, member2).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			result, err := standaloneClient.SMembers(context.Background(), testKey)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(result).To(ContainElements(member, member2))
 		})
 	})
 

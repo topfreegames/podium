@@ -49,6 +49,20 @@ func (mr *MockRedisMockRecorder) Del(ctx, key interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockRedis)(nil).Del), ctx, key)
 }
 
+// Exists mocks base method.
+func (m *MockRedis) Exists(ctx context.Context, key string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Exists", ctx, key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Exists indicates an expected call of Exists.
+func (mr *MockRedisMockRecorder) Exists(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockRedis)(nil).Exists), ctx, key)
+}
+
 // ExpireAt mocks base method.
 func (m *MockRedis) ExpireAt(ctx context.Context, key string, time time.Time) error {
 	m.ctrl.T.Helper()
@@ -90,6 +104,21 @@ func (m *MockRedis) SAdd(ctx context.Context, key, member string) error {
 func (mr *MockRedisMockRecorder) SAdd(ctx, key, member interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SAdd", reflect.TypeOf((*MockRedis)(nil).SAdd), ctx, key, member)
+}
+
+// SMembers mocks base method.
+func (m *MockRedis) SMembers(ctx context.Context, key string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SMembers", ctx, key)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SMembers indicates an expected call of SMembers.
+func (mr *MockRedisMockRecorder) SMembers(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SMembers", reflect.TypeOf((*MockRedis)(nil).SMembers), ctx, key)
 }
 
 // SRem mocks base method.
