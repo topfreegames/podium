@@ -24,7 +24,7 @@ func (s *Service) SetMembersScore(ctx context.Context, leaderboard string, membe
 		return NewGeneralError(setMembersScoreServiceLabel, err.Error())
 	}
 
-	err = s.setMembersRank(ctx, leaderboard, members, setMembersOrder)
+	err = s.setMembersValues(ctx, leaderboard, members, setMembersOrder)
 	if err != nil {
 		return NewGeneralError(setMembersScoreServiceLabel, err.Error())
 	}

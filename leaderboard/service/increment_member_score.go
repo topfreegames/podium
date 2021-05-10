@@ -24,7 +24,7 @@ func (s *Service) IncrementMemberScore(ctx context.Context, leaderboard string, 
 
 	members := []*model.Member{modelMember}
 
-	err = s.setMembersRank(ctx, leaderboard, members, incrementMemberOrder)
+	err = s.setMembersValues(ctx, leaderboard, members, incrementMemberOrder)
 	if err != nil {
 		return nil, NewGeneralError(incrementMemberScoreServiceLabel, err.Error())
 	}
