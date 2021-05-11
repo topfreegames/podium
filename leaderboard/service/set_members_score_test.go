@@ -176,6 +176,66 @@ var _ = Describe("Service SetMembersScore", func() {
 			Expect(members).To(Equal(expectedMembers))
 		})
 
+		It("Should set a non existent member as rank equals to -1", func() {
+			databaseMembersPreviousRankReturned := []*database.Member{
+				nil,
+				{
+					Member: "member2",
+					Score:  1.0,
+					Rank:   int64(1),
+				},
+			}
+			members := []*model.Member{
+				{
+					PublicID: "member1",
+					Score:    1,
+				},
+				{
+					PublicID: "member2",
+					Score:    2,
+				},
+			}
+
+			expectedMembers := []*model.Member{
+				{
+					PublicID:     "member1",
+					Score:        1,
+					PreviousRank: -1,
+					Rank:         2,
+				},
+				{
+					PublicID:     "member2",
+					Score:        2,
+					PreviousRank: 2,
+					Rank:         1,
+				},
+			}
+
+			mock.EXPECT().GetMembers(
+				gomock.Any(),
+				gomock.Eq(leaderboard),
+				gomock.Eq("desc"),
+				gomock.Eq(true),
+				gomock.Eq(databaseMembersToGetRank[0]),
+				gomock.Eq(databaseMembersToGetRank[1]),
+			).Times(1).Return(databaseMembersPreviousRankReturned, nil)
+
+			mock.EXPECT().SetMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(databaseMembersToInsert)).Return(nil)
+			mock.EXPECT().GetMembers(
+				gomock.Any(),
+				gomock.Eq(leaderboard),
+				gomock.Eq("desc"),
+				gomock.Eq(true),
+				gomock.Eq(databaseMembersToGetRank[0]),
+				gomock.Eq(databaseMembersToGetRank[1]),
+			).Return(databaseMembersReturned, nil)
+
+			err := svc.SetMembersScore(context.Background(), leaderboard, members, previousRank, scoreTTL)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(members).To(Equal(expectedMembers))
+		})
+
 		It("Should return error if GetMembers return in error", func() {
 			members := []*model.Member{
 				{

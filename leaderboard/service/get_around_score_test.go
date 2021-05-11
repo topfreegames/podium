@@ -37,8 +37,8 @@ var _ = Describe("Service GetAroundScore", func() {
 
 	It("Should return members slice if all is OK", func() {
 		rank := 6
-		start := 5
-		stop := 7
+		start := 6
+		stop := 8
 
 		membersDatabaseReturn := []*database.Member{
 			&database.Member{
@@ -87,26 +87,61 @@ var _ = Describe("Service GetAroundScore", func() {
 		Expect(membersFromService).To(Equal(membersReturn))
 	})
 
-	It("Should return member not found if GetMemberIDsWithScoreInsideRange return no member", func() {
+	It("Should return member slice with last members if GetMemberIDsWithScoreInsideRange return no member", func() {
+		start := 7
+		stop := 10
+
+		membersDatabaseReturn := []*database.Member{
+			{
+				Member: "member1",
+				Score:  float64(1),
+				Rank:   8,
+			},
+			{
+				Member: "member2",
+				Score:  float64(2),
+				Rank:   9,
+			},
+			{
+				Member: "member3",
+				Score:  float64(3),
+				Rank:   10,
+			},
+		}
+
+		membersReturn := []*model.Member{
+			{
+				PublicID: "member1",
+				Score:    1,
+				Rank:     9,
+			},
+			{
+				PublicID: "member2",
+				Score:    2,
+				Rank:     10,
+			},
+			{
+				PublicID: "member3",
+				Score:    3,
+				Rank:     11,
+			},
+		}
+
 		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{}, nil)
 
-		_, err := svc.GetAroundScore(context.Background(), leaderboard, pageSize, score, order)
-		Expect(err).To(Equal(service.NewMemberNotFoundError(leaderboard, fmt.Sprint(score))))
-	})
+		//As dont exists member with empty id it will return member not found
+		//	as parameter getLastIfNotFound is true it will return totalMember + 1
+		mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(""), gomock.Eq(order)).Return(-1, database.NewMemberNotFoundError(leaderboard, member))
 
-	It("Should return error if GetMemberIDsWithScoreInsideRange return in error", func() {
-		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return(nil, fmt.Errorf("database error"))
+		//GetTotalMembers is called two times
+		//	first by fetchMemberRank, getting last member if no one is found
+		//	second by calculate indexes
+		mock.EXPECT().GetTotalMembers(gomock.Any(), gomock.Eq(leaderboard)).Times(2).Return(totalMembers, nil)
+		mock.EXPECT().GetOrderedMembers(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(start), gomock.Eq(stop), gomock.Eq(order)).Return(membersDatabaseReturn, nil)
 
-		_, err := svc.GetAroundScore(context.Background(), leaderboard, pageSize, score, order)
-		Expect(err).To(Equal(service.NewGeneralError("get around score", "database error")))
-	})
-
-	It("Should return error if getRank return member not found", func() {
-		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{member}, nil)
-		mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(-1, database.NewMemberNotFoundError(leaderboard, member))
-
-		_, err := svc.GetAroundScore(context.Background(), leaderboard, pageSize, score, order)
-		Expect(err).To(Equal(service.NewMemberNotFoundError(leaderboard, member)))
+		members, err := svc.GetAroundScore(context.Background(), leaderboard, pageSize, score, order)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(members).To(Equal(membersReturn))
 	})
 
 	It("Should return error if getRank return in error", func() {
@@ -130,8 +165,8 @@ var _ = Describe("Service GetAroundScore", func() {
 
 	It("Should return error if GetOrderedMembers return in error", func() {
 		rank := 6
-		start := 5
-		stop := 7
+		start := 6
+		stop := 8
 
 		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{member}, nil)
 		mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(rank, nil)
@@ -160,7 +195,7 @@ var _ = Describe("Service GetAroundScore", func() {
 
 	It("Should ask for last members if user is the last one", func() {
 		rank := 10
-		start := 8
+		start := 7
 		stop := 10
 
 		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{member}, nil)
