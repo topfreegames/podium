@@ -107,7 +107,15 @@ func validateResp(statusCode int, body string, err error) {
 }
 
 func generateNMembers(amount int) string {
-	client := leaderboard.NewClientWithRedis(getRedis())
+	config, err := testing.GetDefaultConfig("../config/default.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	client := leaderboard.NewClient(
+		config.GetString("redis.host"),
+		config.GetInt("redis.port"),
+		config.GetString("redis.password"),
+		config.GetInt("redis.db"),
+	)
 
 	lbID := "leaderboard-0"
 

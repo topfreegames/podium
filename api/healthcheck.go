@@ -26,9 +26,9 @@ import (
 func (app *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	workingString := app.Config.GetString("healthcheck.workingText")
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	res, err := app.Leaderboards.Ping(r.Context())
+	err := app.Leaderboards.Healthcheck(r.Context())
 	var msg string
-	if err != nil || res != "PONG" {
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		msg = newFailMsg(fmt.Sprintf("Error connecting to redis: %v", err))
 	} else {
@@ -40,18 +40,16 @@ func (app *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Healthcheck handle grpc requests to healthcheck
 func (app *App) HealthCheck(ctx context.Context, req *api.HealthCheckRequest) (*api.HealthCheckResponse, error) {
-	var res string
-
 	err := withSegment("redis", ctx, func() error {
 		var err error
 
-		switch res, err = app.Leaderboards.Ping(ctx); {
-		case err != nil:
+		err = app.Leaderboards.Healthcheck(ctx)
+		if err != nil {
 			return status.Errorf(codes.Internal, "Error trying to ping redis: %v", err)
-		case res != "PONG":
-			return status.Errorf(codes.Internal, "Redis return = %s, want PONG", res)
 		}
+
 		return nil
 	})
 

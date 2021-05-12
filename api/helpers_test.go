@@ -17,12 +17,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/log"
@@ -33,36 +31,12 @@ import (
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 
-	extredis "github.com/topfreegames/extensions/redis"
 	pb "github.com/topfreegames/podium/proto/podium/api/v1"
 )
 
 var serverInitialized map[string]bool = map[string]bool{}
 var defaultApp *api.App
 var defaultFaultyRedisApp *api.App
-
-func GetConnectedRedis(app *api.App) (*extredis.Client, error) {
-	redisURL := url.URL{
-		Scheme: "redis",
-		User:   url.UserPassword("", app.Config.GetString("redis.password")),
-		Host:   fmt.Sprintf("%s:%d", app.Config.GetString("redis.host"), app.Config.GetInt("redis.port")),
-		Path:   app.Config.GetString("redis.db"),
-	}
-	app.Config.Set("redis.url", redisURL.String())
-	app.Config.Set("redis.connectionTimeout", 200)
-
-	return extredis.NewClient("redis", app.Config)
-}
-
-//GetFaultyRedis returns an invalid connection to redis
-func GetFaultyRedis() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:38465",
-		Password: "",
-		DB:       0,
-		PoolSize: 20,
-	})
-}
 
 //Creates an empty context (shortcut for context.Background())
 func NewEmptyCtx() context.Context {
@@ -92,10 +66,13 @@ func GetDefaultTestAppWithFaultyRedis() *api.App {
 	app, err := api.New("127.0.0.1", 8082, 8083, "../config/test.yaml", false, logger)
 	Expect(err).NotTo(HaveOccurred())
 
-	faultyRedisClient, err := GetConnectedRedis(app)
-	Expect(err).NotTo(HaveOccurred())
-	faultyRedisClient.Client = GetFaultyRedis()
-	app.Leaderboards = leaderboard.NewClientWithRedis(faultyRedisClient)
+	leaderboard := leaderboard.NewClient(
+		app.Config.GetString("faultyRedis.host"),
+		app.Config.GetInt("faultyRedis.port"),
+		app.Config.GetString("faultyRedis.password"),
+		app.Config.GetInt("faultyRedis.db"),
+	)
+	app.Leaderboards = leaderboard
 
 	defaultFaultyRedisApp = app
 	return app
@@ -103,12 +80,16 @@ func GetDefaultTestAppWithFaultyRedis() *api.App {
 
 // ShutdownDefaultTestApp turn off default test app
 func ShutdownDefaultTestApp() {
-	defaultApp.GracefullStop()
+	if defaultApp != nil {
+		defaultApp.GracefullStop()
+	}
 }
 
 // ShutdownDefaultTestWithFaultyApp turn off default test app
 func ShutdownDefaultTestAppWithFaltyRedis() {
-	defaultFaultyRedisApp.GracefullStop()
+	if defaultFaultyRedisApp != nil {
+		defaultFaultyRedisApp.GracefullStop()
+	}
 }
 
 //Get from server

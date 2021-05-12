@@ -193,6 +193,9 @@ func (r *Redis) GetRank(ctx context.Context, leaderboard, member, order string) 
 func (r *Redis) GetTotalMembers(ctx context.Context, leaderboard string) (int, error) {
 	totalMembers, err := r.Redis.ZCard(ctx, leaderboard)
 	if err != nil {
+		if _, ok := err.(*redis.KeyNotFoundError); ok {
+			return 0, nil
+		}
 		return -1, NewGeneralError(err.Error())
 	}
 

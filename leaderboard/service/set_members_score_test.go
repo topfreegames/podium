@@ -493,6 +493,38 @@ var _ = Describe("Service SetMembersScore", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("Should return error LeaderboardExpiredError if leaderboard is expired", func() {
+		leaderboardExpiration := fmt.Sprintf(
+			"testkey-from%dto%d",
+			time.Now().UTC().Add(time.Duration(-2)*time.Second).Unix(),
+			time.Now().UTC().Add(time.Duration(-1)*time.Second).Unix(),
+		)
+
+		members := []*model.Member{
+			{
+				PublicID: "member1",
+				Score:    1,
+			},
+			{
+				PublicID: "member2",
+				Score:    2,
+			},
+		}
+
+		mock.EXPECT().SetMembers(gomock.Any(), gomock.Eq(leaderboardExpiration), gomock.Eq(databaseMembersToInsert)).Times(1).Return(nil)
+		mock.EXPECT().GetMembers(
+			gomock.Any(),
+			gomock.Eq(leaderboardExpiration),
+			gomock.Eq("desc"),
+			gomock.Eq(true),
+			gomock.Eq(databaseMembersToGetRank[0]),
+			gomock.Eq(databaseMembersToGetRank[1]),
+		).Return(databaseMembersReturned, nil)
+
+		err := svc.SetMembersScore(context.Background(), leaderboardExpiration, members, previousRank, scoreTTL)
+		Expect(err).To(MatchError(service.NewLeaderboardExpiredError(leaderboardExpiration)))
+	})
+
 	It("Should return error if database GetLeaderboardExpiration return in error", func() {
 		leaderboardExpiration := fmt.Sprintf("year%d", time.Now().UTC().Year())
 

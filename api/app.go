@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/jaeger"
 	"github.com/topfreegames/podium/leaderboard"
+	lservice "github.com/topfreegames/podium/leaderboard/service"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -60,7 +61,7 @@ type App struct {
 	httpServer   *http.Server
 	Config       *viper.Viper
 	Logger       *zap.Logger
-	Leaderboards *leaderboard.Client
+	Leaderboards lservice.Leaderboard
 	NewRelic     newrelic.Application
 	DDStatsD     *extnethttpmiddleware.DogStatsD
 }
@@ -294,7 +295,8 @@ func (app *App) configureApplication() error {
 	)
 
 	rl.Info("Creating leaderboard client.")
-	cli, err := leaderboard.NewClient(host, port, password, db, connectionTimeout)
+	cli := leaderboard.NewClient(host, port, password, db)
+	err := cli.Healthcheck(context.Background())
 	if err != nil {
 		return err
 	}
@@ -454,7 +456,7 @@ func (app *App) WaitForReady(d time.Duration) error {
 	return fmt.Errorf("timed out waiting for endpoints")
 }
 
-// GracefulStop attempts to stop the server.
+// GracefullStop attempts to stop the server.
 func (app *App) GracefullStop() {
 	if app.grpcServer != nil {
 		app.grpcServer.GracefulStop()

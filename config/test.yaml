@@ -8,6 +8,11 @@ redis:
   connectionTimeout: 200
   db: 0
 
+faultyRedis:
+  host: "localhost"
+  port: 12345
+  db: 0
+
 api:
   maxReturnedMembers: 2000
 

@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 
 	. "github.com/onsi/ginkgo"
@@ -40,21 +41,26 @@ var _ = Describe("Leaderboard integration tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		host := config.GetString("redis.host")
+		password := config.GetString("redis.password")
 		port := config.GetInt("redis.port")
 		db := config.GetInt("redis.db")
 
 		redisClient = redis.NewStandaloneClient(redis.StandaloneOptions{
-			Host: host,
-			Port: port,
-			DB:   db,
+			Host:     host,
+			Password: password,
+			Port:     port,
+			DB:       db,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		leaderboards, err = NewClient(host, port, "", db)
-		Expect(err).NotTo(HaveOccurred())
+		leaderboards = NewClient(host, port, "", db)
 
-		faultyLeaderboards, err = NewClient("localhost", 12345, "", 0)
-		Expect(err).NotTo(HaveOccurred())
+		faultyLeaderboards = leaderboard.NewClient(
+			config.GetString("faultyRedis.host"),
+			config.GetInt("faultyRedis.port"),
+			config.GetString("faultyRedis.password"),
+			config.GetInt("faultyRedis.db"),
+		)
 
 		err = leaderboards.RemoveLeaderboard(NewEmptyCtx(), testLeaderboardID)
 		Expect(err).NotTo(HaveOccurred())
@@ -823,7 +829,7 @@ var _ = Describe("Leaderboard integration tests", func() {
 			top10, err := leaderboards.GetTopPercentage(NewEmptyCtx(), leaderboardID, 10, 101, 2000, "desc")
 			Expect(top10).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("error on service get top percentage: Percentage must be a valid integer between 1 and 100"))
+			Expect(err).To(MatchError(service.NewPercentageError(101)))
 		})
 
 		It("should fail if invalid redis connection", func() {
