@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topfreegames/extensions/redis/interfaces"
 	"github.com/topfreegames/podium/api"
+	"github.com/topfreegames/podium/leaderboard/database/redis"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -33,23 +33,28 @@ import (
 
 var _ = Describe("Leaderboard Handler", func() {
 	var app *api.App
-	var redisClient interfaces.RedisClient
+	var redisClient redis.Redis
 	const testLeaderboardID = "testkey"
 
 	BeforeSuite(func() {
 		app = GetDefaultTestApp()
+
+		redisClient = redis.NewStandaloneClient(redis.StandaloneOptions{
+			Host:     app.Config.GetString("redis.host"),
+			Port:     app.Config.GetInt("redis.port"),
+			Password: app.Config.GetString("redis.password"),
+			DB:       app.Config.GetInt("redis.db"),
+		})
 	})
 
-	BeforeEach(func() {
-		extRedisClient, err := GetConnectedRedis(app)
-		Expect(err).NotTo(HaveOccurred())
-		redisClient = extRedisClient.Client
-		redisClient.Del("testkey")
-		redisClient.Del("testkey1")
-		redisClient.Del("testkey2")
-		redisClient.Del("testkey3")
-		redisClient.Del("testkey4")
-		redisClient.Del("testkey5")
+	AfterEach(func() {
+		redisClient.Del(context.Background(), "testkey")
+		redisClient.Del(context.Background(), "testkey:ttl")
+		redisClient.Del(context.Background(), "testkey1")
+		redisClient.Del(context.Background(), "testkey2")
+		redisClient.Del(context.Background(), "testkey3")
+		redisClient.Del(context.Background(), "testkey4")
+		redisClient.Del(context.Background(), "testkey5")
 	})
 
 	Describe("When leaderboard has expired", func() {
@@ -103,7 +108,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(result["success"]).To(BeFalse())
 			Expect(result["reason"]).To(
 				Equal(
-					fmt.Sprintf("Leaderboard %s has already expired", key),
+					fmt.Sprintf("Leaderboard expired error: %s", key),
 				),
 			)
 		}
@@ -270,20 +275,18 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-			result2, err := redisClient.Exists(redisLBExpirationKey).Result()
+			err := redisClient.Exists(context.Background(), redisLBExpirationKey)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result2).To(Equal(int64(1)))
 			redisExpirationSetKey := "expiration-sets"
-			result2, err = redisClient.Exists(redisExpirationSetKey).Result()
+			err = redisClient.Exists(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result2).To(Equal(int64(1)))
-			result3, err := redisClient.SMembers(redisExpirationSetKey).Result()
+			result3, err := redisClient.SMembers(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3).To(ContainElement(redisLBExpirationKey))
-			result4, err := redisClient.ZScore(redisLBExpirationKey, "memberpublicid1").Result()
+			result4, err := redisClient.ZScore(context.Background(), redisLBExpirationKey, "memberpublicid1")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result4).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
-			result5, err := redisClient.ZScore(redisLBExpirationKey, "memberpublicid2").Result()
+			result5, err := redisClient.ZScore(context.Background(), redisLBExpirationKey, "memberpublicid2")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result5).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 
@@ -497,17 +500,15 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(member.ExpireAt).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl", lbName)
-			result2, err := redisClient.Exists(redisLBExpirationKey).Result()
+			err = redisClient.Exists(context.Background(), redisLBExpirationKey)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result2).To(Equal(int64(1)))
 			redisExpirationSetKey := "expiration-sets"
-			result2, err = redisClient.Exists(redisExpirationSetKey).Result()
+			err = redisClient.Exists(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result2).To(Equal(int64(1)))
-			result3, err := redisClient.SMembers(redisExpirationSetKey).Result()
+			result3, err := redisClient.SMembers(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result3).To(ContainElement(redisLBExpirationKey))
-			result4, err := redisClient.ZScore(redisLBExpirationKey, "memberpublicid").Result()
+			result4, err := redisClient.ZScore(context.Background(), redisLBExpirationKey, "memberpublicid")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result4).To(BeNumerically("~", time.Now().Unix()+int64(ttl), 1))
 		})
@@ -2106,7 +2107,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			leaderboardID := uuid.NewV4().String()
 			status, body := Get(app, fmt.Sprintf("/l/%s/top-percent/120", leaderboardID))
 			Expect(status).To(Equal(http.StatusBadRequest), body)
-			Expect(body).To(ContainSubstring("Percentage must be a valid integer between 1 and 100."))
 		})
 
 		It("Should fail if percentage lesser than 1", func() {
@@ -2535,6 +2535,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			status, body, err := fastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
-		}, 0.1)
+		}, 0.9)
 	})
 })

@@ -58,7 +58,6 @@ var _ = Describe("App", func() {
 			app, err := api.New("127.0.0.1", 9999, 10000, "../config/invalid-redis.yaml", false, logger)
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("timed out"))
 		})
 	})
 

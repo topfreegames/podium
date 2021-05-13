@@ -12,7 +12,7 @@ const getTopPercentageServiceLabel = "get top percentage"
 // GetTopPercentage retrieves top x% members from the leaderboard.
 func (s *Service) GetTopPercentage(ctx context.Context, leaderboardID string, pageSize, amount, maxMembers int, order string) ([]*model.Member, error) {
 	if amount < 1 || amount > 100 {
-		return nil, NewGeneralError(getTopPercentageServiceLabel, "Percentage must be a valid integer between 1 and 100")
+		return nil, NewPercentageError(amount)
 	}
 
 	if order != "desc" && order != "asc" {

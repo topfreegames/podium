@@ -1,6 +1,8 @@
 package service
 
-import "context"
+import (
+	"context"
+)
 
 const totalMembersServiceLabel = "total members"
 

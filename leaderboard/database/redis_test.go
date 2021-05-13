@@ -598,6 +598,15 @@ var _ = Describe("Redis Database", func() {
 			Expect(totalMembers).To(Equal(countMembers))
 		})
 
+		It("Should return total members as zero if redis return KeyNotFoundError", func() {
+			mock.EXPECT().ZCard(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(-1), redis.NewKeyNotFoundError(leaderboard))
+
+			totalMembers, err := redisDatabase.GetTotalMembers(context.Background(), leaderboard)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(totalMembers).To(Equal(0))
+		})
+
 		It("Should return error if redis returns in error", func() {
 			mock.EXPECT().ZCard(gomock.Any(), gomock.Eq(leaderboard)).Return(int64(-1), fmt.Errorf("General error"))
 

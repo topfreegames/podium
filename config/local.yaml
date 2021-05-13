@@ -8,6 +8,11 @@ redis:
   db: 0
   connectionTimeout: 200
 
+faultyRedis:
+  host: "localhost"
+  port: 12345
+  db: 0
+
 jaeger:
   disabled: false
   samplingProbability: 0.1

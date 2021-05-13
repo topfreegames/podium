@@ -128,6 +128,14 @@ var _ = Describe("Service GetTopPercentage", func() {
 		Expect(members).To(Equal(expectedMembersToReturn))
 	})
 
+	It("Should return PercentageError if percentage is grater than 100 or small than 1", func() {
+		_, err := svc.GetTopPercentage(context.Background(), leaderboard, pageSize, 0, maxMembers, order)
+		Expect(err).To(MatchError(service.NewPercentageError(0)))
+
+		_, err = svc.GetTopPercentage(context.Background(), leaderboard, pageSize, 101, maxMembers, order)
+		Expect(err).To(MatchError(service.NewPercentageError(101)))
+	})
+
 	It("Should return no members when percentage is small", func() {
 		amount = 1
 		maxMembers = 10

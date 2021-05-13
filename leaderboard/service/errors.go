@@ -55,3 +55,35 @@ func NewPageOutOfRangeError(page, totalPage int) *PageOutOfRangeError {
 func (poor *PageOutOfRangeError) Error() string {
 	return fmt.Sprintf("page %d out of range (1, %d)", poor.page, poor.totalPage)
 }
+
+// LeaderboardExpiredError is an error threw when a not handled error was found
+type LeaderboardExpiredError struct {
+	leaderboard string
+}
+
+func (lee *LeaderboardExpiredError) Error() string {
+	return fmt.Sprintf("Leaderboard expired error: %s", lee.leaderboard)
+}
+
+// NewLeaderboardExpiredError create a new LeaderboardExpiredError
+func NewLeaderboardExpiredError(leaderboard string) *LeaderboardExpiredError {
+	return &LeaderboardExpiredError{
+		leaderboard: leaderboard,
+	}
+}
+
+// PercentageError is an error threw when a not handled error was found
+type PercentageError struct {
+	percentage int
+}
+
+func (pe *PercentageError) Error() string {
+	return fmt.Sprintf("percentage error: %d, it must be a valid integer between 1 and 100", pe.percentage)
+}
+
+// NewPercentageError create a new PercentageError
+func NewPercentageError(percentage int) *PercentageError {
+	return &PercentageError{
+		percentage: percentage,
+	}
+}

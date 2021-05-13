@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/topfreegames/podium/leaderboard/expiration"
 	"github.com/topfreegames/podium/leaderboard/model"
 )
 
@@ -31,6 +32,9 @@ func (s *Service) IncrementMemberScore(ctx context.Context, leaderboard string, 
 
 	err = s.persistLeaderboardExpirationTime(ctx, leaderboard)
 	if err != nil {
+		if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
+			return nil, NewLeaderboardExpiredError(leaderboard)
+		}
 		return nil, NewGeneralError(incrementMemberScoreServiceLabel, err.Error())
 	}
 

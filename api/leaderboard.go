@@ -15,8 +15,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/topfreegames/podium/leaderboard"
-	"github.com/topfreegames/podium/leaderboard/expiration"
+	lmodel "github.com/topfreegames/podium/leaderboard/model"
+	"github.com/topfreegames/podium/leaderboard/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -49,19 +49,19 @@ func (app *App) BulkUpsertScores(ctx context.Context, req *api.BulkUpsertScoresR
 		zap.String("leaderboard", req.LeaderboardId),
 	)
 
-	members := make(leaderboard.Members, len(req.MemberScores.Members))
+	members := make([]*lmodel.Member, len(req.MemberScores.Members))
 
 	err := withSegment("Model", ctx, func() error {
 		lg.Debug("Setting member scores.")
 		for i, ms := range req.MemberScores.Members {
-			members[i] = &leaderboard.Member{Score: int64(ms.Score), PublicID: ms.PublicID}
+			members[i] = &lmodel.Member{Score: int64(ms.Score), PublicID: ms.PublicID}
 		}
 
 		if err := app.Leaderboards.SetMembersScore(ctx, req.LeaderboardId, members, req.PrevRank, getScoreTTL(req.ScoreTTL)); err != nil {
 			lg.Error("Setting member scores failed.", zap.Error(err))
 			app.AddError()
 			//TODO: Turn all these LeaderboardExpiredError verifications into a middleware
-			if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
+			if _, ok := err.(*service.LeaderboardExpiredError); ok {
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
 			return err
@@ -104,7 +104,7 @@ func (app *App) UpsertScore(ctx context.Context, req *api.UpsertScoreRequest) (*
 		zap.String("memberPublicID", req.MemberPublicId),
 	)
 
-	var member *leaderboard.Member
+	var member *lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		lg.Debug("Setting member score.", zap.Int64("score", int64(req.ScoreChange.Score)))
 
@@ -115,7 +115,7 @@ func (app *App) UpsertScore(ctx context.Context, req *api.UpsertScoreRequest) (*
 		if err != nil {
 			lg.Error("Setting member score failed.", zap.Error(err))
 			app.AddError()
-			if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
+			if _, ok := err.(*service.LeaderboardExpiredError); ok {
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
 
@@ -151,7 +151,7 @@ func (app *App) IncrementScore(ctx context.Context, req *api.IncrementScoreReque
 		zap.String("memberPublicID", req.MemberPublicId),
 	)
 
-	var member *leaderboard.Member
+	var member *lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Incrementing member score.", zap.Int64("increment", int64(req.Body.Increment)))
@@ -161,7 +161,7 @@ func (app *App) IncrementScore(ctx context.Context, req *api.IncrementScoreReque
 		if err != nil {
 			lg.Error("Member score increment failed.", zap.Error(err))
 			app.AddError()
-			if _, ok := err.(*expiration.LeaderboardExpiredError); ok {
+			if _, ok := err.(*service.LeaderboardExpiredError); ok {
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
 
@@ -226,7 +226,7 @@ func (app *App) RemoveMembers(ctx context.Context, req *api.RemoveMembersRequest
 	}
 
 	memberIDs := strings.Split(req.Ids, ",")
-	idsInter := make([]interface{}, len(memberIDs))
+	idsInter := make([]string, len(memberIDs))
 	for i, v := range memberIDs {
 		idsInter[i] = v
 	}
@@ -266,7 +266,7 @@ func (app *App) GetMember(ctx context.Context, req *api.GetMemberRequest) (*api.
 
 	order := getOrder(req.Order)
 
-	var member *leaderboard.Member
+	var member *lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting member.")
@@ -408,7 +408,7 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 		return nil, status.Errorf(codes.InvalidArgument, msg)
 	}
 
-	var members leaderboard.Members
+	var members []*lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting members around player.")
@@ -463,7 +463,7 @@ func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreReque
 		return nil, status.Errorf(codes.InvalidArgument, msg)
 	}
 
-	var members leaderboard.Members
+	var members []*lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting players around score.", zap.Int64("score", int64(req.Score)))
@@ -541,7 +541,7 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 		return nil, status.Errorf(codes.InvalidArgument, msg)
 	}
 
-	var members leaderboard.Members
+	var members []*lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting top members.")
@@ -579,7 +579,7 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 
 	order := getOrder(req.Order)
 
-	var members leaderboard.Members
+	var members []*lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting top percentage.", zap.Int("percentage", int(req.Percentage)))
@@ -588,7 +588,7 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 
 		if err != nil {
 			lg.Error("Getting top percentage failed.", zap.Error(err))
-			if err.Error() == "Percentage must be a valid integer between 1 and 100." {
+			if _, ok := err.(*service.PercentageError); ok {
 				app.AddError()
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
@@ -609,7 +609,7 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 	}, nil
 }
 
-func newGetMembersResponseList(members leaderboard.Members) []*api.GetMembersResponse_Member {
+func newGetMembersResponseList(members []*lmodel.Member) []*api.GetMembersResponse_Member {
 	list := make([]*api.GetMembersResponse_Member, len(members))
 	for i, m := range members {
 		list[i] = &api.GetMembersResponse_Member{
@@ -639,7 +639,7 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 
 	memberIDs := strings.Split(req.Ids, ",")
 
-	var members leaderboard.Members
+	var members []*lmodel.Member
 	err := withSegment("Model", ctx, func() error {
 		var err error
 		lg.Debug("Getting members.", zap.String("ids", req.Ids))
@@ -679,7 +679,7 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 	}, nil
 }
 
-func newMemberRankResponseList(members leaderboard.Members) []*api.Member {
+func newMemberRankResponseList(members []*lmodel.Member) []*api.Member {
 	list := make([]*api.Member, len(members))
 	for i, m := range members {
 		list[i] = &api.Member{
