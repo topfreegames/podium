@@ -272,10 +272,6 @@ func (app *App) OnErrorHandler(err error, stack []byte) {
 }
 
 func (app *App) configureApplication() error {
-	l := app.Logger.With(
-		zap.String("operation", "configureApplication"),
-	)
-
 	app.Errors = metrics.NewEWMA15()
 
 	go func() {
@@ -283,27 +279,44 @@ func (app *App) configureApplication() error {
 		time.Sleep(5 * time.Second)
 	}()
 
+	client, err := app.createAndConfigureLeaderboardClient()
+	if err != nil {
+		return err
+	}
+	app.Leaderboards = client
+	app.Logger.Info("Leaderboard client creation successfull.")
+
+	return nil
+}
+
+func (app *App) createAndConfigureLeaderboardClient() (lservice.Leaderboard, error) {
+	client := app.createLeaderboardClient()
+	err := client.Healthcheck(context.Background())
+
+	return client, err
+}
+
+func (app *App) createLeaderboardClient() lservice.Leaderboard {
+	shouldRunOnCluster := app.Config.GetBool("redis.cluster.enabled")
 	host := app.Config.GetString("redis.host")
 	port := app.Config.GetInt("redis.port")
 	password := app.Config.GetString("redis.password")
 	db := app.Config.GetInt("redis.db")
-	connectionTimeout := app.Config.GetInt("redis.connectionTimeout")
 
-	rl := l.With(
+	logger := app.Logger.With(
+		zap.String("operation", "configureApplication"),
 		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", host, port, db)),
-		zap.Int("connectionTimeout", connectionTimeout),
+		zap.Bool("cluster", shouldRunOnCluster),
 	)
 
-	rl.Info("Creating leaderboard client.")
-	cli := leaderboard.NewClient(host, port, password, db)
-	err := cli.Healthcheck(context.Background())
-	if err != nil {
-		return err
-	}
-	app.Leaderboards = cli
-	rl.Info("Leaderboard client creation successfull.")
+	logger.Info("Creating leaderboard client.")
 
-	return nil
+	if shouldRunOnCluster {
+		return leaderboard.NewClient(host, port, password, db)
+	}
+
+	connectionTimeout := app.Config.GetInt("redis.connectionTimeout")
+	return leaderboard.NewClusterClient(host, port, password, db, connectionTimeout)
 }
 
 //AddError rate statistics
