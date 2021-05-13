@@ -312,11 +312,11 @@ func (app *App) createLeaderboardClient() lservice.Leaderboard {
 	logger.Info("Creating leaderboard client.")
 
 	if shouldRunOnCluster {
-		return leaderboard.NewClient(host, port, password, db)
+		connectionTimeout := app.Config.GetInt("redis.connectionTimeout")
+		return leaderboard.NewClusterClient(host, port, password, db, connectionTimeout)
 	}
 
-	connectionTimeout := app.Config.GetInt("redis.connectionTimeout")
-	return leaderboard.NewClusterClient(host, port, password, db, connectionTimeout)
+	return leaderboard.NewClient(host, port, password, db)
 }
 
 //AddError rate statistics
