@@ -94,8 +94,8 @@ func (cc *clusterClient) SMembers(ctx context.Context, key string) ([]string, er
 }
 
 // SRem call redis SREM function
-func (cc *clusterClient) SRem(ctx context.Context, key, member string) error {
-	err := cc.ClusterClient.SRem(ctx, key, member).Err()
+func (cc *clusterClient) SRem(ctx context.Context, key string, members ...string) error {
+	err := cc.ClusterClient.SRem(ctx, key, members).Err()
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
@@ -176,6 +176,15 @@ func (cc *clusterClient) ZRange(ctx context.Context, key string, start, stop int
 	}
 
 	return members, nil
+}
+
+// ZRangeByScore call redis ZREVRANGEBYSCORE command
+func (cc *clusterClient) ZRangeByScore(ctx context.Context, key string, min, max string, offset, count int64) ([]string, error) {
+	result, err := cc.ClusterClient.ZRangeByScore(ctx, key, &goredis.ZRangeBy{Min: min, Max: max, Offset: offset, Count: count}).Result()
+	if err != nil {
+		return nil, NewGeneralError(err.Error())
+	}
+	return result, nil
 }
 
 // ZRank call redis ZRANK function

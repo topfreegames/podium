@@ -20,12 +20,13 @@ type Redis interface {
 	Ping(ctx context.Context) (string, error)
 	SAdd(ctx context.Context, key, member string) error
 	SMembers(ctx context.Context, key string) ([]string, error)
-	SRem(ctx context.Context, key, member string) error
+	SRem(ctx context.Context, key string, members ...string) error
 	TTL(ctx context.Context, key string) (time.Duration, error)
 	ZAdd(ctx context.Context, key string, members ...*Member) error
 	ZCard(ctx context.Context, key string) (int64, error)
 	ZIncrBy(ctx context.Context, key, member string, increment float64) error
 	ZRange(ctx context.Context, key string, start, stop int64) ([]*Member, error)
+	ZRangeByScore(ctx context.Context, key string, min, max string, offset, count int64) ([]string, error)
 	ZRank(ctx context.Context, key, member string) (int64, error)
 	ZRem(ctx context.Context, key string, members ...string) error
 	ZRevRange(ctx context.Context, key string, start, stop int64) ([]*Member, error)

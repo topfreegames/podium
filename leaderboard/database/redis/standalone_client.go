@@ -97,8 +97,8 @@ func (c *standaloneClient) SMembers(ctx context.Context, key string) ([]string, 
 }
 
 // SRem call redis SREM function
-func (c *standaloneClient) SRem(ctx context.Context, key, member string) error {
-	err := c.Client.SRem(ctx, key, member).Err()
+func (c *standaloneClient) SRem(ctx context.Context, key string, members ...string) error {
+	err := c.Client.SRem(ctx, key, members).Err()
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
@@ -178,6 +178,15 @@ func (c *standaloneClient) ZRange(ctx context.Context, key string, start, stop i
 	}
 
 	return members, nil
+}
+
+// ZRangeByScore call redis ZRANGEBYSCORE command
+func (c *standaloneClient) ZRangeByScore(ctx context.Context, key string, min, max string, offset, count int64) ([]string, error) {
+	result, err := c.Client.ZRangeByScore(ctx, key, &goredis.ZRangeBy{Min: min, Max: max, Offset: offset, Count: count}).Result()
+	if err != nil {
+		return nil, NewGeneralError(err.Error())
+	}
+	return result, nil
 }
 
 // ZRank call redis ZRANK function

@@ -65,3 +65,19 @@ func NewTTLNotFoundError(leaderboard string) *TTLNotFoundError {
 func (tnfe *TTLNotFoundError) Error() string {
 	return fmt.Sprintf("ttl to leaderboard %s not found", tnfe.leaderboard)
 }
+
+// LeaderboardWithoutMemberToExpireError is an error throw when leaderboard doesn't have member to expire
+type LeaderboardWithoutMemberToExpireError struct {
+	leaderboard string
+}
+
+// NewLeaderboardWithoutMemberToExpireError create a new KeyNotFoundError
+func NewLeaderboardWithoutMemberToExpireError(leaderboard string) *LeaderboardWithoutMemberToExpireError {
+	return &LeaderboardWithoutMemberToExpireError{
+		leaderboard: leaderboard,
+	}
+}
+
+func (lwmtee *LeaderboardWithoutMemberToExpireError) Error() string {
+	return fmt.Sprintf("leaderboard %s without member to expire", lwmtee.leaderboard)
+}
