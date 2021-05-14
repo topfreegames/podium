@@ -8,36 +8,19 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis"
-
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
+	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/testing"
 )
 
 var currentStage int
 var stages map[int]string
-
-func setScore(cli *redis.Client, leaderboard, member string, score int) {
-	_, err := cli.ZAdd(leaderboard, redis.Z{float64(score), member}).Result()
-	if err != nil {
-		panic(err)
-	}
-}
-
-func createTestData(cli *redis.Client, leaderboardCount, membersPerLeaderboard int, progress func() bool) error {
-	for i := 0; i < leaderboardCount; i++ {
-		for j := 0; j < membersPerLeaderboard; j++ {
-			setScore(cli, fmt.Sprintf("leaderboard-%d", i), fmt.Sprintf("member-%d", j), i*j)
-			progress()
-		}
-	}
-
-	return nil
-}
 
 var leaderboardCount = flag.Int("leaderboards", 3, "number of leaderboards to create")
 var membersPerLeaderboard = flag.Int("mpl", 5000000, "number of members per leaderboard")
@@ -48,6 +31,11 @@ func main() {
 	start := time.Now().Unix()
 
 	totalOps := *leaderboardCount * *membersPerLeaderboard
+
+	config, err := testing.GetDefaultConfig("../../default.yaml")
+	if err != nil {
+		panic(err)
+	}
 
 	uiprogress.Start()                     // start rendering
 	bar := uiprogress.AddBar(totalOps - 1) // Add a new bar
@@ -63,11 +51,30 @@ func main() {
 		return strutil.Resize(text, uint(len(text)))
 	})
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
+	client := redis.NewStandaloneClient(redis.StandaloneOptions{
+		Host:     config.GetString("redis.host"),
+		Port:     config.GetInt("redis.port"),
+		Password: config.GetString("redis.password"),
+		DB:       config.GetInt("redis.db"),
 	})
 
 	createTestData(client, *leaderboardCount, *membersPerLeaderboard, bar.Incr)
+}
+
+func createTestData(cli redis.Redis, leaderboardCount, membersPerLeaderboard int, progress func() bool) error {
+	for i := 0; i < leaderboardCount; i++ {
+		for j := 0; j < membersPerLeaderboard; j++ {
+			setScore(cli, fmt.Sprintf("leaderboard-%d", i), fmt.Sprintf("member-%d", j), i*j)
+			progress()
+		}
+	}
+
+	return nil
+}
+
+func setScore(cli redis.Redis, leaderboard, member string, score int) {
+	err := cli.ZAdd(context.Background(), leaderboard, &redis.Member{Score: float64(score), Member: member})
+	if err != nil {
+		panic(err)
+	}
 }
