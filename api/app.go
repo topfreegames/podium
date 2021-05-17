@@ -239,6 +239,7 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("redis.connectionTimeout", 200)
 	app.Config.SetDefault("jaeger.disabled", true)
 	app.Config.SetDefault("jaeger.samplingProbability", 0.001)
+	app.Config.SetDefault("redis.cluster.enabled", false)
 }
 
 func (app *App) loadConfiguration() error {
@@ -293,21 +294,21 @@ func (app *App) createAndConfigureLeaderboardClient() (lservice.Leaderboard, err
 	err := client.Healthcheck(context.Background())
 
 	if err != nil {
-		app.Logger.Info("Leaderboard client creation successfull.")
+		return nil, err
 	}
 
-	return client, err
+	app.Logger.Info("Leaderboard client creation successfull.")
+	return client, nil
 }
 
 func (app *App) createLeaderboardClient() lservice.Leaderboard {
 	shouldRunOnCluster := app.Config.GetBool("redis.cluster.enabled")
 	password := app.Config.GetString("redis.password")
 	if shouldRunOnCluster {
-		redisAddrs := app.Config.GetString("redis.addrs")
-		addrs := strings.Split(redisAddrs, " ")
+		addrs := app.Config.GetStringSlice("redis.addrs")
 		logger := app.Logger.With(
 			zap.String("operation", "createLeaderboardClient"),
-			zap.String("addrs", redisAddrs),
+			zap.Strings("addrs", addrs),
 			zap.Bool("cluster", shouldRunOnCluster),
 		)
 

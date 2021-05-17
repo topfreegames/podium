@@ -27,7 +27,7 @@ services:
     image: redis-cluster:6.2.1-alpine
     networks:
       - podium
-    ports: 
+    ports:
       - "7002:6379"
 
   initialize-cluster:
@@ -48,6 +48,8 @@ services:
     image: redis:6.2.1-alpine
     networks:
       - podium
+    ports:
+      - "6379:6379"
 
   podium-cluster:
     build:
@@ -73,23 +75,12 @@ services:
       dockerfile: ./build/TestAppDockerfile
     depends_on:
       - redis-standalone
-    environment:
-      - "PODIUM_REDIS_HOST=redis-standalone"
-    volumes:
-      - "../:/podium"
-      - "<<LOCAL_GO_MODCACHE>>:/go/pkg/mod"
-    networks:
-      - podium
-
-  podium-cluster-test:
-    build:
-      context: ../
-      dockerfile: ./build/TestAppDockerfile
-    depends_on:
       - redis-node-0
       - redis-node-1
       - redis-node-2
+      - initialize-cluster
     environment:
+      - "PODIUM_REDIS_HOST=redis-standalone"
       - "PODIUM_REDIS_ADDRS=redis-node-0:6379"
       - "PODIUM_REDIS_CLUSTER_ENABLED=true"
     volumes:
