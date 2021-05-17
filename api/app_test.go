@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/log"
+	"github.com/topfreegames/podium/testing"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -20,7 +21,7 @@ var _ = Describe("App", func() {
 	})
 
 	AfterSuite(func() {
-		ShutdownDefaultTestApp()
+		testing.ShutdownDefaultTestApp()
 		ShutdownDefaultTestAppWithFaltyRedis()
 	})
 
@@ -50,13 +51,6 @@ var _ = Describe("App", func() {
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not load configuration file from: ../config/invalid.yaml"))
-		})
-	})
-
-	Describe("App Connect To Redis", func() {
-		It("Should fail if invalid redis connection", func() {
-			_, err := api.New("127.0.0.1", 9999, 10000, "../config/invalid-redis.yaml", false, logger)
-			Expect(err).To(HaveOccurred())
 		})
 	})
 

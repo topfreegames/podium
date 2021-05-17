@@ -43,19 +43,6 @@ func NewEmptyCtx() context.Context {
 	return context.Background()
 }
 
-// GetDefaultTestApp returns a new podium API Application bound to random ports for test
-func GetDefaultTestApp() *api.App {
-	if defaultApp != nil {
-		return defaultApp
-	}
-	logger := log.CreateLoggerWithLevel(zapcore.DebugLevel, log.LoggerOptions{WriteSyncer: os.Stdout, RemoveTimestamp: true})
-	app, err := api.New("127.0.0.1", 8080, 8081, "../config/test.yaml", false, logger)
-	Expect(err).NotTo(HaveOccurred())
-
-	defaultApp = app
-	return app
-}
-
 // GetFaultyTestApp returns a new podium API Application bound to 0.0.0.0:8890 for test but with a failing Redis
 func GetDefaultTestAppWithFaultyRedis() *api.App {
 	if defaultFaultyRedisApp != nil {
@@ -76,13 +63,6 @@ func GetDefaultTestAppWithFaultyRedis() *api.App {
 
 	defaultFaultyRedisApp = app
 	return app
-}
-
-// ShutdownDefaultTestApp turn off default test app
-func ShutdownDefaultTestApp() {
-	if defaultApp != nil {
-		defaultApp.GracefullStop()
-	}
 }
 
 // ShutdownDefaultTestWithFaultyApp turn off default test app

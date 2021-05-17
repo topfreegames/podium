@@ -20,6 +20,7 @@ import (
 	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 	lservice "github.com/topfreegames/podium/leaderboard/service"
+	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/worker"
 
 	. "github.com/onsi/ginkgo"
@@ -47,28 +48,17 @@ var _ = Describe("Scores Expirer Worker", func() {
 	}()
 
 	BeforeEach(func() {
-		var err error
-
-		config, err := config.GetDefaultConfig("../config/test.yaml")
-		Expect(err).NotTo(HaveOccurred())
-
-		redisClient = redis.NewStandaloneClient(
-			redis.StandaloneOptions{
-				Host:     config.GetString("redis.host"),
-				Port:     config.GetInt("redis.port"),
-				Password: config.GetString("redis.password"),
-				DB:       config.GetInt("redis.db"),
-			},
-		)
-		Expect(err).NotTo(HaveOccurred())
+		app := testing.GetDefaultTestApp()
+		redisClient = testing.GetAppRedis(app)
 
 		leaderboards = leaderboard.NewClient(
-			config.GetString("redis.host"),
-			config.GetInt("redis.port"),
-			config.GetString("redis.password"),
-			config.GetInt("redis.db"),
+			app.Config.GetString("redis.host"),
+			app.Config.GetInt("redis.port"),
+			app.Config.GetString("redis.password"),
+			app.Config.GetInt("redis.db"),
 		)
 
+		var err error
 		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 	})

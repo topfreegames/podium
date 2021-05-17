@@ -20,6 +20,7 @@ import (
 	"github.com/onsi/ginkgo/types"
 	"github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
+	"github.com/topfreegames/podium/leaderboard/database/redis"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 )
@@ -52,7 +53,8 @@ func initializeTestServer(app *api.App) {
 
 var defaultApp *api.App
 
-func getDefaultTestApp() *api.App {
+// GetDefaultTestApp returns a testing app
+func GetDefaultTestApp() *api.App {
 	if defaultApp != nil {
 		return defaultApp
 	}
@@ -63,6 +65,37 @@ func getDefaultTestApp() *api.App {
 	}
 	defaultApp = app
 	return app
+}
+
+// ShutdownDefaultTestApp turn off default test app
+func ShutdownDefaultTestApp() {
+	if defaultApp != nil {
+		defaultApp.GracefullStop()
+	}
+}
+
+// GetAppRedis creates a redis instance based on the app configuration
+func GetAppRedis(app *api.App) redis.Redis {
+	shouldRunOnCluster := app.Config.GetBool("redis.cluster.enabled")
+	password := app.Config.GetString("redis.password")
+	if shouldRunOnCluster {
+		addrs := app.Config.GetStringSlice("redis.addrs")
+		return redis.NewClusterClient(redis.ClusterOptions{
+			Addrs:    addrs,
+			Password: password,
+		})
+	}
+
+	host := app.Config.GetString("redis.host")
+	port := app.Config.GetInt("redis.port")
+	db := app.Config.GetInt("redis.db")
+
+	return redis.NewStandaloneClient(redis.StandaloneOptions{
+		Host:     host,
+		Port:     port,
+		Password: password,
+		DB:       db,
+	})
 }
 
 //HTTPMeasure runs the specified specs in an http test
@@ -81,7 +114,7 @@ func XHTTPMeasure(description string, setup func(map[string]interface{}), f func
 }
 
 func measure(description string, setup func(map[string]interface{}), f func(string, map[string]interface{}), timeout float64, flagType types.FlagType) bool {
-	app := getDefaultTestApp()
+	app := GetDefaultTestApp()
 
 	d := func(t string, f func()) { ginkgo.Describe(t, f) }
 	if flagType == types.FlagTypeFocused {

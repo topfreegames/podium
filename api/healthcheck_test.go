@@ -20,11 +20,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
+	"github.com/topfreegames/podium/testing"
 )
 
 var _ = Describe("Healthcheck Handler", func() {
 	It("Should respond with default WORKING string (http)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 		status, body := Get(a, "/healthcheck")
 
 		Expect(status).To(Equal(http.StatusOK))
@@ -32,7 +33,7 @@ var _ = Describe("Healthcheck Handler", func() {
 	})
 
 	It("Should respond with default WORKING string (grpc)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 
 		SetupGRPC(a, func(cli api.PodiumClient) {
 			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
@@ -43,7 +44,7 @@ var _ = Describe("Healthcheck Handler", func() {
 	})
 
 	It("Should respond with customized WORKING string (http)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
 		status, body := Get(a, "/healthcheck")
 
@@ -52,7 +53,7 @@ var _ = Describe("Healthcheck Handler", func() {
 	})
 
 	It("Should respond with customized WORKING string (grpc)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
 
 		SetupGRPC(a, func(cli api.PodiumClient) {

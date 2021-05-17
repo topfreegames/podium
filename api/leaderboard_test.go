@@ -38,13 +38,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 	BeforeSuite(func() {
 		app = GetDefaultTestApp()
-
-		redisClient = redis.NewStandaloneClient(redis.StandaloneOptions{
-			Host:     app.Config.GetString("redis.host"),
-			Port:     app.Config.GetInt("redis.port"),
-			Password: app.Config.GetString("redis.password"),
-			DB:       app.Config.GetInt("redis.db"),
-		})
+		redisClient = GetAppRedis(app)
 	})
 
 	AfterEach(func() {

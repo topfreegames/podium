@@ -20,11 +20,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
+	"github.com/topfreegames/podium/testing"
 )
 
 var _ = Describe("Status Handler", func() {
 	It("Should respond with status (http)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 		status, body := Get(a, "/status")
 
 		Expect(status).To(Equal(http.StatusOK))
@@ -39,7 +40,7 @@ var _ = Describe("Status Handler", func() {
 	})
 
 	It("Should respond with status (grpc)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 
 		SetupGRPC(a, func(cli api.PodiumClient) {
 			resp, err := cli.Status(context.Background(), &empty.Empty{})

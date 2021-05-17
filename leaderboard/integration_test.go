@@ -23,7 +23,7 @@ import (
 	. "github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/model"
 	"github.com/topfreegames/podium/leaderboard/service"
-	"github.com/topfreegames/podium/leaderboard/testing"
+	podiumTesting "github.com/topfreegames/podium/testing"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -36,33 +36,19 @@ var _ = Describe("Leaderboard integration tests", func() {
 	const testLeaderboardID = "test-leaderboard"
 
 	BeforeEach(func() {
-		var err error
-		config, err := testing.GetDefaultConfig("../config/test.yaml")
-		Expect(err).NotTo(HaveOccurred())
+		app := podiumTesting.GetDefaultTestApp()
+		redisClient = podiumTesting.GetAppRedis(app)
 
-		host := config.GetString("redis.host")
-		password := config.GetString("redis.password")
-		port := config.GetInt("redis.port")
-		db := config.GetInt("redis.db")
-
-		redisClient = redis.NewStandaloneClient(redis.StandaloneOptions{
-			Host:     host,
-			Password: password,
-			Port:     port,
-			DB:       db,
-		})
-		Expect(err).NotTo(HaveOccurred())
-
-		leaderboards = NewClient(host, port, "", db)
+		leaderboards = NewClientFromExistingRedis(redisClient)
 
 		faultyLeaderboards = leaderboard.NewClient(
-			config.GetString("faultyRedis.host"),
-			config.GetInt("faultyRedis.port"),
-			config.GetString("faultyRedis.password"),
-			config.GetInt("faultyRedis.db"),
+			app.Config.GetString("faultyRedis.host"),
+			app.Config.GetInt("faultyRedis.port"),
+			app.Config.GetString("faultyRedis.password"),
+			app.Config.GetInt("faultyRedis.db"),
 		)
 
-		err = leaderboards.RemoveLeaderboard(NewEmptyCtx(), testLeaderboardID)
+		err := leaderboards.RemoveLeaderboard(NewEmptyCtx(), testLeaderboardID)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
