@@ -43,6 +43,9 @@ run: ## Execute the project
 
 test: test-podium test-leaderboard ## Execute all tests
 
+test-cluster: deployments/docker-compose.yaml ## Execute all API tests against podium cluster
+	@docker-compose -f $< up podium-cluster-test
+
 test-podium: ## Execute all API tests
 	@ginkgo --cover -r -nodes=1 -skipPackage=leaderboard ./
 

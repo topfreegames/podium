@@ -54,9 +54,8 @@ var _ = Describe("App", func() {
 	})
 
 	Describe("App Connect To Redis", func() {
-		It("Should faild if invalid redis connection", func() {
-			app, err := api.New("127.0.0.1", 9999, 10000, "../config/invalid-redis.yaml", false, logger)
-			Expect(app).To(BeNil())
+		It("Should fail if invalid redis connection", func() {
+			_, err := api.New("127.0.0.1", 9999, 10000, "../config/invalid-redis.yaml", false, logger)
 			Expect(err).To(HaveOccurred())
 		})
 	})

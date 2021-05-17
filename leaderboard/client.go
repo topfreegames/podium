@@ -20,13 +20,11 @@ func NewClient(host string, port int, password string, db int) service.Leaderboa
 }
 
 // NewClusterClient creates a leaderboard prepared to receive commands and execute them in a redis cluster
-func NewClusterClient(host string, port int, password string, db int, connectionTimeout int) service.Leaderboard {
+func NewClusterClient(addrs []string, password string) service.Leaderboard {
 	database := database.NewRedisDatabase(database.RedisOptions{
 		ClusterEnabled: true,
-		Host:           host,
-		Port:           port,
+		Addrs:          addrs,
 		Password:       password,
-		DB:             db,
 	})
 
 	service := service.NewService(database)

@@ -284,7 +284,6 @@ func (app *App) configureApplication() error {
 		return err
 	}
 	app.Leaderboards = client
-	app.Logger.Info("Leaderboard client creation successfull.")
 
 	return nil
 }
@@ -293,28 +292,40 @@ func (app *App) createAndConfigureLeaderboardClient() (lservice.Leaderboard, err
 	client := app.createLeaderboardClient()
 	err := client.Healthcheck(context.Background())
 
+	if err != nil {
+		app.Logger.Info("Leaderboard client creation successfull.")
+	}
+
 	return client, err
 }
 
 func (app *App) createLeaderboardClient() lservice.Leaderboard {
 	shouldRunOnCluster := app.Config.GetBool("redis.cluster.enabled")
+	password := app.Config.GetString("redis.password")
+	if shouldRunOnCluster {
+		redisAddrs := app.Config.GetString("redis.addrs")
+		addrs := strings.Split(redisAddrs, " ")
+		logger := app.Logger.With(
+			zap.String("operation", "createLeaderboardClient"),
+			zap.String("addrs", redisAddrs),
+			zap.Bool("cluster", shouldRunOnCluster),
+		)
+
+		logger.Info("Creating leaderboard client.")
+		return leaderboard.NewClusterClient(addrs, password)
+	}
+
 	host := app.Config.GetString("redis.host")
 	port := app.Config.GetInt("redis.port")
-	password := app.Config.GetString("redis.password")
 	db := app.Config.GetInt("redis.db")
 
 	logger := app.Logger.With(
-		zap.String("operation", "configureApplication"),
+		zap.String("operation", "createLeaderboardClient"),
 		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", host, port, db)),
 		zap.Bool("cluster", shouldRunOnCluster),
 	)
 
 	logger.Info("Creating leaderboard client.")
-
-	if shouldRunOnCluster {
-		connectionTimeout := app.Config.GetInt("redis.connectionTimeout")
-		return leaderboard.NewClusterClient(host, port, password, db, connectionTimeout)
-	}
 
 	return leaderboard.NewClient(host, port, password, db)
 }
