@@ -395,6 +395,22 @@ var _ = Describe("Leaderboard integration tests", func() {
 			Expect(lastAroundMe.PublicID).To(Equal("member_7"))
 		})
 
+		It("should always return page size members when page size is less than total members", func() {
+			pageSize := 3
+			for i := 0; i < 5; i++ {
+				_, err := leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			for i := 0; i < 5; i++ {
+				members, err := leaderboards.GetAroundMe(NewEmptyCtx(), testLeaderboardID, pageSize, fmt.Sprintf("member_%d", i), "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(len(members)).To(Equal(pageSize))
+			}
+
+		})
+
 		It("should get members around specific member in reverse order", func() {
 			pageSize := 20
 			for i := 0; i < 101; i++ {
@@ -490,6 +506,22 @@ var _ = Describe("Leaderboard integration tests", func() {
 			Expect(len(members)).To(Equal(pageSize))
 			Expect(firstAroundMe.PublicID).To(Equal("member_31"))
 			Expect(lastAroundMe.PublicID).To(Equal("member_7"))
+		})
+
+		It("should always return page size members when page size is less than total members", func() {
+			pageSize := 3
+			for i := 0; i < 5; i++ {
+				_, err := leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			for i := 0; i < 5; i++ {
+				members, err := leaderboards.GetAroundScore(NewEmptyCtx(), testLeaderboardID, pageSize, int64(i), "desc")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(len(members)).To(Equal(pageSize))
+			}
+
 		})
 
 		It("should get members around specific score reverse order", func() {
