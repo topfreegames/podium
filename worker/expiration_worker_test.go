@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/topfreegames/podium/config"
-	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 	lservice "github.com/topfreegames/podium/leaderboard/service"
@@ -51,12 +50,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		app := testing.GetDefaultTestApp()
 		redisClient = testing.GetAppRedis(app)
 
-		leaderboards = leaderboard.NewClient(
-			app.Config.GetString("redis.host"),
-			app.Config.GetInt("redis.port"),
-			app.Config.GetString("redis.password"),
-			app.Config.GetInt("redis.db"),
-		)
+		leaderboards = app.Leaderboards
 
 		var err error
 		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml")
