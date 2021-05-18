@@ -89,7 +89,7 @@ var _ = Describe("Service GetAroundScore", func() {
 
 	It("Should return member slice with last members if GetMemberIDsWithScoreInsideRange return no member", func() {
 		start := 7
-		stop := 10
+		stop := 9
 
 		membersDatabaseReturn := []*database.Member{
 			{
@@ -196,7 +196,7 @@ var _ = Describe("Service GetAroundScore", func() {
 	It("Should ask for last members if user is the last one", func() {
 		rank := 10
 		start := 7
-		stop := 10
+		stop := 9
 
 		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{member}, nil)
 
@@ -213,7 +213,7 @@ var _ = Describe("Service GetAroundScore", func() {
 		var rank int = 0
 		var totalMembers int = 2
 		start := 0
-		stop := 2
+		stop := 1
 
 		mock.EXPECT().GetMemberIDsWithScoreInsideRange(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq("-inf"), gomock.Eq(fmt.Sprint(score)), gomock.Eq(0), gomock.Eq(1)).Return([]string{member}, nil)
 		mock.EXPECT().GetRank(gomock.Any(), gomock.Eq(leaderboard), gomock.Eq(member), gomock.Eq(order)).Return(rank, nil)

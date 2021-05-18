@@ -76,8 +76,11 @@ deployments/docker-compose.yaml: deployments/docker-compose-model.yaml
 compose-up-dependencies: deployments/docker-compose.yaml ## Run all dependencies using docker-compose
 	@docker-compose -f $< up -d redis-node-0 redis-node-1 redis-node-2 redis-standalone initialize-cluster
 
+compose-up-api: deployments/docker-compose.yaml ## Initialize api on composer environment
+	@docker-compose -f $< up -d --build podium-api podium-api
+
 compose-test: deployments/docker-compose.yaml compose-up-dependencies ## Execute podium tests using docker-compose
-	@docker-compose -f $< up --build podium-test
+	@docker-compose -f $< up podium-test
 
 compose-down: deployments/docker-compose.yaml ## Stop all dependency containers
 	@docker-compose -f $< down
