@@ -36,7 +36,7 @@ func (r *ExpirationResult) String() string {
 // ExpirationWorker is the struct that represents the scores expirer worker
 type ExpirationWorker struct {
 	Config                  *viper.Viper
-	Database                database.ExpirationDatabase
+	Database                database.Expiration
 	ConfigPath              string
 	ExpirationCheckInterval time.Duration
 	ExpirationLimitPerRun   int

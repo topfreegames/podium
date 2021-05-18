@@ -16,7 +16,7 @@ import (
 var _ = Describe("Redis Expiration Database", func() {
 	var ctrl *gomock.Controller
 	var mock *redis.MockRedis
-	var redisExpiration database.ExpirationDatabase
+	var redisExpiration database.Expiration
 	var leaderboard string = "leaderboardTest"
 	var leaderboardTTL string = "leaderboardTest:ttl"
 	var amount int = 10

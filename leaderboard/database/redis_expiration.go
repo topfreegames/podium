@@ -10,7 +10,7 @@ import (
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 )
 
-var _ ExpirationDatabase = &Redis{}
+var _ Expiration = &Redis{}
 
 // GetExpirationLeaderboards return leaderboards registerd with members to expire
 func (r *Redis) GetExpirationLeaderboards(ctx context.Context) ([]string, error) {
