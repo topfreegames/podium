@@ -16,6 +16,8 @@ import (
 
 var _ = Describe("App", func() {
 	var logger *zap.Logger
+	var app *api.App
+	var err error
 	BeforeEach(func() {
 		logger = log.CreateLoggerWithLevel(zapcore.FatalLevel, log.LoggerOptions{WriteSyncer: os.Stdout, RemoveTimestamp: true})
 	})
@@ -25,9 +27,16 @@ var _ = Describe("App", func() {
 		ShutdownDefaultTestAppWithFaltyRedis()
 	})
 
+	AfterEach(func() {
+		if app != nil {
+			app.GracefullStop()
+			app = nil
+		}
+	})
+
 	Describe("App creation", func() {
 		It("should create new app", func() {
-			app, err := api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", true, logger)
+			app, err = api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", true, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(app).NotTo(BeNil())
 			Expect(app.HTTPEndpoint).To(Equal("127.0.0.1:9999"))
@@ -39,7 +48,7 @@ var _ = Describe("App", func() {
 
 	Describe("App Load Configuration", func() {
 		It("Should load configuration from file", func() {
-			app, err := api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", false, logger)
+			app, err = api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", false, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(app.Config).NotTo(BeNil())
 			expected := app.Config.GetString("healthcheck.workingText")
@@ -47,7 +56,7 @@ var _ = Describe("App", func() {
 		})
 
 		It("Should fail if configuration file does not exist", func() {
-			app, err := api.New("127.0.0.1", 9999, 10000, "../config/invalid.yaml", false, logger)
+			app, err = api.New("127.0.0.1", 9999, 10000, "../config/invalid.yaml", false, logger)
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Could not load configuration file from: ../config/invalid.yaml"))
@@ -62,7 +71,7 @@ var _ = Describe("App", func() {
 		})
 
 		It("should handle errors and send to raven", func() {
-			app, err := api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", false, logger)
+			app, err = api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", false, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			app.OnErrorHandler(fmt.Errorf("some other error occurred"), []byte("stack"))
@@ -78,7 +87,7 @@ var _ = Describe("App", func() {
 
 	Describe("Error metrics", func() {
 		It("should add error rate", func() {
-			app, err := api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", false, logger)
+			app, err = api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", false, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			app.AddError()

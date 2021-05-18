@@ -134,7 +134,11 @@ func initializeTestServer(app *api.App) {
 	}
 	if !serverInitialized[app.HTTPEndpoint] {
 		go func() {
-			_ = app.Start(context.Background())
+			err := app.Start(context.Background())
+			fmt.Printf("Starting test server. HTTP: %s; GRPC: %s\n", app.HTTPEndpoint, app.GRPCEndpoint)
+			if err != nil {
+				panic(err)
+			}
 		}()
 		serverInitialized[app.HTTPEndpoint] = true
 		err := app.WaitForReady(500 * time.Millisecond)
