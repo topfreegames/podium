@@ -10,7 +10,7 @@ import (
 
 // Redis is a type that implements Database interface with redis client
 type Redis struct {
-	redis.Redis
+	redis.Client
 }
 
 var _ Database = &Redis{}
@@ -47,7 +47,7 @@ func NewRedisDatabase(options RedisOptions) *Redis {
 
 // GetLeaderboardExpiration return leaderboard expiration time
 func (r *Redis) GetLeaderboardExpiration(ctx context.Context, leaderboard string) (int64, error) {
-	duration, err := r.Redis.TTL(ctx, leaderboard)
+	duration, err := r.Client.TTL(ctx, leaderboard)
 	if err != nil {
 		if _, ok := err.(*redis.TTLNotFoundError); ok {
 			return int64(-1), NewTTLNotFoundError(leaderboard)
@@ -67,7 +67,7 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 	membersToReturn := make([]*Member, 0, len(members))
 
 	for _, member := range members {
-		score, err := r.Redis.ZScore(ctx, leaderboard, member)
+		score, err := r.Client.ZScore(ctx, leaderboard, member)
 		if err != nil {
 			if _, ok := err.(*redis.MemberNotFoundError); ok {
 				membersToReturn = append(membersToReturn, nil)
@@ -80,9 +80,9 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 		var rank int64
 		switch order {
 		case "asc":
-			rank, err = r.Redis.ZRank(ctx, leaderboard, member)
+			rank, err = r.Client.ZRank(ctx, leaderboard, member)
 		case "desc":
-			rank, err = r.Redis.ZRevRank(ctx, leaderboard, member)
+			rank, err = r.Client.ZRevRank(ctx, leaderboard, member)
 		}
 		if err != nil {
 			return nil, NewGeneralError(err.Error())
@@ -113,7 +113,7 @@ func (r *Redis) GetMembers(ctx context.Context, leaderboard, order string, inclu
 
 func (r *Redis) getMemberTTL(ctx context.Context, leaderboard, member string) (time.Time, error) {
 	leaderboardTTL := fmt.Sprintf("%s:ttl", leaderboard)
-	ttl, err := r.Redis.ZScore(ctx, leaderboardTTL, member)
+	ttl, err := r.Client.ZScore(ctx, leaderboardTTL, member)
 	if err != nil {
 		if _, ok := err.(*redis.MemberNotFoundError); ok {
 			return time.Time{}, NewMemberNotFoundError(leaderboardTTL, member)
@@ -126,7 +126,7 @@ func (r *Redis) getMemberTTL(ctx context.Context, leaderboard, member string) (t
 
 // GetMemberIDsWithScoreInsideRange find members with score close to
 func (r *Redis) GetMemberIDsWithScoreInsideRange(ctx context.Context, leaderboard string, min, max string, offset, count int) ([]string, error) {
-	members, err := r.Redis.ZRevRangeByScore(ctx, leaderboard, min, max, int64(offset), int64(count))
+	members, err := r.Client.ZRevRangeByScore(ctx, leaderboard, min, max, int64(offset), int64(count))
 	if err != nil {
 		return nil, NewGeneralError(err.Error())
 	}
@@ -141,9 +141,9 @@ func (r *Redis) GetOrderedMembers(ctx context.Context, leaderboard string, start
 
 	switch order {
 	case "asc":
-		redisMembers, err = r.Redis.ZRange(ctx, leaderboard, int64(start), int64(stop))
+		redisMembers, err = r.Client.ZRange(ctx, leaderboard, int64(start), int64(stop))
 	case "desc":
-		redisMembers, err = r.Redis.ZRevRange(ctx, leaderboard, int64(start), int64(stop))
+		redisMembers, err = r.Client.ZRevRange(ctx, leaderboard, int64(start), int64(stop))
 	default:
 		return nil, NewInvalidOrderError(order)
 	}
@@ -171,9 +171,9 @@ func (r *Redis) GetRank(ctx context.Context, leaderboard, member, order string) 
 
 	switch order {
 	case "asc":
-		rank, err = r.Redis.ZRank(ctx, leaderboard, member)
+		rank, err = r.Client.ZRank(ctx, leaderboard, member)
 	case "desc":
-		rank, err = r.Redis.ZRevRank(ctx, leaderboard, member)
+		rank, err = r.Client.ZRevRank(ctx, leaderboard, member)
 	default:
 		return -1, NewInvalidOrderError(order)
 	}
@@ -191,7 +191,7 @@ func (r *Redis) GetRank(ctx context.Context, leaderboard, member, order string) 
 
 // GetTotalMembers return total members in a leaderboard
 func (r *Redis) GetTotalMembers(ctx context.Context, leaderboard string) (int, error) {
-	totalMembers, err := r.Redis.ZCard(ctx, leaderboard)
+	totalMembers, err := r.Client.ZCard(ctx, leaderboard)
 	if err != nil {
 		if _, ok := err.(*redis.KeyNotFoundError); ok {
 			return 0, nil
@@ -222,7 +222,7 @@ func (r *Redis) IncrementMemberScore(ctx context.Context, leaderboard, member st
 
 // RemoveLeaderboard delete leaderboard key from redis
 func (r *Redis) RemoveLeaderboard(ctx context.Context, leaderboard string) error {
-	err := r.Redis.Del(ctx, leaderboard)
+	err := r.Client.Del(ctx, leaderboard)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
@@ -231,7 +231,7 @@ func (r *Redis) RemoveLeaderboard(ctx context.Context, leaderboard string) error
 
 // RemoveMembers delete from redis members
 func (r *Redis) RemoveMembers(ctx context.Context, leaderboard string, members ...string) error {
-	err := r.Redis.ZRem(ctx, leaderboard, members...)
+	err := r.Client.ZRem(ctx, leaderboard, members...)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
@@ -240,7 +240,7 @@ func (r *Redis) RemoveMembers(ctx context.Context, leaderboard string, members .
 
 // SetLeaderboardExpiration will set leaderboard expiration time
 func (r *Redis) SetLeaderboardExpiration(ctx context.Context, leaderboard string, expireAt time.Time) error {
-	err := r.Redis.ExpireAt(ctx, leaderboard, expireAt)
+	err := r.Client.ExpireAt(ctx, leaderboard, expireAt)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
@@ -256,7 +256,7 @@ func (r *Redis) SetMembers(ctx context.Context, leaderboard string, databaseMemb
 			Score:  member.Score,
 		})
 	}
-	err := r.Redis.ZAdd(ctx, leaderboard, redisMembers...)
+	err := r.Client.ZAdd(ctx, leaderboard, redisMembers...)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
@@ -279,12 +279,12 @@ func (r *Redis) SetMembersTTL(ctx context.Context, leaderboard string, databaseM
 	}
 
 	expirationKey := fmt.Sprintf("%s:ttl", leaderboard)
-	err := r.Redis.ZAdd(ctx, expirationKey, redisMembers...)
+	err := r.Client.ZAdd(ctx, expirationKey, redisMembers...)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
 
-	err = r.Redis.SAdd(ctx, ExpirationSet, expirationKey)
+	err = r.Client.SAdd(ctx, ExpirationSet, expirationKey)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}

@@ -72,13 +72,13 @@ var _ = Describe("Redis Database", func() {
 
 				It("Should return member list if redis return ok", func() {
 					expectedMembers := []*database.Member{
-						&database.Member{
+						{
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
 							TTL:    time.Unix(10000, 0),
 						},
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -103,13 +103,13 @@ var _ = Describe("Redis Database", func() {
 
 				It("Should return member list with TTL equals zero if redis return ok", func() {
 					expectedMembers := []*database.Member{
-						&database.Member{
+						{
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
 							TTL:    time.Unix(10000, 0),
 						},
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -135,7 +135,7 @@ var _ = Describe("Redis Database", func() {
 				It("Should return nil member if it doesnt exists", func() {
 					expectedMembers := []*database.Member{
 						nil,
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -170,13 +170,13 @@ var _ = Describe("Redis Database", func() {
 
 				It("Should return member list if redis return ok with TTL = 0", func() {
 					expectedMembers := []*database.Member{
-						&database.Member{
+						{
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
 							TTL:    time.Time{},
 						},
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -198,13 +198,13 @@ var _ = Describe("Redis Database", func() {
 
 				It("Should return member list with empty TTL if redis return ok", func() {
 					expectedMembers := []*database.Member{
-						&database.Member{
+						{
 							Member: "member1",
 							Score:  float64(1),
 							Rank:   int64(0),
 							TTL:    time.Time{},
 						},
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -227,7 +227,7 @@ var _ = Describe("Redis Database", func() {
 				It("Should return nil member if it doesnt exists", func() {
 					expectedMembers := []*database.Member{
 						nil,
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -264,13 +264,13 @@ var _ = Describe("Redis Database", func() {
 
 				It("Should return member list if redis return ok", func() {
 					expectedMembers := []*database.Member{
-						&database.Member{
+						{
 							Member: "member1",
 							Score:  float64(2),
 							Rank:   int64(0),
 							TTL:    time.Unix(10000, 0),
 						},
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(1),
 							Rank:   int64(1),
@@ -296,7 +296,7 @@ var _ = Describe("Redis Database", func() {
 				It("Should return nil member if it doesnt exists", func() {
 					expectedMembers := []*database.Member{
 						nil,
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -331,13 +331,13 @@ var _ = Describe("Redis Database", func() {
 
 				It("Should return member list if redis return ok with TTL equal zero", func() {
 					expectedMembers := []*database.Member{
-						&database.Member{
+						{
 							Member: "member1",
 							Score:  float64(2),
 							Rank:   int64(0),
 							TTL:    time.Time{},
 						},
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(1),
 							Rank:   int64(1),
@@ -360,7 +360,7 @@ var _ = Describe("Redis Database", func() {
 				It("Should return nil member if it doesnt exists", func() {
 					expectedMembers := []*database.Member{
 						nil,
-						&database.Member{
+						{
 							Member: "member2",
 							Score:  float64(2),
 							Rank:   int64(1),
@@ -446,32 +446,32 @@ var _ = Describe("Redis Database", func() {
 			var order = "asc"
 			It("Should return member list if redis return ok", func() {
 				membersRedisReturn := []*redis.Member{
-					&redis.Member{
+					{
 						Member: "member1",
 						Score:  float64(1),
 					},
-					&redis.Member{
+					{
 						Member: "member2",
 						Score:  float64(2),
 					},
-					&redis.Member{
+					{
 						Member: "member3",
 						Score:  float64(3),
 					},
 				}
 
 				membersToReturn := []*database.Member{
-					&database.Member{
+					{
 						Member: "member1",
 						Score:  float64(1),
 						Rank:   int64(start),
 					},
-					&database.Member{
+					{
 						Member: "member2",
 						Score:  float64(2),
 						Rank:   int64(start + 1),
 					},
-					&database.Member{
+					{
 						Member: "member3",
 						Score:  float64(3),
 						Rank:   int64(start + 2),
@@ -498,32 +498,32 @@ var _ = Describe("Redis Database", func() {
 			var order = "desc"
 			It("Should return member list if redis return ok", func() {
 				membersRedisReturn := []*redis.Member{
-					&redis.Member{
+					{
 						Member: "member3",
 						Score:  float64(3),
 					},
-					&redis.Member{
+					{
 						Member: "member2",
 						Score:  float64(2),
 					},
-					&redis.Member{
+					{
 						Member: "member1",
 						Score:  float64(1),
 					},
 				}
 
 				membersToReturn := []*database.Member{
-					&database.Member{
+					{
 						Member: "member3",
 						Score:  float64(3),
 						Rank:   int64(start + 0),
 					},
-					&database.Member{
+					{
 						Member: "member2",
 						Score:  float64(2),
 						Rank:   int64(start + 1),
 					},
-					&database.Member{
+					{
 						Member: "member1",
 						Score:  float64(1),
 						Rank:   int64(start + 2),
@@ -683,22 +683,22 @@ var _ = Describe("Redis Database", func() {
 
 	Describe("SetMembersScore", func() {
 		redisMembers := []*redis.Member{
-			&redis.Member{
+			{
 				Member: member,
 				Score:  score,
 			},
-			&redis.Member{
+			{
 				Member: "member2",
 				Score:  2.0,
 			},
 		}
 
 		databaseMembers := []*database.Member{
-			&database.Member{
+			{
 				Member: member,
 				Score:  score,
 			},
-			&database.Member{
+			{
 				Member: "member2",
 				Score:  2.0,
 			},
@@ -723,22 +723,22 @@ var _ = Describe("Redis Database", func() {
 		time2 := time.Now().Add(-12 * time.Hour)
 		leaderboardTTL := fmt.Sprintf("%s:ttl", leaderboard)
 		redisMembers := []*redis.Member{
-			&redis.Member{
+			{
 				Member: member,
 				Score:  float64(time1.Unix()),
 			},
-			&redis.Member{
+			{
 				Member: "member2",
 				Score:  float64(time2.Unix()),
 			},
 		}
 
 		databaseMembers := []*database.Member{
-			&database.Member{
+			{
 				Member: member,
 				TTL:    time1,
 			},
-			&database.Member{
+			{
 				Member: "member2",
 				TTL:    time2,
 			},

@@ -12,8 +12,8 @@ const (
 	KeyWithoutTTL = -1
 )
 
-// Redis interface define wich redis methods will be used by leaderboard module
-type Redis interface {
+// Client interface define wich redis methods will be used by leaderboard module
+type Client interface {
 	Del(ctx context.Context, key string) error
 	Exists(ctx context.Context, key string) error
 	ExpireAt(ctx context.Context, key string, time time.Time) error

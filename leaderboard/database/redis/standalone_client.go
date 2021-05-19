@@ -12,7 +12,7 @@ type standaloneClient struct {
 	*goredis.Client
 }
 
-var _ Redis = &standaloneClient{}
+var _ Client = &standaloneClient{}
 
 // StandaloneOptions define configuration parameters to instantiate a new StandaloneClient
 type StandaloneOptions struct {
@@ -23,7 +23,7 @@ type StandaloneOptions struct {
 }
 
 // NewStandaloneClient returns a new redis standalone client instance
-func NewStandaloneClient(options StandaloneOptions) Redis {
+func NewStandaloneClient(options StandaloneOptions) Client {
 	goRedisClient := goredis.NewClient(&goredis.Options{
 		Addr:     fmt.Sprintf("%s:%d", options.Host, options.Port),
 		Password: options.Password,

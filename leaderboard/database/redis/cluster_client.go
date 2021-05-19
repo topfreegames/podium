@@ -12,7 +12,7 @@ type clusterClient struct {
 	*goredis.ClusterClient
 }
 
-var _ Redis = &clusterClient{}
+var _ Client = &clusterClient{}
 
 // ClusterOptions define configuration parameters to instantiate a new ClusterClient
 type ClusterOptions struct {
@@ -21,7 +21,7 @@ type ClusterOptions struct {
 }
 
 // NewClusterClient returns a new redis cluster client instance
-func NewClusterClient(clusterOptions ClusterOptions) Redis {
+func NewClusterClient(clusterOptions ClusterOptions) Client {
 	goRedisClient := goredis.NewClusterClient(&goredis.ClusterOptions{
 		Addrs:    clusterOptions.Addrs,
 		Password: clusterOptions.Password,

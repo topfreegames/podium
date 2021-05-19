@@ -16,7 +16,7 @@ var _ = Describe("Cluster Client", func() {
 	const testKey string = "testKey"
 	const member string = "member"
 
-	var clusterClient redis.Redis
+	var clusterClient redis.Client
 	var goRedis *goredis.ClusterClient
 
 	BeforeEach(func() {
