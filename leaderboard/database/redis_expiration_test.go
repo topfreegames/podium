@@ -21,7 +21,6 @@ var _ = Describe("Redis Expiration Database", func() {
 	var leaderboardTTL string = "leaderboardTest:ttl"
 	var amount int = 10
 	var member string = "memberTest"
-	// 	var score float64 = 1.0
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
