@@ -27,13 +27,6 @@ var _ = Describe("App", func() {
 		testing.ShutdownDefaultTestAppWithFaltyRedis()
 	})
 
-	AfterEach(func() {
-		if app != nil {
-			app.GracefullStop()
-			app = nil
-		}
-	})
-
 	Describe("App creation", func() {
 		It("should create new app", func() {
 			app, err = api.New("127.0.0.1", 9999, 10000, "../config/test.yaml", true, logger)

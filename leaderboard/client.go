@@ -2,7 +2,6 @@ package leaderboard
 
 import (
 	"github.com/topfreegames/podium/leaderboard/database"
-	"github.com/topfreegames/podium/leaderboard/database/redis"
 	"github.com/topfreegames/podium/leaderboard/service"
 )
 
@@ -18,12 +17,6 @@ func NewClient(host string, port int, password string, db int) service.Leaderboa
 
 	service := service.NewService(database)
 	return service
-}
-
-// NewClientFromExistingRedis creates a client using an existing redis connection
-func NewClientFromExistingRedis(redis redis.Redis) service.Leaderboard {
-	database := &database.Redis{redis}
-	return service.NewService(database)
 }
 
 // NewClusterClient creates a leaderboard prepared to receive commands and execute them in a redis cluster

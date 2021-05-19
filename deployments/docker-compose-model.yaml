@@ -7,8 +7,6 @@ services:
     image: redis-cluster:6.2.1-alpine
     networks:
       - podium
-    ports: 
-      - "7000:6379"
 
   redis-node-1:
     build:
@@ -17,8 +15,6 @@ services:
     image: redis-cluster:6.2.1-alpine
     networks:
       - podium
-    ports: 
-      - "7001:6379"
 
   redis-node-2:
     build:
@@ -27,8 +23,6 @@ services:
     image: redis-cluster:6.2.1-alpine
     networks:
       - podium
-    ports:
-      - "7002:6379"
 
   initialize-cluster:
     build:
