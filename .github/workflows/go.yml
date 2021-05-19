@@ -44,6 +44,8 @@ jobs:
         run: make setup
       - name: Test
         run: make test
+      - name: Test cluster
+        run: make compose-test
       - name: Coverage
         run: make coverage
       - name: Install goveralls
