@@ -11,6 +11,7 @@ import (
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/testing"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -91,26 +92,30 @@ func ShutdownDefaultTestAppWithFaltyRedis() {
 	}
 }
 
-// GetAppRedis creates a redis instance based on the app configuration
-func GetAppRedis(app *api.App) redis.Redis {
-	shouldRunOnCluster := app.Config.GetBool("redis.cluster.enabled")
-	password := app.Config.GetString("redis.password")
+// GetTestingRedis creates a redis instance based on the default app configuration
+func GetTestingRedis(app *api.App) (redis.Redis, error) {
+	config, err := testing.GetDefaultConfig("../config/test.yaml")
+	if err != nil {
+		return nil, err
+	}
+	shouldRunOnCluster := config.GetBool("redis.cluster.enabled")
+	password := config.GetString("redis.password")
 	if shouldRunOnCluster {
-		addrs := app.Config.GetStringSlice("redis.addrs")
+		addrs := config.GetStringSlice("redis.addrs")
 		return redis.NewClusterClient(redis.ClusterOptions{
 			Addrs:    addrs,
 			Password: password,
-		})
+		}), nil
 	}
 
-	host := app.Config.GetString("redis.host")
-	port := app.Config.GetInt("redis.port")
-	db := app.Config.GetInt("redis.db")
+	host := config.GetString("redis.host")
+	port := config.GetInt("redis.port")
+	db := config.GetInt("redis.db")
 
 	return redis.NewStandaloneClient(redis.StandaloneOptions{
 		Host:     host,
 		Port:     port,
 		Password: password,
 		DB:       db,
-	})
+	}), nil
 }

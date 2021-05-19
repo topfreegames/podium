@@ -48,11 +48,12 @@ var _ = Describe("Scores Expirer Worker", func() {
 
 	BeforeEach(func() {
 		app := testing.GetDefaultTestApp()
-		redisClient = testing.GetAppRedis(app)
+		var err error
+		redisClient, err = testing.GetTestingRedis(app)
+		Expect(err).NotTo(HaveOccurred())
 
 		leaderboards = app.Leaderboards
 
-		var err error
 		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 	})

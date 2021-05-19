@@ -37,7 +37,9 @@ var _ = Describe("Leaderboard integration tests", func() {
 
 	BeforeEach(func() {
 		app := podiumTesting.GetDefaultTestApp()
-		redisClient = podiumTesting.GetAppRedis(app)
+		var err error
+		redisClient, err = podiumTesting.GetTestingRedis(app)
+		Expect(err).NotTo(HaveOccurred())
 
 		leaderboards = NewClientFromExistingRedis(redisClient)
 

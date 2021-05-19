@@ -40,7 +40,10 @@ var _ = Describe("Leaderboard Handler", func() {
 	BeforeSuite(func() {
 		app = GetDefaultTestApp()
 		testing.InitializeTestServer(app)
-		redisClient = GetAppRedis(app)
+
+		var err error
+		redisClient, err = GetTestingRedis(app)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
