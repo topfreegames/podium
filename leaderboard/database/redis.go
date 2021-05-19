@@ -13,8 +13,6 @@ type Redis struct {
 	redis.Client
 }
 
-var _ Database = &Redis{}
-
 // ExpirationSet is used to list expirations set that worker will use to remove members
 const ExpirationSet string = "expiration-sets"
 

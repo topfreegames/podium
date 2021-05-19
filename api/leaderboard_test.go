@@ -34,7 +34,7 @@ import (
 
 var _ = Describe("Leaderboard Handler", func() {
 	var app *api.App
-	var redisClient redis.Redis
+	var redisClient redis.Client
 	const testLeaderboardID = "testkey"
 
 	BeforeSuite(func() {

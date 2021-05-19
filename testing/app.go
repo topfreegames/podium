@@ -9,8 +9,9 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/api"
-	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/service"
 	"github.com/topfreegames/podium/leaderboard/testing"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
@@ -73,12 +74,14 @@ func GetDefaultTestAppWithFaultyRedis() *api.App {
 	app, err := api.New("127.0.0.1", 8082, 8083, "../config/test.yaml", false, logger)
 	Expect(err).NotTo(HaveOccurred())
 
-	leaderboard := leaderboard.NewClient(
-		app.Config.GetString("faultyRedis.host"),
-		app.Config.GetInt("faultyRedis.port"),
-		app.Config.GetString("faultyRedis.password"),
-		app.Config.GetInt("faultyRedis.db"),
-	)
+	leaderboard := service.NewService(database.NewRedisDatabase(database.RedisOptions{
+		ClusterEnabled: app.Config.GetBool("faultyRedis.clusterEnabled"),
+		Addrs:          app.Config.GetStringSlice("faultyRedis.addrs"),
+		Host:           app.Config.GetString("faultyRedis.host"),
+		Port:           app.Config.GetInt("faultyRedis.port"),
+		Password:       app.Config.GetString("faultyRedis.password"),
+		DB:             app.Config.GetInt("faultyRedis.db"),
+	}))
 	app.Leaderboards = leaderboard
 
 	defaultFaultyRedisApp = app
@@ -93,7 +96,7 @@ func ShutdownDefaultTestAppWithFaltyRedis() {
 }
 
 // GetTestingRedis creates a redis instance based on the default app configuration
-func GetTestingRedis(app *api.App) (redis.Redis, error) {
+func GetTestingRedis(app *api.App) (redis.Client, error) {
 	config, err := testing.GetDefaultConfig("../config/test.yaml")
 	if err != nil {
 		return nil, err
