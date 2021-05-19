@@ -26,7 +26,7 @@ import (
 var _ = Describe("Status Handler", func() {
 	It("Should respond with status (http)", func() {
 		a := testing.GetDefaultTestApp()
-		status, body := Get(a, "/status")
+		status, body := testing.Get(a, "/status")
 
 		Expect(status).To(Equal(http.StatusOK))
 
@@ -42,7 +42,7 @@ var _ = Describe("Status Handler", func() {
 	It("Should respond with status (grpc)", func() {
 		a := testing.GetDefaultTestApp()
 
-		SetupGRPC(a, func(cli api.PodiumClient) {
+		testing.SetupGRPC(a, func(cli api.PodiumClient) {
 			resp, err := cli.Status(context.Background(), &empty.Empty{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp).NotTo(BeNil())

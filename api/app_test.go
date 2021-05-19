@@ -24,7 +24,7 @@ var _ = Describe("App", func() {
 
 	AfterSuite(func() {
 		testing.ShutdownDefaultTestApp()
-		ShutdownDefaultTestAppWithFaltyRedis()
+		testing.ShutdownDefaultTestAppWithFaltyRedis()
 	})
 
 	AfterEach(func() {
@@ -64,9 +64,9 @@ var _ = Describe("App", func() {
 	})
 
 	Describe("Error Handler", func() {
-		var sink *TestBuffer
+		var sink *testing.TestBuffer
 		BeforeEach(func() {
-			sink = &TestBuffer{}
+			sink = &testing.TestBuffer{}
 			logger = log.CreateLoggerWithLevel(zapcore.ErrorLevel, log.LoggerOptions{WriteSyncer: sink, RemoveTimestamp: true})
 		})
 
