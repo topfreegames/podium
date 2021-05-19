@@ -20,21 +20,22 @@ import (
 	. "github.com/onsi/gomega"
 
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
+	"github.com/topfreegames/podium/testing"
 )
 
 var _ = Describe("Healthcheck Handler", func() {
 	It("Should respond with default WORKING string (http)", func() {
-		a := GetDefaultTestApp()
-		status, body := Get(a, "/healthcheck")
+		a := testing.GetDefaultTestApp()
+		status, body := testing.Get(a, "/healthcheck")
 
 		Expect(status).To(Equal(http.StatusOK))
 		Expect(body).To(Equal("WORKING"))
 	})
 
 	It("Should respond with default WORKING string (grpc)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 
-		SetupGRPC(a, func(cli api.PodiumClient) {
+		testing.SetupGRPC(a, func(cli api.PodiumClient) {
 			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -43,19 +44,19 @@ var _ = Describe("Healthcheck Handler", func() {
 	})
 
 	It("Should respond with customized WORKING string (http)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
-		status, body := Get(a, "/healthcheck")
+		status, body := testing.Get(a, "/healthcheck")
 
 		Expect(status).To(Equal(http.StatusOK))
 		Expect(body).To(Equal("OTHERWORKING"))
 	})
 
 	It("Should respond with customized WORKING string (grpc)", func() {
-		a := GetDefaultTestApp()
+		a := testing.GetDefaultTestApp()
 		a.Config.Set("healthcheck.workingText", "OTHERWORKING")
 
-		SetupGRPC(a, func(cli api.PodiumClient) {
+		testing.SetupGRPC(a, func(cli api.PodiumClient) {
 			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -64,18 +65,18 @@ var _ = Describe("Healthcheck Handler", func() {
 	})
 
 	It("Should fail if redis failing (http)", func() {
-		a := GetDefaultTestAppWithFaultyRedis()
+		a := testing.GetDefaultTestAppWithFaultyRedis()
 
-		status, body := Get(a, "/healthcheck")
+		status, body := testing.Get(a, "/healthcheck")
 
 		Expect(status).To(Equal(500))
 		Expect(body).To(ContainSubstring("connection refused"))
 	})
 
 	It("Should fail if redis failing (grpc)", func() {
-		a := GetDefaultTestAppWithFaultyRedis()
+		a := testing.GetDefaultTestAppWithFaultyRedis()
 
-		SetupGRPC(a, func(cli api.PodiumClient) {
+		testing.SetupGRPC(a, func(cli api.PodiumClient) {
 			resp, err := cli.HealthCheck(context.Background(), &api.HealthCheckRequest{})
 
 			Expect(err).To(HaveOccurred())
