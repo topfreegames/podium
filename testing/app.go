@@ -49,15 +49,14 @@ func InitializeTestServer(app *api.App) {
 		client = &http.Client{Transport: transport}
 	}
 
-	if !serverInitialized[app.HTTPEndpoint] {
+	if !serverInitialized[app.ID.String()] {
+		serverInitialized[app.ID.String()] = true
 		go func() {
 			err := app.Start(context.Background())
-			fmt.Printf("Starting test server. HTTP: %s; GRPC: %s\n", app.HTTPEndpoint, app.GRPCEndpoint)
 			if err != nil {
 				panic(err)
 			}
 		}()
-		serverInitialized[app.HTTPEndpoint] = true
 		err := app.WaitForReady(500 * time.Millisecond)
 		Expect(err).NotTo(HaveOccurred())
 	}

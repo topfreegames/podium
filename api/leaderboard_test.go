@@ -39,6 +39,7 @@ var _ = Describe("Leaderboard Handler", func() {
 
 	BeforeSuite(func() {
 		app = GetDefaultTestApp()
+		testing.InitializeTestServer(app)
 		redisClient = GetAppRedis(app)
 	})
 

@@ -24,6 +24,7 @@ import (
 	"github.com/getsentry/raven-go"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rcrowley/go-metrics"
+	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/jaeger"
 	"github.com/topfreegames/podium/leaderboard"
@@ -64,6 +65,8 @@ type App struct {
 	Leaderboards lservice.Leaderboard
 	NewRelic     newrelic.Application
 	DDStatsD     *extnethttpmiddleware.DogStatsD
+	isStarted    bool
+	ID           uuid.UUID
 }
 
 // New returns a new podium Application.
@@ -78,6 +81,8 @@ func New(host string, httpPort, grpcPort int, configPath string, debug bool, log
 		Config:       viper.New(),
 		Debug:        debug,
 		Logger:       logger,
+		isStarted:    false,
+		ID:           uuid.NewV4(),
 	}
 	err := app.configure()
 	if err != nil {
@@ -338,6 +343,10 @@ func (app *App) AddError() {
 
 // Start starts listening for web requests at specified host and port
 func (app *App) Start(ctx context.Context) error {
+	if app.isStarted {
+		return nil
+	}
+
 	l := app.Logger.With(
 		zap.String("source", "app"),
 		zap.String("operation", "Start"),
@@ -383,6 +392,7 @@ func (app *App) Start(ctx context.Context) error {
 	}()
 
 	log.I(l, "app started")
+	app.isStarted = true
 	sg := make(chan os.Signal)
 	//TODO verify that capturing SIGKILL actually works. Signal handling should be moved outside of Start.
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
@@ -491,4 +501,6 @@ func (app *App) GracefullStop() {
 			app.Logger.Error("HTTP server Shutdown.", zap.Error(err))
 		}
 	}
+
+	app.isStarted = false
 }
