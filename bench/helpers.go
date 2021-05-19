@@ -17,12 +17,12 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/extensions/redis"
+	"github.com/topfreegames/podium/config"
 	"github.com/topfreegames/podium/leaderboard"
-	"github.com/topfreegames/podium/testing"
 )
 
 func getRedis() *redis.Client {
-	config, err := testing.GetDefaultConfig("../config/default.yaml")
+	config, err := config.GetDefaultConfig("../config/default.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	redisHost := config.GetString("redis.host")
@@ -107,7 +107,7 @@ func validateResp(statusCode int, body string, err error) {
 }
 
 func generateNMembers(amount int) string {
-	config, err := testing.GetDefaultConfig("../config/default.yaml")
+	config, err := config.GetDefaultConfig("../config/default.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	client := leaderboard.NewClient(

@@ -15,11 +15,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/topfreegames/podium/config"
 	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 	lservice "github.com/topfreegames/podium/leaderboard/service"
-	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/worker"
 
 	. "github.com/onsi/ginkgo"
@@ -49,7 +49,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 	BeforeEach(func() {
 		var err error
 
-		config, err := testing.GetDefaultConfig("../config/test.yaml")
+		config, err := config.GetDefaultConfig("../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
 		redisClient = redis.NewStandaloneClient(
@@ -106,15 +106,12 @@ var _ = Describe("Scores Expirer Worker", func() {
 		}()
 		expirationWorker.Run(expirationSink, errorSink)
 
-		time.Sleep(time.Duration(6) * time.Second)
-
 		res, err := redisClient.ZRange(context.Background(), lbName, 0, 1)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(res)).To(Equal(0))
 
 		members, err := redisClient.SMembers(context.Background(), database.ExpirationSet)
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Printf("\n\n%+v", members)
 		Expect(len(members)).To(Equal(0))
 
 		err = redisClient.Exists(context.Background(), redisLBExpirationKey)
@@ -240,13 +237,12 @@ var _ = Describe("Scores Expirer Worker", func() {
 	})
 
 	It("should create a valid expiration worker with external configuration", func() {
-		config, err := testing.GetDefaultConfig("../config/test.yaml")
+		config, err := config.GetDefaultConfig("../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
 		expirationWorker, err = worker.NewExpirationWorker(config.GetString("redis.host"),
 			config.GetInt("redis.port"), config.GetString("redis.password"), config.GetInt("redis.db"),
-			config.GetInt("redis.connectionTimeout"), config.GetDuration("worker.expirationCheckInterval"),
-			config.GetInt("worker.expirationLimitPerRun"))
+			config.GetDuration("worker.expirationCheckInterval"), config.GetInt("worker.expirationLimitPerRun"))
 		Expect(err).NotTo(HaveOccurred())
 	})
 

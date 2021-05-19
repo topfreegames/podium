@@ -122,17 +122,22 @@ func (mr *MockRedisMockRecorder) SMembers(ctx, key interface{}) *gomock.Call {
 }
 
 // SRem mocks base method.
-func (m *MockRedis) SRem(ctx context.Context, key, member string) error {
+func (m *MockRedis) SRem(ctx context.Context, key string, members ...string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SRem", ctx, key, member)
+	varargs := []interface{}{ctx, key}
+	for _, a := range members {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SRem", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SRem indicates an expected call of SRem.
-func (mr *MockRedisMockRecorder) SRem(ctx, key, member interface{}) *gomock.Call {
+func (mr *MockRedisMockRecorder) SRem(ctx, key interface{}, members ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SRem", reflect.TypeOf((*MockRedis)(nil).SRem), ctx, key, member)
+	varargs := append([]interface{}{ctx, key}, members...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SRem", reflect.TypeOf((*MockRedis)(nil).SRem), varargs...)
 }
 
 // TTL mocks base method.
@@ -211,6 +216,21 @@ func (m *MockRedis) ZRange(ctx context.Context, key string, start, stop int64) (
 func (mr *MockRedisMockRecorder) ZRange(ctx, key, start, stop interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZRange", reflect.TypeOf((*MockRedis)(nil).ZRange), ctx, key, start, stop)
+}
+
+// ZRangeByScore mocks base method.
+func (m *MockRedis) ZRangeByScore(ctx context.Context, key, min, max string, offset, count int64) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ZRangeByScore", ctx, key, min, max, offset, count)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ZRangeByScore indicates an expected call of ZRangeByScore.
+func (mr *MockRedisMockRecorder) ZRangeByScore(ctx, key, min, max, offset, count interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZRangeByScore", reflect.TypeOf((*MockRedis)(nil).ZRangeByScore), ctx, key, min, max, offset, count)
 }
 
 // ZRank mocks base method.

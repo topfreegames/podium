@@ -143,7 +143,10 @@ var _ = Describe("Cluster Client", func() {
 			err := goRedis.SAdd(context.Background(), testKey, member).Err()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = clusterClient.SRem(context.Background(), testKey, member)
+			err = goRedis.SAdd(context.Background(), testKey, "member2").Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = clusterClient.SRem(context.Background(), testKey, member, "member2")
 			Expect(err).NotTo(HaveOccurred())
 
 			isMember, err := goRedis.SIsMember(context.Background(), testKey, member).Result()
@@ -261,6 +264,23 @@ var _ = Describe("Cluster Client", func() {
 
 			Expect(members[1].Member).To(Equal(member2))
 			Expect(members[1].Score).To(Equal(score2))
+		})
+	})
+
+	Describe("ZRangeByScore", func() {
+		It("Should return members closest members ordered by score", func() {
+			member2 := "member2"
+
+			score := 1.0
+			score2 := 2.0
+
+			err := goRedis.ZAdd(context.Background(), testKey, &goredis.Z{Member: member, Score: score}, &goredis.Z{Member: member2, Score: score2}).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			members, err := clusterClient.ZRangeByScore(context.Background(), testKey, "-inf", "1", 0, 1)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(members[0]).To(Equal(member))
 		})
 	})
 

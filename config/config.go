@@ -1,4 +1,4 @@
-package testing
+package config
 
 import (
 	"strings"

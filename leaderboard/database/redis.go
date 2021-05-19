@@ -8,7 +8,7 @@ import (
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 )
 
-// Redis is a type that implements database interface with redis client
+// Redis is a type that implements Database interface with redis client
 type Redis struct {
 	redis.Redis
 }
@@ -29,7 +29,7 @@ type RedisOptions struct {
 }
 
 // NewRedisDatabase create a database based on redis
-func NewRedisDatabase(options RedisOptions) Database {
+func NewRedisDatabase(options RedisOptions) *Redis {
 	if options.ClusterEnabled {
 		return &Redis{redis.NewClusterClient(redis.ClusterOptions{
 			Addrs:    options.Addrs,

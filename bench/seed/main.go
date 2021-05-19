@@ -15,8 +15,8 @@ import (
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
+	"github.com/topfreegames/podium/config"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
-	"github.com/topfreegames/podium/testing"
 )
 
 var currentStage int
@@ -32,7 +32,7 @@ func main() {
 
 	totalOps := *leaderboardCount * *membersPerLeaderboard
 
-	config, err := testing.GetDefaultConfig("../../default.yaml")
+	config, err := config.GetDefaultConfig("../../default.yaml")
 	if err != nil {
 		panic(err)
 	}
