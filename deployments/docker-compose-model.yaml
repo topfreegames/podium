@@ -68,7 +68,6 @@ services:
       context: ../
       dockerfile: ./build/TestAppDockerfile
     depends_on:
-      - redis-standalone
       - redis-node-0
       - redis-node-1
       - redis-node-2
