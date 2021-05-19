@@ -42,10 +42,10 @@ jobs:
           go-version: 1.15
       - name: Setup env
         run: make setup
-      - name: Test
-        run: make test
       - name: Test cluster
         run: make compose-test
+      - name: Test standalone
+        run: make test
       - name: Coverage
         run: make coverage
       - name: Install goveralls
