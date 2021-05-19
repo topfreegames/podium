@@ -13,7 +13,7 @@ require (
 	github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054 // indirect
 	github.com/getsentry/raven-go v0.0.0-20170918144728-1452f6376ddb
 	github.com/go-pg/pg v8.0.7+incompatible // indirect
-	github.com/go-redis/redis v6.13.2+incompatible
+	github.com/go-redis/redis v6.13.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3

@@ -16,41 +16,44 @@ import (
 	"time"
 
 	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/model"
 	"github.com/topfreegames/podium/leaderboard/service"
-	podiumTesting "github.com/topfreegames/podium/testing"
 
 	uuid "github.com/satori/go.uuid"
 )
 
 var _ = Describe("Leaderboard integration tests", func() {
 
-	var redisClient redis.Redis
+	var redisDatabase *database.Redis
 	var leaderboards service.Leaderboard
 	var faultyLeaderboards service.Leaderboard
 	const testLeaderboardID = "test-leaderboard"
 
 	BeforeEach(func() {
-		app := podiumTesting.GetDefaultTestApp()
 		var err error
-		redisClient, err = podiumTesting.GetTestingRedis(app)
+
+		defaultConfig, err := testing.GetDefaultConfig("../config/test.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
-		leaderboards = NewClientFromExistingRedis(redisClient)
+		redisDatabase, err = GetDefaultRedis()
+		Expect(err).NotTo(HaveOccurred())
+
+		leaderboards = service.NewService(redisDatabase)
 
 		faultyLeaderboards = leaderboard.NewClient(
-			app.Config.GetString("faultyRedis.host"),
-			app.Config.GetInt("faultyRedis.port"),
-			app.Config.GetString("faultyRedis.password"),
-			app.Config.GetInt("faultyRedis.db"),
+			defaultConfig.GetString("faultyRedis.host"),
+			defaultConfig.GetInt("faultyRedis.port"),
+			defaultConfig.GetString("faultyRedis.password"),
+			defaultConfig.GetInt("faultyRedis.db"),
 		)
 
-		err := leaderboards.RemoveLeaderboard(NewEmptyCtx(), testLeaderboardID)
+		err = leaderboards.RemoveLeaderboard(NewEmptyCtx(), testLeaderboardID)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -78,16 +81,16 @@ var _ = Describe("Leaderboard integration tests", func() {
 				"denix", 481516, false, ttl)
 			Expect(err).NotTo(HaveOccurred())
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl", testLeaderboardID)
-			err = redisClient.Exists(context.Background(), redisLBExpirationKey)
+			err = redisDatabase.Exists(context.Background(), redisLBExpirationKey)
 			Expect(err).NotTo(HaveOccurred())
 			redisExpirationSetKey := "expiration-sets"
-			err = redisClient.Exists(context.Background(), redisExpirationSetKey)
+			err = redisDatabase.Exists(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
-			result2, err := redisClient.SMembers(context.Background(), redisExpirationSetKey)
+			result2, err := redisDatabase.SMembers(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(ContainElement(redisLBExpirationKey))
 			Expect(err).NotTo(HaveOccurred())
-			result3, err := redisClient.ZScore(context.Background(), redisLBExpirationKey, "denix")
+			result3, err := redisDatabase.ZScore(context.Background(), redisLBExpirationKey, "denix")
 			Expect(err).NotTo(HaveOccurred())
 			ttlInt, _ := strconv.ParseInt(ttl, 10, 64)
 			Expect(result3).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
@@ -144,19 +147,19 @@ var _ = Describe("Leaderboard integration tests", func() {
 			err := leaderboards.SetMembersScore(NewEmptyCtx(), testLeaderboardID, members, false, ttl)
 			Expect(err).NotTo(HaveOccurred())
 			redisLBExpirationKey := fmt.Sprintf("%s:ttl", testLeaderboardID)
-			err = redisClient.Exists(context.Background(), redisLBExpirationKey)
+			err = redisDatabase.Exists(context.Background(), redisLBExpirationKey)
 			Expect(err).NotTo(HaveOccurred())
 			redisExpirationSetKey := "expiration-sets"
-			err = redisClient.Exists(context.Background(), redisExpirationSetKey)
+			err = redisDatabase.Exists(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
-			result2, err := redisClient.SMembers(context.Background(), redisExpirationSetKey)
+			result2, err := redisDatabase.SMembers(context.Background(), redisExpirationSetKey)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2).To(ContainElement(redisLBExpirationKey))
-			result3, err := redisClient.ZScore(context.Background(), redisLBExpirationKey, "denix1")
+			result3, err := redisDatabase.ZScore(context.Background(), redisLBExpirationKey, "denix1")
 			Expect(err).NotTo(HaveOccurred())
 			ttlInt, _ := strconv.ParseInt(ttl, 10, 64)
 			Expect(result3).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
-			result4, err := redisClient.ZScore(context.Background(), redisLBExpirationKey, "denix2")
+			result4, err := redisDatabase.ZScore(context.Background(), redisLBExpirationKey, "denix2")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result4).To(BeNumerically("~", time.Now().Unix()+ttlInt, 1))
 		})
@@ -203,7 +206,7 @@ var _ = Describe("Leaderboard integration tests", func() {
 			Expect(member.Score).To(Equal(int64(1010)))
 			Expect(member.PublicID).To(Equal("dayvson"))
 
-			score, err := redisClient.ZScore(context.Background(), lbID, "dayvson")
+			score, err := redisDatabase.ZScore(context.Background(), lbID, "dayvson")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(int(score)).To(Equal(1010))
 		})
@@ -216,7 +219,7 @@ var _ = Describe("Leaderboard integration tests", func() {
 			Expect(member.Score).To(Equal(int64(10)))
 			Expect(member.PublicID).To(Equal("dayvson"))
 
-			score, err := redisClient.ZScore(context.Background(), lbID, "dayvson")
+			score, err := redisDatabase.ZScore(context.Background(), lbID, "dayvson")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(int(score)).To(Equal(10))
 		})
@@ -696,7 +699,7 @@ var _ = Describe("Leaderboard integration tests", func() {
 			_, err := leaderboards.SetMemberScore(NewEmptyCtx(), leaderboardID, "dayvson", 12345, false, "")
 			Expect(err).NotTo(HaveOccurred())
 
-			result, err := redisClient.TTL(context.Background(), leaderboardID)
+			result, err := redisDatabase.TTL(context.Background(), leaderboardID)
 			Expect(err).NotTo(HaveOccurred())
 
 			exp := result.Seconds()
@@ -900,7 +903,7 @@ var _ = Describe("Leaderboard integration tests", func() {
 			err := leaderboards.RemoveLeaderboard(NewEmptyCtx(), leaderboardID)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = redisClient.Exists(context.Background(), leaderboardID)
+			err = redisDatabase.Exists(context.Background(), leaderboardID)
 			Expect(err).To(MatchError(redis.NewKeyNotFoundError(leaderboardID)))
 		})
 

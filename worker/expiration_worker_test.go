@@ -19,7 +19,6 @@ import (
 	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 	lservice "github.com/topfreegames/podium/leaderboard/service"
-	"github.com/topfreegames/podium/testing"
 	"github.com/topfreegames/podium/worker"
 
 	. "github.com/onsi/ginkgo"
@@ -28,7 +27,7 @@ import (
 
 var _ = Describe("Scores Expirer Worker", func() {
 
-	var redisClient redis.Redis
+	var redisClient *database.Redis
 	var expirationWorker *worker.ExpirationWorker
 	var leaderboards lservice.Leaderboard
 
@@ -47,14 +46,18 @@ var _ = Describe("Scores Expirer Worker", func() {
 	}()
 
 	BeforeEach(func() {
-		app := testing.GetDefaultTestApp()
 		var err error
-		redisClient, err = testing.GetTestingRedis(app)
-		Expect(err).NotTo(HaveOccurred())
-
-		leaderboards = app.Leaderboards
-
 		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml")
+		redisClient = database.NewRedisDatabase(database.RedisOptions{
+			ClusterEnabled: expirationWorker.Config.GetBool("redis.clusterEnabled"),
+			Addrs:          expirationWorker.Config.GetStringSlice("redis.addrs"),
+			Host:           expirationWorker.Config.GetString("redis.host"),
+			Port:           expirationWorker.Config.GetInt("redis.port"),
+			Password:       expirationWorker.Config.GetString("redis.password"),
+			DB:             expirationWorker.Config.GetInt("redis.db"),
+		})
+		leaderboards = lservice.NewService(redisClient)
+
 		Expect(err).NotTo(HaveOccurred())
 	})
 
