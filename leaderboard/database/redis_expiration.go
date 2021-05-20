@@ -14,7 +14,7 @@ var _ Expiration = &Redis{}
 
 // GetExpirationLeaderboards return leaderboards registerd with members to expire
 func (r *Redis) GetExpirationLeaderboards(ctx context.Context) ([]string, error) {
-	expirationKeys, err := r.Redis.SMembers(ctx, ExpirationSet)
+	expirationKeys, err := r.Client.SMembers(ctx, ExpirationSet)
 	if err != nil {
 		return nil, NewGeneralError(err.Error())
 	}
@@ -31,7 +31,7 @@ func (r *Redis) GetExpirationLeaderboards(ctx context.Context) ([]string, error)
 func (r *Redis) GetMembersToExpire(ctx context.Context, leaderboard string, amount int, maxTime time.Time) ([]string, error) {
 	expirationSet := fmt.Sprintf("%s:ttl", leaderboard)
 
-	err := r.Redis.Exists(ctx, expirationSet)
+	err := r.Client.Exists(ctx, expirationSet)
 	if err != nil {
 		if _, ok := err.(*redis.KeyNotFoundError); ok {
 			return nil, NewLeaderboardWithoutMemberToExpireError(leaderboard)
@@ -41,7 +41,7 @@ func (r *Redis) GetMembersToExpire(ctx context.Context, leaderboard string, amou
 
 	unixTimestamp := maxTime.Unix()
 
-	members, err := r.Redis.ZRangeByScore(ctx, expirationSet, "-inf", strconv.FormatInt(unixTimestamp, 10), 0, int64(amount))
+	members, err := r.Client.ZRangeByScore(ctx, expirationSet, "-inf", strconv.FormatInt(unixTimestamp, 10), 0, int64(amount))
 	if err != nil {
 		return nil, NewGeneralError(err.Error())
 	}
@@ -53,7 +53,7 @@ func (r *Redis) GetMembersToExpire(ctx context.Context, leaderboard string, amou
 func (r *Redis) RemoveLeaderboardFromExpireList(ctx context.Context, leaderboard string) error {
 	leaderboardExpirationKey := fmt.Sprintf("%s:ttl", leaderboard)
 
-	err := r.Redis.SRem(ctx, ExpirationSet, leaderboardExpirationKey)
+	err := r.Client.SRem(ctx, ExpirationSet, leaderboardExpirationKey)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
@@ -65,12 +65,12 @@ func (r *Redis) RemoveLeaderboardFromExpireList(ctx context.Context, leaderboard
 func (r *Redis) ExpireMembers(ctx context.Context, leaderboard string, members []string) error {
 	leaderboardExpirationKey := fmt.Sprintf("%s:ttl", leaderboard)
 
-	err := r.Redis.ZRem(ctx, leaderboard, members...)
+	err := r.Client.ZRem(ctx, leaderboard, members...)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}
 
-	err = r.Redis.ZRem(ctx, leaderboardExpirationKey, members...)
+	err = r.Client.ZRem(ctx, leaderboardExpirationKey, members...)
 	if err != nil {
 		return NewGeneralError(err.Error())
 	}

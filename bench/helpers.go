@@ -18,7 +18,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/extensions/redis"
 	"github.com/topfreegames/podium/config"
-	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/leaderboard/database"
+	"github.com/topfreegames/podium/leaderboard/service"
 )
 
 func getRedis() *redis.Client {
@@ -110,11 +111,15 @@ func generateNMembers(amount int) string {
 	config, err := config.GetDefaultConfig("../config/default.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
-	client := leaderboard.NewClient(
-		config.GetString("redis.host"),
-		config.GetInt("redis.port"),
-		config.GetString("redis.password"),
-		config.GetInt("redis.db"),
+	client := service.NewService(
+		database.NewRedisDatabase(database.RedisOptions{
+			ClusterEnabled: config.GetBool("redis.clusterEnabled"),
+			Addrs:          config.GetStringSlice("redis.addrs"),
+			Host:           config.GetString("redis.host"),
+			Port:           config.GetInt("redis.port"),
+			Password:       config.GetString("redis.password"),
+			DB:             config.GetInt("redis.db"),
+		}),
 	)
 
 	lbID := "leaderboard-0"

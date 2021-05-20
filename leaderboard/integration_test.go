@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/topfreegames/podium/leaderboard"
 	"github.com/topfreegames/podium/leaderboard/database"
 	"github.com/topfreegames/podium/leaderboard/database/redis"
 	"github.com/topfreegames/podium/leaderboard/testing"
@@ -46,12 +45,14 @@ var _ = Describe("Leaderboard integration tests", func() {
 
 		leaderboards = service.NewService(redisDatabase)
 
-		faultyLeaderboards = leaderboard.NewClient(
-			defaultConfig.GetString("faultyRedis.host"),
-			defaultConfig.GetInt("faultyRedis.port"),
-			defaultConfig.GetString("faultyRedis.password"),
-			defaultConfig.GetInt("faultyRedis.db"),
-		)
+		faultyLeaderboards = service.NewService(database.NewRedisDatabase(database.RedisOptions{
+			ClusterEnabled: defaultConfig.GetBool("faultyRedis.clusterEnabled"),
+			Addrs:          defaultConfig.GetStringSlice("faultyRedis.addrs"),
+			Host:           defaultConfig.GetString("faultyRedis.host"),
+			Port:           defaultConfig.GetInt("faultyRedis.port"),
+			Password:       defaultConfig.GetString("faultyRedis.password"),
+			DB:             defaultConfig.GetInt("faultyRedis.db"),
+		}))
 
 		err = leaderboards.RemoveLeaderboard(NewEmptyCtx(), testLeaderboardID)
 		Expect(err).NotTo(HaveOccurred())

@@ -9,8 +9,6 @@ type Service struct {
 	database.Database
 }
 
-var _ Leaderboard = &Service{}
-
 // NewService instantiate a new Service
 func NewService(database database.Database) *Service {
 	return &Service{database}

@@ -17,7 +17,7 @@ var _ = Describe("Standalone Client", func() {
 	const testKey string = "testKey"
 	const member string = "member"
 
-	var standaloneClient redis.Redis
+	var standaloneClient redis.Client
 	var goRedis *goredis.Client
 
 	BeforeEach(func() {

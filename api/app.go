@@ -27,7 +27,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/jaeger"
-	"github.com/topfreegames/podium/leaderboard"
+	"github.com/topfreegames/podium/leaderboard/database"
+	"github.com/topfreegames/podium/leaderboard/service"
 	lservice "github.com/topfreegames/podium/leaderboard/service"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
@@ -306,32 +307,31 @@ func (app *App) createAndConfigureLeaderboardClient() (lservice.Leaderboard, err
 
 func (app *App) createLeaderboardClient() lservice.Leaderboard {
 	shouldRunOnCluster := app.Config.GetBool("redis.cluster.enabled")
+	addrs := app.Config.GetStringSlice("redis.addrs")
 	password := app.Config.GetString("redis.password")
-	if shouldRunOnCluster {
-		addrs := app.Config.GetStringSlice("redis.addrs")
-		logger := app.Logger.With(
-			zap.String("operation", "createLeaderboardClient"),
-			zap.Strings("addrs", addrs),
-			zap.Bool("cluster", shouldRunOnCluster),
-		)
-
-		logger.Info("Creating leaderboard client.")
-		return leaderboard.NewClusterClient(addrs, password)
-	}
-
 	host := app.Config.GetString("redis.host")
 	port := app.Config.GetInt("redis.port")
 	db := app.Config.GetInt("redis.db")
 
 	logger := app.Logger.With(
 		zap.String("operation", "createLeaderboardClient"),
-		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", host, port, db)),
+		zap.Strings("addrs", addrs),
 		zap.Bool("cluster", shouldRunOnCluster),
+		zap.String("url", fmt.Sprintf("redis://:<REDACTED>@%s:%v/%v", host, port, db)),
 	)
+
+	leaderboardService := service.NewService(database.NewRedisDatabase(database.RedisOptions{
+		ClusterEnabled: shouldRunOnCluster,
+		Addrs:          addrs,
+		Host:           host,
+		Password:       password,
+		Port:           port,
+		DB:             db,
+	}))
 
 	logger.Info("Creating leaderboard client.")
 
-	return leaderboard.NewClient(host, port, password, db)
+	return leaderboardService
 }
 
 //AddError rate statistics
