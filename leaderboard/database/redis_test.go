@@ -751,8 +751,16 @@ var _ = Describe("Redis Database", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("Should return GeneralError if redis return in error", func() {
+		It("Should return GeneralError if redis ZAdd return in error", func() {
 			mock.EXPECT().ZAdd(gomock.Any(), gomock.Eq(leaderboardTTL), gomock.Eq(redisMembers[0]), gomock.Eq(redisMembers[1])).Return(fmt.Errorf("New redis error"))
+
+			err := redisDatabase.SetMembersTTL(context.Background(), leaderboard, databaseMembers)
+			Expect(err).To(Equal(database.NewGeneralError("New redis error")))
+		})
+
+		It("Should return GeneralError if redis SAdd return in error", func() {
+			mock.EXPECT().ZAdd(gomock.Any(), gomock.Eq(leaderboardTTL), gomock.Eq(redisMembers[0]), gomock.Eq(redisMembers[1])).Return(nil)
+			mock.EXPECT().SAdd(gomock.Any(), gomock.Eq(database.ExpirationSet), gomock.Eq(leaderboardTTL)).Return(fmt.Errorf("New redis error"))
 
 			err := redisDatabase.SetMembersTTL(context.Background(), leaderboard, databaseMembers)
 			Expect(err).To(Equal(database.NewGeneralError("New redis error")))

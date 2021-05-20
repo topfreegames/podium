@@ -284,7 +284,10 @@ func (r *Redis) SetMembersTTL(ctx context.Context, leaderboard string, databaseM
 		return NewGeneralError(err.Error())
 	}
 
-	r.Redis.SAdd(ctx, ExpirationSet, expirationKey)
+	err = r.Redis.SAdd(ctx, ExpirationSet, expirationKey)
+	if err != nil {
+		return NewGeneralError(err.Error())
+	}
 
 	return nil
 }

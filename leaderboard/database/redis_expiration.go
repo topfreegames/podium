@@ -39,7 +39,7 @@ func (r *Redis) GetMembersToExpire(ctx context.Context, leaderboard string, amou
 		return nil, NewGeneralError(err.Error())
 	}
 
-	unixTimestamp := maxTime.UTC().Unix()
+	unixTimestamp := maxTime.Unix()
 
 	members, err := r.Redis.ZRangeByScore(ctx, expirationSet, "-inf", strconv.FormatInt(unixTimestamp, 10), 0, int64(amount))
 	if err != nil {
