@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/topfreegames/podium/config"
-	"github.com/topfreegames/podium/leaderboard/database"
-	"github.com/topfreegames/podium/leaderboard/database/redis"
-	lservice "github.com/topfreegames/podium/leaderboard/service"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
+	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
+	lservice "github.com/topfreegames/podium/leaderboard/v2/service"
 	"github.com/topfreegames/podium/worker"
 
 	. "github.com/onsi/ginkgo"
