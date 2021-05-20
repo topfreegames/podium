@@ -2,7 +2,8 @@ healthcheck:
   workingText: WORKING
 
 redis:
-  clusterEnabled: false
+  cluster:
+    enabled: false
   addrs: "localhost:5000"
   host: localhost
   port: 6379

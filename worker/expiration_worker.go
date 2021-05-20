@@ -100,7 +100,7 @@ func (w *ExpirationWorker) configure() error {
 	w.stop = make(chan bool, 1)
 
 	database := database.NewRedisDatabase(database.RedisOptions{
-		ClusterEnabled: w.Config.GetBool("redis.clusterEnabled"),
+		ClusterEnabled: w.Config.GetBool("redis.cluster.enabled"),
 		Addrs:          w.Config.GetStringSlice("redis.addrs"),
 		Host:           w.Config.GetString("redis.host"),
 		Port:           w.Config.GetInt("redis.port"),
@@ -176,7 +176,7 @@ func (w *ExpirationWorker) expireMembers(resultsChan chan<- []*ExpirationResult,
 
 	result := []*ExpirationResult{}
 	for _, leaderboard := range leaderboardExpirations {
-		members, err := w.Database.GetMembersToExpire(context.Background(), leaderboard, w.ExpirationLimitPerRun, time.Now())
+		members, err := w.Database.GetMembersToExpire(context.Background(), leaderboard, w.ExpirationLimitPerRun, time.Now().UTC())
 		if err != nil {
 			if _, ok := err.(*database.LeaderboardWithoutMemberToExpireError); ok {
 				err = w.Database.RemoveLeaderboardFromExpireList(context.Background(), leaderboard)
