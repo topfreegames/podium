@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
 )
 
 var _ Expiration = &Redis{}

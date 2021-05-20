@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
 )
 
 // Redis is a type that implements Database interface with redis client

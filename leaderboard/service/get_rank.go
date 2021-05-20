@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/topfreegames/podium/leaderboard/database"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
 )
 
 const getRankServiceLabel = "get rank"

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/topfreegames/podium/leaderboard/database"
-	"github.com/topfreegames/podium/leaderboard/expiration"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
+	"github.com/topfreegames/podium/leaderboard/v2/expiration"
 )
 
 func (s *Service) persistLeaderboardExpirationTime(ctx context.Context, leaderboard string) error {

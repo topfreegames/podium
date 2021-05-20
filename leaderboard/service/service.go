@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/topfreegames/podium/leaderboard/database"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
 )
 
 // Service holds all dependencies to leaderboard execute your operations

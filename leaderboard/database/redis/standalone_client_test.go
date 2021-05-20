@@ -6,8 +6,8 @@ import (
 	"time"
 
 	goredis "github.com/go-redis/redis/v8"
-	"github.com/topfreegames/podium/leaderboard/database/redis"
-	"github.com/topfreegames/podium/leaderboard/testing"
+	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
+	"github.com/topfreegames/podium/leaderboard/v2/testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

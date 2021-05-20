@@ -8,8 +8,8 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/topfreegames/podium/leaderboard/database"
-	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
+	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
 )
 
 var _ = Describe("Redis Database", func() {
