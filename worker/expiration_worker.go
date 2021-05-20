@@ -176,7 +176,7 @@ func (w *ExpirationWorker) expireMembers(resultsChan chan<- []*ExpirationResult,
 
 	result := []*ExpirationResult{}
 	for _, leaderboard := range leaderboardExpirations {
-		members, err := w.Database.GetMembersToExpire(context.Background(), leaderboard, w.ExpirationLimitPerRun, time.Now())
+		members, err := w.Database.GetMembersToExpire(context.Background(), leaderboard, w.ExpirationLimitPerRun, time.Now().UTC())
 		if err != nil {
 			if _, ok := err.(*database.LeaderboardWithoutMemberToExpireError); ok {
 				err = w.Database.RemoveLeaderboardFromExpireList(context.Background(), leaderboard)
