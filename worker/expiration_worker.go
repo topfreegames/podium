@@ -176,36 +176,51 @@ func (w *ExpirationWorker) expireMembers(resultsChan chan<- []*ExpirationResult,
 
 	result := []*ExpirationResult{}
 	for _, leaderboard := range leaderboardExpirations {
-		members, err := w.Database.GetMembersToExpire(context.Background(), leaderboard, w.ExpirationLimitPerRun, time.Now().UTC())
+		expirationResult, err := w.expireMembersFromLeaderboard(leaderboard)
 		if err != nil {
-			if _, ok := err.(*database.LeaderboardWithoutMemberToExpireError); ok {
-				err = w.Database.RemoveLeaderboardFromExpireList(context.Background(), leaderboard)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				result = append(result, &ExpirationResult{
-					DeletedMembers: 0,
-					DeletedSet:     true,
-					Set:            leaderboard,
-				})
-				continue
+			errChan <- err
+			return
+		}
+
+		result = append(result, expirationResult)
+	}
+	resultsChan <- result
+}
+
+func (w *ExpirationWorker) expireMembersFromLeaderboard(leaderboard string) (*ExpirationResult, error) {
+	members, err := w.Database.GetMembersToExpire(context.Background(), leaderboard, w.ExpirationLimitPerRun, time.Now().UTC())
+	if err != nil {
+		if _, ok := err.(*database.LeaderboardWithoutMemberToExpireError); ok {
+			err = w.Database.RemoveLeaderboardFromExpireList(context.Background(), leaderboard)
+			if err != nil {
+				return nil, err
 			}
-			errChan <- err
-			return
-		}
 
-		err = w.Database.ExpireMembers(context.Background(), leaderboard, members)
-		if err != nil {
-			errChan <- err
-			return
+			return &ExpirationResult{
+				DeletedMembers: 0,
+				DeletedSet:     true,
+				Set:            leaderboard,
+			}, nil
 		}
-
-		result = append(result, &ExpirationResult{
-			DeletedMembers: len(members),
-			DeletedSet:     false,
-			Set:            leaderboard,
-		})
+		return nil, err
 	}
 
+	if len(members) == 0 {
+		return &ExpirationResult{
+			DeletedMembers: 0,
+			DeletedSet:     false,
+			Set:            leaderboard,
+		}, nil
+	}
+
+	err = w.Database.ExpireMembers(context.Background(), leaderboard, members)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ExpirationResult{
+		DeletedMembers: len(members),
+		DeletedSet:     false,
+		Set:            leaderboard,
+	}, nil
 }
