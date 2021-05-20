@@ -141,7 +141,6 @@ var _ = Describe("Scores Expirer Worker", func() {
 		members, err := redisClient.SMembers(context.Background(), database.ExpirationSet)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(members)).To(Equal(1))
-		fmt.Printf("%+v", members)
 
 		err = redisClient.Exists(context.Background(), redisLBExpirationKey)
 		Expect(err).NotTo(HaveOccurred())
