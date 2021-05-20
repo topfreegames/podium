@@ -49,7 +49,7 @@ var _ = Describe("Scores Expirer Worker", func() {
 		var err error
 		expirationWorker, err = worker.GetExpirationWorker("../config/test.yaml")
 		redisClient = database.NewRedisDatabase(database.RedisOptions{
-			ClusterEnabled: expirationWorker.Config.GetBool("redis.clusterEnabled"),
+			ClusterEnabled: expirationWorker.Config.GetBool("redis.cluster.enabled"),
 			Addrs:          expirationWorker.Config.GetStringSlice("redis.addrs"),
 			Host:           expirationWorker.Config.GetString("redis.host"),
 			Port:           expirationWorker.Config.GetInt("redis.port"),
