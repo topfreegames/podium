@@ -87,10 +87,22 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.15
-      - name: Setup env
-        run: make setup
       - name: Test
-        run: make compose-test
+        run: make test
+        env:
+          PODIUM_REDIS_CLUSTERENABLED: true
+      - name: Coverage
+        run: make coverage
+        env:
+          PODIUM_REDIS_CLUSTERENABLED: true
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile _build/test-coverage-all.out -service=github
 
   build_and_deploy_podium:
     needs:
