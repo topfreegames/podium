@@ -9,5 +9,5 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/topfreegames/extensions v8.5.0+incompatible
-	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20190314184232-a8ac0a50d0b5 // indirect
+	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20190314184232-a8ac0a50d0b5
 )
