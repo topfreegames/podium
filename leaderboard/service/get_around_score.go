@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/topfreegames/podium/leaderboard/model"
+	"github.com/topfreegames/podium/leaderboard/v2/model"
 )
 
 const (

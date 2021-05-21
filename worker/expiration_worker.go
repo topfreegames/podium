@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/topfreegames/podium/config"
-	"github.com/topfreegames/podium/leaderboard/database"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
 )
 
 // ExpirationResult is the struct that represents the result of an expiration job

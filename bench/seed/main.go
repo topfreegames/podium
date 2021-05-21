@@ -16,7 +16,7 @@ import (
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/topfreegames/podium/config"
-	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
 )
 
 var currentStage int

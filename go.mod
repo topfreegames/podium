@@ -2,7 +2,7 @@ module github.com/topfreegames/podium
 
 go 1.15
 
-replace github.com/topfreegames/podium/leaderboard v0.0.0 => ./leaderboard
+replace github.com/topfreegames/podium/leaderboard/v2 v2.0.0 => ./leaderboard
 
 require (
 	github.com/DataDog/datadog-go v4.5.1+incompatible // indirect
@@ -38,7 +38,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/topfreegames/extensions v8.0.2+incompatible
-	github.com/topfreegames/podium/leaderboard v0.0.0
+	github.com/topfreegames/podium/leaderboard/v2 v2.0.0
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

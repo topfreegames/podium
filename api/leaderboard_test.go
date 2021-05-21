@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/topfreegames/podium/api"
-	"github.com/topfreegames/podium/leaderboard/database/redis"
+	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
 	"github.com/topfreegames/podium/testing"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

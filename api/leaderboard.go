@@ -15,8 +15,8 @@ import (
 	"math"
 	"strings"
 
-	lmodel "github.com/topfreegames/podium/leaderboard/model"
-	"github.com/topfreegames/podium/leaderboard/service"
+	lmodel "github.com/topfreegames/podium/leaderboard/v2/model"
+	"github.com/topfreegames/podium/leaderboard/v2/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

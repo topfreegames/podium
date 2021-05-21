@@ -1,4 +1,4 @@
-module github.com/topfreegames/podium/leaderboard
+module github.com/topfreegames/podium/leaderboard/v2
 
 go 1.15
 

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/topfreegames/podium/leaderboard/model"
+	"github.com/topfreegames/podium/leaderboard/v2/model"
 )
 
 // Leaderboard holds functional struct inside leaderboard and your dependecies to be executed

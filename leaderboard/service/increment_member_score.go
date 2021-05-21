@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/topfreegames/podium/leaderboard/expiration"
-	"github.com/topfreegames/podium/leaderboard/model"
+	"github.com/topfreegames/podium/leaderboard/v2/expiration"
+	"github.com/topfreegames/podium/leaderboard/v2/model"
 )
 
 const incrementMemberScoreServiceLabel = "increment member score"
