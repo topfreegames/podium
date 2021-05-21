@@ -1,16 +1,16 @@
-package lib_test
+package client_test
 
 import (
 	"github.com/spf13/viper"
-	"github.com/topfreegames/podium/lib"
+	"github.com/topfreegames/podium/client"
 	httpmock "gopkg.in/jarcoal/httpmock.v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Lib", func() {
-	var p lib.PodiumInterface
+var _ = Describe("client", func() {
+	var p client.PodiumInterface
 	var config *viper.Viper
 	var globalLeaderboard string
 	var localeLeaderboard string
@@ -27,13 +27,13 @@ var _ = Describe("Lib", func() {
 		config.Set("podium.pass", "pass")
 		globalLeaderboard = "game:leaderboard:global"
 		localeLeaderboard = "game:leaderboard:us"
-		p = lib.NewPodium(config)
+		p = client.NewPodium(config)
 		httpmock.Reset()
 	})
 
 	Describe("NewPodium", func() {
-		It("Should start a new instance of Podium Lib", func() {
-			p = lib.NewPodium(config)
+		It("Should start a new instance of Podium Client", func() {
+			p = client.NewPodium(config)
 			Expect(p).NotTo(BeNil())
 		})
 	})
@@ -208,7 +208,7 @@ var _ = Describe("Lib", func() {
 			url := "http://podium/l/" + leaderboard + "/scores"
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1, "previousRank": 1 } ] }`))
-			reqMembers := []*lib.Member{&lib.Member{Score: 1, PublicID: "1"}}
+			reqMembers := []*client.Member{&client.Member{Score: 1, PublicID: "1"}}
 			members, err := p.UpdateMembersScore(nil, leaderboard, reqMembers, 0)
 
 			Expect(members).NotTo(BeNil())
@@ -227,7 +227,7 @@ var _ = Describe("Lib", func() {
 			url := "http://podium/l/" + leaderboard + "/scores?prevRank=true&scoreTTL=10"
 			httpmock.RegisterResponder("PUT", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "members": [ { "publicID": "1", "score": 2, "rank": 1, "previousRank": 1 } ] }`))
-			reqMembers := []*lib.Member{&lib.Member{Score: 1, PublicID: "1"}}
+			reqMembers := []*client.Member{&client.Member{Score: 1, PublicID: "1"}}
 			members, err := p.UpdateMembersScore(nil, leaderboard, reqMembers, 10)
 
 			Expect(members).NotTo(BeNil())
@@ -359,7 +359,7 @@ var _ = Describe("Lib", func() {
 
 			Expect(members).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			reqErr, ok := err.(*lib.RequestError)
+			reqErr, ok := err.(*client.RequestError)
 			Expect(ok).To(BeTrue())
 			Expect(reqErr.Status()).To(BeNumerically("==", 404))
 		})
@@ -594,7 +594,7 @@ var _ = Describe("Lib", func() {
 		It("Should not respond if server is down", func() {
 			//set podium url to be wrong
 			config.Set("podium.url", "http://localhostel")
-			p = lib.NewPodium(config)
+			p = client.NewPodium(config)
 
 			body, err := p.Healthcheck(nil)
 

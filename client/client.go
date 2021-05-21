@@ -1,4 +1,4 @@
-package lib
+package client
 
 import (
 	"bytes"
@@ -89,10 +89,7 @@ type Response struct {
 	Reason  string
 }
 
-func getHTTPClient(
-	timeout time.Duration,
-	maxIdleConns, maxIdleConnsPerHost int,
-) *http.Client {
+func getHTTPClient(timeout time.Duration, maxIdleConns, maxIdleConnsPerHost int) *http.Client {
 	once.Do(func() {
 		client = &http.Client{
 			Transport: getHTTPTransport(maxIdleConns, maxIdleConnsPerHost),
