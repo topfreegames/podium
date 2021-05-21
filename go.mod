@@ -2,8 +2,6 @@ module github.com/topfreegames/podium
 
 go 1.15
 
-replace github.com/topfreegames/podium/leaderboard/v2 v2.0.0 => ./leaderboard
-
 require (
 	github.com/DataDog/datadog-go v4.5.1+incompatible // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.0 // indirect
@@ -50,3 +48,5 @@ require (
 	google.golang.org/grpc v1.28.0
 	mellium.im/sasl v0.2.1 // indirect
 )
+
+replace github.com/topfreegames/podium/leaderboard/v2 v2.0.0 => ./leaderboard
