@@ -41,13 +41,16 @@ build: ## Build the project
 run: ## Execute the project
 	@go run main.go start
 
-test: test-podium test-leaderboard ## Execute all tests
+test: test-podium test-leaderboard test-client ## Execute all tests
 
 test-podium: ## Execute all API tests
-	@ginkgo --cover -r -nodes=1 -skipPackage=leaderboard ./
+	@ginkgo --cover -r -nodes=1 -skipPackage=leaderboard,client ./
 
 test-leaderboard: ## Execute all leaderboard tests
 	@cd leaderboard && ginkgo --cover -r -nodes=1 ./
+
+test-client: ## Execute all client tests
+	@cd client && ginkgo --cover -r -nodes=1 ./
 
 coverage: ## Generate code coverage file
 	@rm -rf _build

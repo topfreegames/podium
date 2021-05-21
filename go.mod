@@ -2,8 +2,6 @@ module github.com/topfreegames/podium
 
 go 1.15
 
-replace github.com/topfreegames/podium/leaderboard/v2 v2.0.0 => ./leaderboard
-
 require (
 	github.com/DataDog/datadog-go v4.5.1+incompatible // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.0 // indirect
@@ -15,7 +13,6 @@ require (
 	github.com/go-pg/pg v8.0.7+incompatible // indirect
 	github.com/go-redis/redis v6.13.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/context v0.0.0-20160226214623-1ea25387ff6f // indirect
 	github.com/gorilla/mux v1.6.1 // indirect
@@ -45,10 +42,11 @@ require (
 	github.com/valyala/fasthttp v0.0.0-20161005094451-07f692d02d61
 	go.uber.org/zap v1.16.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
+	golang.org/x/sys v0.0.0-20210521090106-6ca3eb03dfc2 // indirect
 	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/genproto v0.0.0-20200311144346-b662892dd51b
 	google.golang.org/grpc v1.28.0
-	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20180304133419-61bcb58a0752
 	mellium.im/sasl v0.2.1 // indirect
 )
+
+replace github.com/topfreegames/podium/leaderboard/v2 v2.0.0 => ./leaderboard
