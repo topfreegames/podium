@@ -30,7 +30,7 @@ setup: setup-hooks ## Install local dependencies and tidy go mods
 	@go get -u github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
 	@go get github.com/uber/prototool/cmd/prototool
-	@go mod tidy
+	@go mod download
 
 setup-docs: ## Install dependencies necessary for building docs
 	@pip2.7 install -q --log /tmp/pip.log --no-cache-dir sphinx recommonmark sphinx_rtd_theme
@@ -56,7 +56,7 @@ coverage: ## Generate code coverage file
 	@rm -rf _build
 	@mkdir -p _build
 	@echo "mode: count" > _build/test-coverage-all.out
-	@bash -c 'for f in $$(find . -name "*.coverprofile"); do tail -n +2 $$f >> _build/test-coverage-all.out; done'
+	@bash -c 'for f in $$(find . -name "*.coverprofile"); do tail -n +2 $$f | sed -e "s#v2##g" >> _build/test-coverage-all.out; done'
 
 test-coverage-html: test coverage ## Generate html page with code coverage information
 	@go tool cover -html=_build/test-coverage-all.out
