@@ -28,7 +28,7 @@ require (
 	github.com/newrelic/go-agent v1.11.0
 	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.11.0
-	github.com/opentracing/opentracing-go v1.2.0 // indirect
+	github.com/opentracing/opentracing-go v1.2.0
 	github.com/rcrowley/go-metrics v0.0.0-20180125231941-8732c616f529
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v0.0.6
@@ -36,7 +36,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/topfreegames/extensions v8.0.2+incompatible
 	github.com/topfreegames/podium/leaderboard/v2 v2.0.0
-	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
+	github.com/uber/jaeger-client-go v2.29.1+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v0.0.0-20161005094451-07f692d02d61
