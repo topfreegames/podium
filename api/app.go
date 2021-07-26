@@ -23,10 +23,10 @@ import (
 
 	"github.com/getsentry/raven-go"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/opentracing/opentracing-go"
 	"github.com/rcrowley/go-metrics"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/extensions/jaeger"
 	"github.com/topfreegames/podium/leaderboard/v2/database"
 	"github.com/topfreegames/podium/leaderboard/v2/service"
 	lservice "github.com/topfreegames/podium/leaderboard/v2/service"
@@ -40,6 +40,7 @@ import (
 	newrelic "github.com/newrelic/go-agent"
 	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 )
 
 // JSON type
@@ -219,16 +220,24 @@ func (app *App) configureJaeger() {
 		zap.String("operation", "configureJaeger"),
 	)
 
-	opts := jaeger.Options{
-		Disabled:    app.Config.GetBool("jaeger.disabled"),
-		Probability: app.Config.GetFloat64("jaeger.samplingProbability"),
-		ServiceName: "podium",
+	cfg, err := jaegercfg.FromEnv()
+	if err != nil {
+		l.Error("Could not parse Jaeger env vars", zap.Error(err))
+		return
 	}
 
-	_, err := jaeger.Configure(opts)
-	if err != nil {
-		l.Error("Failed to initialize Jaeger.")
+	if cfg.ServiceName == "" {
+		cfg.ServiceName = "podium"
 	}
+
+	tracer, _, err := cfg.NewTracer()
+	if err != nil {
+		l.Error("Could not initialize jaeger tracer", zap.Error(err))
+		return
+	}
+
+	opentracing.SetGlobalTracer(tracer)
+	l.Info(fmt.Sprintf("Tracer configured for %s", cfg.Reporter.LocalAgentHostPort))
 }
 
 func (app *App) setConfigurationDefaults() {
@@ -241,8 +250,6 @@ func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("redis.password", "")
 	app.Config.SetDefault("redis.db", 0)
 	app.Config.SetDefault("redis.connectionTimeout", 200)
-	app.Config.SetDefault("jaeger.disabled", true)
-	app.Config.SetDefault("jaeger.samplingProbability", 0.001)
 	app.Config.SetDefault("redis.cluster.enabled", false)
 }
 
