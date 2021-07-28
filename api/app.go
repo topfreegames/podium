@@ -23,6 +23,8 @@ import (
 
 	"github.com/getsentry/raven-go"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	otgrpc "github.com/opentracing-contrib/go-grpc"
+	"github.com/opentracing-contrib/go-stdlib/nethttp"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rcrowley/go-metrics"
 	uuid "github.com/satori/go.uuid"
@@ -429,6 +431,8 @@ func (app *App) startGRPCServer(lis net.Listener) error {
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
 		grpc_middleware.ChainUnaryServer(
 			basicAuthInterceptor,
+			grpc.UnaryServerInterceptor(
+				otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer())),
 			grpc.UnaryServerInterceptor(app.loggerMiddleware),
 			grpc.UnaryServerInterceptor(app.recoveryMiddleware),
 			grpc.UnaryServerInterceptor(app.responseTimeMetricsMiddleware),
@@ -459,10 +463,11 @@ func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
 	mux.Handle("/", removeTrailingSlashMiddleware{addVersionMiddleware{gatewayMux}})
 	mux.HandleFunc("/healthcheck", addVersionHandlerFunc(app.healthCheckHandler))
 	mux.HandleFunc("/status", addVersionHandlerFunc(app.statusHandler))
+	muxWithTracing := nethttp.Middleware(opentracing.GlobalTracer(), mux)
 
 	app.httpServer = &http.Server{
 		Addr:    app.HTTPEndpoint,
-		Handler: mux,
+		Handler: muxWithTracing,
 	}
 
 	app.httpReady <- true

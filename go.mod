@@ -28,6 +28,8 @@ require (
 	github.com/newrelic/go-agent v1.11.0
 	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.11.0
+	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e
+	github.com/opentracing-contrib/go-stdlib v1.0.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/rcrowley/go-metrics v0.0.0-20180125231941-8732c616f529
 	github.com/satori/go.uuid v1.2.0
