@@ -453,7 +453,10 @@ func (app *App) startGRPCServer(lis net.Listener) error {
 func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
 	gatewayMux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{EmitDefaults: true}))
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+	}
 
 	if err := api.RegisterPodiumHandlerFromEndpoint(ctx, gatewayMux, app.GRPCEndpoint, opts); err != nil {
 		return fmt.Errorf("error registering multiplexer for grpc gateway: %v", err)
@@ -463,7 +466,10 @@ func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
 	mux.Handle("/", removeTrailingSlashMiddleware{addVersionMiddleware{gatewayMux}})
 	mux.HandleFunc("/healthcheck", addVersionHandlerFunc(app.healthCheckHandler))
 	mux.HandleFunc("/status", addVersionHandlerFunc(app.statusHandler))
-	muxWithTracing := nethttp.Middleware(opentracing.GlobalTracer(), mux)
+	attachSpan := func(span opentracing.Span, r *http.Request) {
+		opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+	}
+	muxWithTracing := nethttp.Middleware(opentracing.GlobalTracer(), mux, nethttp.MWSpanObserver(attachSpan))
 
 	app.httpServer = &http.Server{
 		Addr:    app.HTTPEndpoint,
