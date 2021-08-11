@@ -274,7 +274,7 @@ func (app *App) GetMember(ctx context.Context, req *api.GetMemberRequest) (*api.
 		member, err = app.Leaderboards.GetMember(ctx, req.LeaderboardId, req.MemberPublicId, order, req.ScoreTTL)
 		switch {
 		case err != nil && strings.HasPrefix(err.Error(), notFoundError):
-			lg.Error("Member not found.", zap.Error(err))
+			lg.Debug("Member not found.", zap.Error(err))
 			app.AddError()
 			return status.Errorf(codes.NotFound, "Member not found.")
 		case err != nil:
@@ -316,7 +316,7 @@ func (app *App) GetRank(ctx context.Context, req *api.GetRankRequest) (*api.GetR
 		rank, err = app.Leaderboards.GetRank(ctx, req.LeaderboardId, req.MemberPublicId, order)
 
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			lg.Error("Member not found.", zap.Error(err))
+			lg.Debug("Member not found.", zap.Error(err))
 			app.AddError()
 			return status.Errorf(codes.NotFound, "Member not found.")
 		} else if err != nil {
@@ -360,7 +360,7 @@ func (app *App) GetRankMultiLeaderboards(ctx context.Context, req *api.GetRankMu
 			lg.Debug("Getting member rank on leaderboard.", zap.String("leaderboard", leaderboardID))
 			member, err := app.Leaderboards.GetMember(ctx, leaderboardID, req.MemberPublicId, order, req.ScoreTTL)
 			if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-				lg.Error("Member not found.", zap.Error(err))
+				lg.Debug("Member not found.", zap.Error(err))
 				app.AddError()
 				return status.Errorf(codes.NotFound, "Leaderboard not found or member not found req leaderboard.")
 			} else if err != nil {
@@ -415,7 +415,7 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 		members, err = app.Leaderboards.GetAroundMe(ctx, req.LeaderboardId, pageSize, req.MemberPublicId, order,
 			req.GetLastIfNotFound)
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			lg.Error("Member not found.", zap.Error(err))
+			lg.Debug("Member not found.", zap.Error(err))
 			app.AddError()
 			return status.Errorf(codes.NotFound, "Member not found.")
 		} else if err != nil {
@@ -469,7 +469,7 @@ func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreReque
 		lg.Debug("Getting players around score.", zap.Int64("score", int64(req.Score)))
 		members, err = app.Leaderboards.GetAroundScore(ctx, req.LeaderboardId, pageSize, int64(req.Score), order)
 		if err != nil && strings.HasPrefix(err.Error(), notFoundError) {
-			lg.Error("Member not found.", zap.Error(err))
+			lg.Debug("Member not found.", zap.Error(err))
 			app.AddError()
 			return status.Errorf(codes.NotFound, "Member not found.")
 		} else if err != nil {
