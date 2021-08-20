@@ -326,7 +326,7 @@ func (p *Podium) UpdateScore(ctx context.Context, leaderboard, memberID string, 
 }
 
 // IncrementScore increments the score of a particular member in a leaderboard
-func (p *Podium) IncrementScore(ctx context.Context, leaderboard, memberID string, increment, scoreTTL int) (*MemberList, error) {
+func (p *Podium) IncrementScore(ctx context.Context, leaderboard, memberID string, increment, scoreTTL int) (*Member, error) {
 	route := p.buildIncrementScoreURL(leaderboard, memberID, scoreTTL)
 	payload := map[string]interface{}{
 		"increment": increment,
@@ -337,7 +337,7 @@ func (p *Podium) IncrementScore(ctx context.Context, leaderboard, memberID strin
 		return nil, err
 	}
 
-	var member MemberList
+	var member Member
 	err = json.Unmarshal(body, &member)
 
 	return &member, err
