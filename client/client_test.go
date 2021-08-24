@@ -135,7 +135,7 @@ var _ = Describe("client", func() {
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1/score"
 			httpmock.RegisterResponder("PATCH", url,
-				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "123", "score": 12, "rank": 1 } }`))
+				httpmock.NewStringResponder(200, `{ "success": true, "publicID": "123", "score": 12, "rank": 1, "previousRank": 0, "expireAt": 0 }`))
 
 			members, err := p.IncrementScore(nil, leaderboard, "1", 10, 0)
 
@@ -151,7 +151,7 @@ var _ = Describe("client", func() {
 			//mock url that should be called
 			url := "http://podium/l/" + leaderboard + "/members/1/score?prevRank=true&scoreTTL=10"
 			httpmock.RegisterResponder("PATCH", url,
-				httpmock.NewStringResponder(200, `{ "success": true, "member": { "publicID": "123", "score": 12, "rank": 1 } }`))
+				httpmock.NewStringResponder(200, `{ "success": true, "publicID": "123", "score": 12, "rank": 1, "previousRank": 0, "expireAt": 0 }`))
 
 			members, err := p.IncrementScore(nil, leaderboard, "1", 10, 10)
 
