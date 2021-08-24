@@ -137,11 +137,11 @@ var _ = Describe("client", func() {
 			httpmock.RegisterResponder("PATCH", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "publicID": "123", "score": 12, "rank": 1, "previousRank": 0, "expireAt": 0 }`))
 
-			members, err := p.IncrementScore(nil, leaderboard, "1", 10, 0)
+			member, err := p.IncrementScore(nil, leaderboard, "1", 10, 0)
 
-			Expect(members).NotTo(BeNil())
-			Expect(members.Member.PublicID).To(Equal("123"))
-			Expect(members.Member.Score).To(Equal(12))
+			Expect(member).NotTo(BeNil())
+			Expect(member.PublicID).To(Equal("123"))
+			Expect(member.Score).To(Equal(12))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -153,11 +153,11 @@ var _ = Describe("client", func() {
 			httpmock.RegisterResponder("PATCH", url,
 				httpmock.NewStringResponder(200, `{ "success": true, "publicID": "123", "score": 12, "rank": 1, "previousRank": 0, "expireAt": 0 }`))
 
-			members, err := p.IncrementScore(nil, leaderboard, "1", 10, 10)
+			member, err := p.IncrementScore(nil, leaderboard, "1", 10, 10)
 
-			Expect(members).NotTo(BeNil())
-			Expect(members.Member.PublicID).To(Equal("123"))
-			Expect(members.Member.Score).To(Equal(12))
+			Expect(member).NotTo(BeNil())
+			Expect(member.PublicID).To(Equal("123"))
+			Expect(member.Score).To(Equal(12))
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
