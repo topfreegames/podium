@@ -4,7 +4,7 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2019 Top Free Games <backend@tfgco.com>
 
-FROM golang:1.16.3-alpine as build
+FROM golang:1.17-alpine as build
 
 MAINTAINER TFG Co <backend@tfgco.com>
 
@@ -21,4 +21,4 @@ COPY --from=build /podium/config/default.yaml /default.yaml
 
 RUN chmod +x /podium
 
-ENTRYPOINT ["/podium", "-c", "/default.yaml"]
+ENTRYPOINT ["/podium", "-c", "/default.yaml", "start"]
