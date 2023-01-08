@@ -94,7 +94,7 @@ func (app *App) loggerMiddleware(ctx context.Context, req interface{}, info *grp
 	return h, err
 }
 
-//Serve executes on error handler when errors happen
+// Serve executes on error handler when errors happen
 func (app *App) recoveryMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -196,4 +196,24 @@ func (m *removeTrailingSlashMiddleware) removeTrailingSlash(path string) string 
 func (m removeTrailingSlashMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.URL.Path = m.removeTrailingSlash(r.URL.Path)
 	m.Handler.ServeHTTP(w, r)
+}
+
+type addCorsMiddleware struct {
+	Handler http.Handler
+}
+
+func addCorsHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+}
+
+func (m addCorsMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	addCorsHeaders(w)
+	m.Handler.ServeHTTP(w, r)
+}
+
+func addCorsHandlerFunc(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addCorsHeaders(w)
+		f(w, r)
+	}
 }
