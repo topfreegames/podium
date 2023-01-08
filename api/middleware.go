@@ -204,11 +204,22 @@ type addCorsMiddleware struct {
 
 func addCorsHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	/*
+		w.Header().Set("Vary", "Origin")
+		w.Header().Set("Vary", "Access-Control-Request-Method")
+		w.Header().Set("Vary", "Access-Control-Request-Headers")
+	*/
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,PATCH,POST,PUT,OPTIONS,DELETE")
 }
 
 func (m addCorsMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	addCorsHeaders(w)
-	m.Handler.ServeHTTP(w, r)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		m.Handler.ServeHTTP(w, r)
+	}
 }
 
 func addCorsHandlerFunc(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
