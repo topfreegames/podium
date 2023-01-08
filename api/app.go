@@ -270,7 +270,7 @@ func (app *App) loadConfiguration() error {
 	return nil
 }
 
-//OnErrorHandler handles panics
+// OnErrorHandler handles panics
 func (app *App) OnErrorHandler(err error, stack []byte) {
 	app.Logger.Error(
 		"Panic occurred.",
@@ -343,7 +343,7 @@ func (app *App) createLeaderboardClient() lservice.Leaderboard {
 	return leaderboardService
 }
 
-//AddError rate statistics
+// AddError rate statistics
 func (app *App) AddError() {
 	app.Errors.Update(1)
 }
@@ -463,7 +463,7 @@ func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", removeTrailingSlashMiddleware{addVersionMiddleware{gatewayMux}})
+	mux.Handle("/", removeTrailingSlashMiddleware{addVersionMiddleware{addCorsMiddleware{gatewayMux}}})
 	mux.HandleFunc("/healthcheck", addVersionHandlerFunc(app.healthCheckHandler))
 	mux.HandleFunc("/status", addVersionHandlerFunc(app.statusHandler))
 	attachSpan := func(span opentracing.Span, r *http.Request) {
