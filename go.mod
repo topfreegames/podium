@@ -12,7 +12,7 @@ require (
 	github.com/getsentry/raven-go v0.0.0-20170918144728-1452f6376ddb
 	github.com/go-pg/pg v8.0.7+incompatible // indirect
 	github.com/go-redis/redis v6.13.2+incompatible // indirect
-	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/context v0.0.0-20160226214623-1ea25387ff6f // indirect
 	github.com/gorilla/mux v1.6.1 // indirect
