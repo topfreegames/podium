@@ -44,7 +44,7 @@ require (
 	github.com/valyala/fasthttp v0.0.0-20161005094451-07f692d02d61
 	go.uber.org/zap v1.16.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/sys v0.0.0-20210521090106-6ca3eb03dfc2 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/genproto v0.0.0-20200311144346-b662892dd51b
 	google.golang.org/grpc v1.28.0
