@@ -48,7 +48,7 @@ require (
 	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/genproto v0.0.0-20200311144346-b662892dd51b
 	google.golang.org/grpc v1.28.0
-	mellium.im/sasl v0.2.1 // indirect
+	mellium.im/sasl v0.3.1 // indirect
 )
 
 replace github.com/topfreegames/podium/leaderboard/v2 v2.0.0 => ./leaderboard
