@@ -21,9 +21,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway v1.9.2
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
-	github.com/klauspost/compress v0.0.0-20160919184342-d0763f13d86e // indirect
-	github.com/klauspost/cpuid v0.0.0-20160302075316-09cded8978dc // indirect
-	github.com/klauspost/crc32 v0.0.0-20160219142609-19b0b332c9e4 // indirect
 	github.com/mailru/easyjson v0.0.0-20180320131758-517203d186eb
 	github.com/newrelic/go-agent v1.11.0
 	github.com/onsi/ginkgo v1.16.2
@@ -40,11 +37,9 @@ require (
 	github.com/topfreegames/podium/leaderboard/v2 v2.0.0
 	github.com/uber/jaeger-client-go v2.29.1+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v0.0.0-20161005094451-07f692d02d61
+	github.com/valyala/fasthttp v1.34.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/sys v0.0.0-20210521090106-6ca3eb03dfc2 // indirect
 	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/genproto v0.0.0-20200311144346-b662892dd51b
 	google.golang.org/grpc v1.28.0
