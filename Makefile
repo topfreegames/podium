@@ -12,6 +12,7 @@ MYIP = $(shell ifconfig | egrep inet | egrep -v inet6 | egrep -v 127.0.0.1 | awk
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
 PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
 LOCAL_GO_MODCACHE = $(shell go env | grep GOMODCACHE | cut -d "=" -f 2 | sed 's/"//g')
+GINKGO := go run github.com/onsi/ginkgo/ginkgo@v1.16.5
 
 help: Makefile ## Show list of commands
 	@echo "Choose a command run in "$(PROJECT_NAME)":"
@@ -27,7 +28,7 @@ clear-hooks: ## Remove pre-commit git hooks
 	@cd .git/hooks && rm pre-commit
 
 setup: setup-hooks ## Install local dependencies and tidy go mods
-	@go get -u github.com/onsi/ginkgo/ginkgo
+	@go get github.com/onsi/ginkgo/ginkgo
 	@go get github.com/gordonklaus/ineffassign
 	@go get github.com/uber/prototool/cmd/prototool
 	@go mod download
@@ -44,13 +45,13 @@ run: ## Execute the project
 test: test-podium test-leaderboard test-client ## Execute all tests
 
 test-podium: ## Execute all API tests
-	@ginkgo --cover -r -nodes=1 -skipPackage=leaderboard,client ./
+	$(GINKGO) --cover -r -nodes=1 --skipPackage=leaderboard,client ./
 
 test-leaderboard: ## Execute all leaderboard tests
-	@cd leaderboard && ginkgo --cover -r -nodes=1 ./
+	@cd leaderboard && $(GINKGO) --cover -r -nodes=1 ./
 
 test-client: ## Execute all client tests
-	@cd client && ginkgo --cover -r -nodes=1 ./
+	@cd client && $(GINKGO) --cover -r -nodes=1 ./
 
 coverage: ## Generate code coverage file
 	@rm -rf _build

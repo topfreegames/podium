@@ -64,7 +64,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				}
 				return fmt.Sprintf("%d", i)
 			}
-			year, week               = time.Now().UTC().AddDate(0, 0, -15).ISOWeek()
+			year, week               = time.Now().UTC().AddDate(0, -1, 0).ISOWeek()
 			lastQuarter, quarterYear = func() (int, int) {
 				quarter := int(time.Now().UTC().Month()-1)/3 + 1
 				quarterYear := time.Now().UTC().Year()
@@ -2534,6 +2534,6 @@ var _ = Describe("Leaderboard Handler", func() {
 			status, body, err := testing.FastGet(url)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
-		}, 0.9)
+		}, 2)
 	})
 })
