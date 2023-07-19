@@ -21,4 +21,4 @@ COPY --from=build /podium/config/default.yaml /default.yaml
 
 RUN chmod +x /podium
 
-ENTRYPOINT ["/podium", "-c", "/default.yaml"]
+ENTRYPOINT ["/podium", "start", "-c", "/default.yaml"]
