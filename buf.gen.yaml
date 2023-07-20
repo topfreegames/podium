@@ -1,0 +1,22 @@
+version: v1
+plugins:
+  - plugin: go
+    out: .
+    opt: paths=source_relative
+  - plugin: go-grpc
+    out: .
+    opt:
+      - paths=source_relative
+  - name: grpc-gateway
+    out: .
+    opt:
+      - paths=source_relative
+  - name: openapiv2
+    out: ./docs/openapi
+    strategy: all
+    opt:
+      - output_format=yaml
+      - allow_merge=true
+      - merge_file_name=spec
+      - openapi_naming_strategy=simple
+      - simple_operation_ids=true

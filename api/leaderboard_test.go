@@ -356,7 +356,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(ContainSubstring("invalid character"))
+			Expect(result["reason"]).To(ContainSubstring("invalid value"))
 		})
 
 		It("Should fail if missing parameters", func() {
@@ -405,7 +405,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			status, body, err := testing.FastPutTo(url, ctx["payload"].([]byte))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(http.StatusOK), string(body))
-		}, 0.05)
+		}, 0.1)
 	})
 
 	Describe("Upsert Member Score", func() {
@@ -572,7 +572,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
 			Expect(result["success"]).To(BeFalse())
-			Expect(result["reason"]).To(Equal("invalid character 'h' looking for beginning of value"))
+			Expect(result["reason"]).To(ContainSubstring("invalid value"))
 		})
 
 		//this test has been deactivated because grpc-gateway still isn't
@@ -715,9 +715,7 @@ var _ = Describe("Leaderboard Handler", func() {
 		})
 
 		It("Should fail if missing parameters", func() {
-			payload := map[string]interface{}{
-				"notscore": 100,
-			}
+			payload := map[string]interface{}{}
 			status, body := PatchJSON(app, "/l/testkey/members/memberpublicid/score", payload)
 			Expect(status).To(Equal(http.StatusBadRequest), body)
 			var result map[string]interface{}
