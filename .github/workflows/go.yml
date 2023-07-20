@@ -115,7 +115,6 @@ jobs:
   build_and_deploy_podium:
     needs:
       - test-standalone
-      - test-cluster
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'leaderboard/') && !contains(github.ref, 'client/')
     steps:
@@ -156,7 +155,6 @@ jobs:
   build_and_deploy_podium_dev:
     needs:
       - test-standalone
-      - test-cluster
     runs-on: ubuntu-latest
     if: (!startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'leaderboard/') && !contains(github.ref, 'client/'))
     steps:
