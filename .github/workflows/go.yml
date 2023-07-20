@@ -11,15 +11,6 @@ jobs:
         ports:
           - '6379:6379'
     steps:
-      - name: Instantiate redis cluster
-        uses: vishnudxb/redis-cluster@1.0.5
-        with:
-          master1-port: 5000
-          master2-port: 5001
-          master3-port: 5002
-          slave1-port: 5003
-          slave2-port: 5004
-          slave3-port: 5005
       - id: go-cache-paths
         run: |
           echo "::set-output name=go-build::$(go env GOCACHE)"
@@ -47,8 +38,6 @@ jobs:
       - name: Coverage
         run: make coverage
       - name: Install goveralls
-        env:
-          GO111MODULE: off
         run: go get github.com/mattn/goveralls
       - name: Send coverage
         env:
