@@ -22,8 +22,8 @@ jobs:
           slave3-port: 5005
       - id: go-cache-paths
         run: |
-          echo "name=go-build" >> $GITHUB_OUTPUT"
-          echo "name=go-mod" >> $GITHUB_OUTPUT"
+          echo "name=go-build" >> $GITHUB_OUTPUT
+          echo "name=go-mod" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
       - name: Go Build Cache
         uses: actions/cache@v3
@@ -75,8 +75,8 @@ jobs:
   #          slave3-port: 5005
   #      - id: go-cache-paths
   #        run: |
-  #          echo "name=go-build" >> $GITHUB_OUTPUT"
-  #          echo "name=go-mod" >> $GITHUB_OUTPUT"
+  #          echo "name=go-build" >> $GITHUB_OUTPUT
+  #          echo "name=go-mod" >> $GITHUB_OUTPUT
   #      - uses: actions/checkout@v3
   #      - name: Go Build Cache
   #        uses: actions/cache@v3
