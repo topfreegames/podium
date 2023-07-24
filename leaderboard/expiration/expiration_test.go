@@ -29,10 +29,10 @@ var _ = Describe("Expires Helper", func() {
 
 	Describe("Yearly expiration", func() {
 		It("should get expiration for year 2020", func() {
-			exp, err := expiration.GetExpireAt("leaderboard_year2020")
+			exp, err := expiration.GetExpireAt("leaderboard_year2099")
 			Expect(err).NotTo(HaveOccurred())
 
-			startTime, err := time.Parse("2006", "2020")
+			startTime, err := time.Parse("2006", "2099")
 			Expect(err).NotTo(HaveOccurred())
 
 			endTime := startTime.AddDate(2, 0, 0)

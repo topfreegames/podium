@@ -29,7 +29,7 @@ func GetDefaultTestApp() *api.App {
 	}
 
 	logger := log.CreateLoggerWithLevel(zap.FatalLevel, log.LoggerOptions{WriteSyncer: os.Stdout, RemoveTimestamp: true})
-	app, err := api.New("127.0.0.1", 0, 0, "../config/test.yaml", false, logger)
+	app, err := api.New("127.0.0.1", 0, 0, "../config/test.yaml", true, logger)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get app: %s\n", err.Error()))
 	}

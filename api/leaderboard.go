@@ -30,6 +30,10 @@ const (
 )
 
 func validateBulkUpsertScoresRequest(req *api.BulkUpsertScoresRequest) error {
+	if len(req.MemberScores.Members) == 0 {
+		return status.Errorf(codes.InvalidArgument, "at least one member is required")
+	}
+
 	for _, m := range req.MemberScores.Members {
 		if m.PublicID == "" {
 			return status.Errorf(codes.InvalidArgument, "publicID is required")

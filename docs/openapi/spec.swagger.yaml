@@ -1,0 +1,863 @@
+swagger: "2.0"
+info:
+  title: proto/podium/api/v1/podium.proto
+  version: version not set
+tags:
+  - name: Podium
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /l/{leaderboardId}:
+    delete:
+      summary: RemoveLeaderboard removes a specified leaderboard.
+      operationId: RemoveLeaderboard
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/RemoveLeaderboardResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+      tags:
+        - Podium
+  /l/{leaderboardId}/members:
+    get:
+      summary: GetMembers retrieves information about multiple members of a leaderboard.
+      operationId: GetMembers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetMembersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+        - name: order
+          in: query
+          required: false
+          type: string
+        - name: scoreTTL
+          in: query
+          required: false
+          type: boolean
+        - name: ids
+          in: query
+          required: false
+          type: string
+      tags:
+        - Podium
+    delete:
+      summary: RemoveMembers allows the removal of multiple members of a leaderboard.
+      operationId: RemoveMembers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/RemoveMembersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          description: The leaderboard identification.
+          in: path
+          required: true
+          type: string
+        - name: ids
+          description: 'Comma separated member id list (ex: ids="memberPublicID1,memberPublicID2,...")'
+          in: query
+          required: false
+          type: string
+      tags:
+        - Podium
+  /l/{leaderboardId}/members-count:
+    get:
+      summary: TotalMembers returns the number of members on a leaderboard.
+      operationId: TotalMembers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/TotalMembersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+      tags:
+        - Podium
+  /l/{leaderboardId}/members/{memberPublicId}:
+    get:
+      summary: GetMember retrieves leaderboard information from a member.
+      operationId: GetMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+        - name: memberPublicId
+          in: path
+          required: true
+          type: string
+        - name: order
+          in: query
+          required: false
+          type: string
+        - name: scoreTTL
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Podium
+    delete:
+      summary: RemoveMember removes a member from a leaderboard.
+      operationId: RemoveMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/RemoveMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+        - name: memberPublicId
+          in: path
+          required: true
+          type: string
+      tags:
+        - Podium
+  /l/{leaderboardId}/members/{memberPublicId}/around:
+    get:
+      summary: GetAroundMember retrieves the closest members to another member on the leaderboard.
+      operationId: GetAroundMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetAroundMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+        - name: memberPublicId
+          in: path
+          required: true
+          type: string
+        - name: order
+          in: query
+          required: false
+          type: string
+        - name: getLastIfNotFound
+          in: query
+          required: false
+          type: boolean
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Podium
+  /l/{leaderboardId}/members/{memberPublicId}/rank:
+    get:
+      summary: GetRank retrieves ranking information about a member.
+      operationId: GetRank
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetRankResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          description: The leaderboard identification.
+          in: path
+          required: true
+          type: string
+        - name: memberPublicId
+          description: The member identification.
+          in: path
+          required: true
+          type: string
+        - name: order
+          description: If set to asc, will treat the ranking with ascending scores (less is best).
+          in: query
+          required: false
+          type: string
+      tags:
+        - Podium
+  /l/{leaderboardId}/members/{memberPublicId}/score:
+    put:
+      summary: UpsertScore submits a single leaderboard score to Podium.
+      operationId: UpsertScore
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/UpsertScoreResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          description: The leaderboard identification.
+          in: path
+          required: true
+          type: string
+        - name: memberPublicId
+          description: The member identification.
+          in: path
+          required: true
+          type: string
+        - name: scoreChange
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ScoreChange'
+        - name: prevRank
+          description: If set to true, it will also return the previous rank of the player in the leaderboard.
+          in: query
+          required: false
+          type: boolean
+        - name: scoreTTL
+          description: If set to more than zero, the score of the player will be expired from the leaderboard past scoreTTL seconds.
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Podium
+    patch:
+      summary: IncrementScore increments a member score.
+      operationId: IncrementScore
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/IncrementScoreResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          description: The leaderboard identification.
+          in: path
+          required: true
+          type: string
+        - name: memberPublicId
+          description: The member identification.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Body'
+        - name: scoreTTL
+          description: If set to more than zero, the score of the player will be expired from the leaderboard past scoreTTL seconds.
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Podium
+  /l/{leaderboardId}/scores:
+    put:
+      summary: BulkUpsertScores allows clients to send multiple scores in a single request.
+      operationId: BulkUpsertScores
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/BulkUpsertScoresResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          description: The leaderboard identification.
+          in: path
+          required: true
+          type: string
+        - name: memberScores
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/MemberScores'
+        - name: prevRank
+          description: |-
+            If set to true, it will also return the previous rank of the player in the leaderboard.
+            -1 if the player didn’t exist in the leaderboard.
+          in: query
+          required: false
+          type: boolean
+        - name: scoreTTL
+          description: If set to more than zero, the score of the player will be expired from the leaderboard past scoreTTL seconds.
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Podium
+  /l/{leaderboardId}/scores/{score}/around:
+    get:
+      summary: GetAroundScore retrieves the closest members to a score on the leaderboard.
+      operationId: GetAroundScore
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetAroundScoreResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+        - name: score
+          in: path
+          required: true
+          type: number
+          format: double
+        - name: order
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Podium
+  /l/{leaderboardId}/top-percent/{percentage}:
+    get:
+      summary: GetTopPercentage retrieves a percentage of the top members of the leaderboard.
+      operationId: GetTopPercentage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetTopPercentageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+        - name: percentage
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: order
+          in: query
+          required: false
+          type: string
+      tags:
+        - Podium
+  /l/{leaderboardId}/top/{pageNumber}:
+    get:
+      summary: GetTopMembers retrieves the top ranking members of a leaderboard.
+      operationId: GetTopMembers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetTopMembersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: leaderboardId
+          in: path
+          required: true
+          type: string
+        - name: pageNumber
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: order
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Podium
+  /m/{memberPublicId}/scores:
+    get:
+      summary: GetRankMultiLeaderboards retrieves information about a member in multiple leaderboards.
+      operationId: GetRankMultiLeaderboards
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/GetRankMultiLeaderboardsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: memberPublicId
+          in: path
+          required: true
+          type: string
+        - name: leaderboardIds
+          in: query
+          required: false
+          type: string
+        - name: order
+          in: query
+          required: false
+          type: string
+        - name: scoreTTL
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Podium
+    put:
+      summary: UpsertScoreMultiLeaderboards sends a member score to multiple leaderboards.
+      operationId: UpsertScoreMultiLeaderboards
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/UpsertScoreMultiLeaderboardsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: memberPublicId
+          in: path
+          required: true
+          type: string
+        - name: scoreMultiChange
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ScoreMultiChange'
+        - name: scoreTTL
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: prevRank
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Podium
+definitions:
+  Any:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
+  Body:
+    type: object
+    properties:
+      increment:
+        type: number
+        format: double
+    description: Body represents the increment payload.
+  BulkUpsertScoresResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/BulkUpsertScoresResponse.Member'
+      success:
+        type: boolean
+  BulkUpsertScoresResponse.Member:
+    type: object
+    properties:
+      expireAt:
+        type: integer
+        format: int32
+        description: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
+      previousRank:
+        type: integer
+        format: int32
+        description: The previous rank of the player in the leaderboard, if requested.
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+    description: Member information returned for BulkUpsertScores request.
+  GetAroundMemberResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/v1.Member'
+      success:
+        type: boolean
+  GetAroundScoreResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/v1.Member'
+      success:
+        type: boolean
+  GetMemberResponse:
+    type: object
+    properties:
+      expireAt:
+        type: integer
+        format: int32
+        title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
+      previousRank:
+        type: integer
+        format: int32
+        description: The previous rank of the player in the leaderboard, if requested.
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+      success:
+        type: boolean
+  GetMembersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/GetMembersResponse.Member'
+      notFound:
+        type: array
+        items:
+          type: string
+      success:
+        type: boolean
+  GetMembersResponse.Member:
+    type: object
+    properties:
+      expireAt:
+        type: integer
+        format: int32
+        description: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
+      position:
+        type: integer
+        format: int32
+        description: Member rank for all members returned in this request.
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+    description: Member information returned for GetMembers request.
+  GetRankMultiLeaderboardsResponse:
+    type: object
+    properties:
+      scores:
+        type: array
+        items:
+          $ref: '#/definitions/GetRankMultiLeaderboardsResponse.Member'
+      success:
+        type: boolean
+  GetRankMultiLeaderboardsResponse.Member:
+    type: object
+    properties:
+      expireAt:
+        type: integer
+        format: int32
+      leaderboardID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+    description: Member represents member information retrieved from one the leaderboards during MultiGetRankResponse operation.
+  GetRankResponse:
+    type: object
+    properties:
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      success:
+        type: boolean
+  GetTopMembersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/v1.Member'
+      success:
+        type: boolean
+  GetTopPercentageResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/v1.Member'
+      success:
+        type: boolean
+  HealthCheckResponse:
+    type: object
+    properties:
+      workingString:
+        type: string
+        description: The string configured on healthcheck.workingText to represent that the service is up.
+  IncrementScoreResponse:
+    type: object
+    properties:
+      expireAt:
+        type: integer
+        format: int32
+        title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
+      previousRank:
+        type: integer
+        format: int32
+        description: The previous rank of the player in the leaderboard, if requested.
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+      success:
+        type: boolean
+  MemberScore:
+    type: object
+    properties:
+      publicID:
+        type: string
+        description: 'TODO: use json_name on variables like this to respect .proto naming format.'
+      score:
+        type: number
+        format: double
+        description: |-
+          Score can store integer values from -9007199254740992 and 9007199254740992.
+          Although the score type is double, internally the service converts this number to a int64 format.
+    description: MemberScore allow to provide score information about a single member.
+  MemberScores:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/MemberScore'
+    description: ScoreUpserts represent multiple score submissions.
+  RemoveLeaderboardResponse:
+    type: object
+    properties:
+      reason:
+        type: string
+        description: If the request failed the reason (as a error message) is written here.
+      success:
+        type: boolean
+        description: If the request was successfull.
+  RemoveMemberResponse:
+    type: object
+    properties:
+      reason:
+        type: string
+        description: If the request failed the reason (as a error message) is written here.
+      success:
+        type: boolean
+        description: If the request was successfull.
+  RemoveMembersResponse:
+    type: object
+    properties:
+      reason:
+        type: string
+        description: If the request failed the reason (as a error message) is written here.
+      success:
+        type: boolean
+        description: If the request was successfull.
+  ScoreChange:
+    type: object
+    properties:
+      score:
+        type: number
+        format: double
+    description: ScoreChange is the score payload when upserting a score.
+  ScoreMultiChange:
+    type: object
+    properties:
+      leaderboards:
+        type: array
+        items:
+          type: string
+      score:
+        type: number
+        format: double
+    description: ScoreMultiChange is the payload to update the score of a member on multiple leaderboards.
+  Status:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      details:
+        type: array
+        items:
+          $ref: '#/definitions/Any'
+      message:
+        type: string
+  StatusResponse:
+    type: object
+    properties:
+      errorRate:
+        type: number
+        format: double
+        description: Rate of errors per second.
+  TotalMembersResponse:
+    type: object
+    properties:
+      count:
+        type: integer
+        format: int32
+      success:
+        type: boolean
+  UpsertScoreMultiLeaderboardsResponse:
+    type: object
+    properties:
+      scores:
+        type: array
+        items:
+          $ref: '#/definitions/UpsertScoreMultiLeaderboardsResponse.Member'
+      success:
+        type: boolean
+  UpsertScoreMultiLeaderboardsResponse.Member:
+    type: object
+    properties:
+      expireAt:
+        type: integer
+        format: int32
+        description: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
+      leaderboardID:
+        type: string
+      previousRank:
+        type: integer
+        format: int32
+        description: The previous rank of the player in the leaderboard, if requested.
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+    description: Member represents the information regarding a single member in response to a multi upsert score.
+  UpsertScoreResponse:
+    type: object
+    properties:
+      expireAt:
+        type: integer
+        format: int32
+        title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
+      previousRank:
+        type: integer
+        format: int32
+        description: The previous rank of the player in the leaderboard, if requested.
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+      success:
+        type: boolean
+  v1.Member:
+    type: object
+    properties:
+      publicID:
+        type: string
+      rank:
+        type: integer
+        format: int32
+      score:
+        type: number
+        format: double
+    description: |-
+      TODO: Create a single Member structure and make all requests use the same structure (document parts of the requests that are not returned)
+      Member is a basic payload for a leaderboard member used by some responses.

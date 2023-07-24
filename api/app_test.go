@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -52,7 +53,7 @@ var _ = Describe("App", func() {
 			app, err = api.New("127.0.0.1", 9999, 10000, "../config/invalid.yaml", false, logger)
 			Expect(app).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Could not load configuration file from: ../config/invalid.yaml"))
+			Expect(strings.ToLower(err.Error())).To(ContainSubstring("could not load configuration file from: ../config/invalid.yaml"))
 		})
 	})
 

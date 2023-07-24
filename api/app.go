@@ -12,6 +12,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/credentials/insecure"
 	"net"
 	"net/http"
 	"os"
@@ -21,8 +22,10 @@ import (
 	"syscall"
 	"time"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/getsentry/raven-go"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	otgrpc "github.com/opentracing-contrib/go-grpc"
 	"github.com/opentracing-contrib/go-stdlib/nethttp"
 	"github.com/opentracing/opentracing-go"
@@ -37,8 +40,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	newrelic "github.com/newrelic/go-agent"
 	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
@@ -50,6 +53,8 @@ type JSON map[string]interface{}
 
 // App is a struct that represents a podium Application
 type App struct {
+	api.UnimplementedPodiumServer
+
 	Debug bool
 
 	// HTTP endpoint for HTTP requests. Built after calling Start. Format: 127.0.0.1:8080
@@ -114,14 +119,8 @@ func (app *App) configure() error {
 	}
 
 	app.configureJaeger()
-	app.configureSentry()
 
 	err = app.configureStatsD()
-	if err != nil {
-		return err
-	}
-
-	err = app.configureNewRelic()
 	if err != nil {
 		return err
 	}
@@ -131,45 +130,7 @@ func (app *App) configure() error {
 		return err
 	}
 
-	//we are customizing the default http error reply
-	runtime.HTTPError = func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, _ *http.Request, rpcErr error) {
-
-		w.Header().Set("Content-Type", marshaler.ContentType())
-		st, s := app.getStatusCodeFromError(rpcErr)
-
-		w.WriteHeader(s)
-
-		type errorBody struct {
-			Success bool   `json:"success"`
-			Reason  string `json:"reason"`
-		}
-
-		body := &errorBody{
-			Success: false,
-			Reason:  st.Message(),
-		}
-
-		buf, err := marshaler.Marshal(body)
-		if err != nil {
-			app.Logger.Error("Failed to marshal error body,", zap.Error(err))
-			return
-		}
-		if _, err := w.Write(buf); err != nil {
-			app.Logger.Error("Failed to write response.,", zap.Error(err))
-		}
-	}
-
 	return nil
-}
-
-func (app *App) configureSentry() {
-	l := app.Logger.With(
-		zap.String("source", "app"),
-		zap.String("operation", "configureSentry"),
-	)
-	sentryURL := app.Config.GetString("sentry.url")
-	raven.SetDSN(sentryURL)
-	l.Info("Configured sentry successfully.")
 }
 
 func (app *App) configureStatsD() error {
@@ -187,31 +148,6 @@ func (app *App) configureStatsD() error {
 	}
 	app.DDStatsD = ddstatsd
 	l.Info("Configured StatsD successfully.")
-
-	return nil
-}
-
-func (app *App) configureNewRelic() error {
-	newRelicKey := app.Config.GetString("newrelic.key")
-
-	l := app.Logger.With(
-		zap.String("source", "app"),
-		zap.String("operation", "configureNewRelic"),
-	)
-
-	config := newrelic.NewConfig("Podium", newRelicKey)
-	if newRelicKey == "" {
-		l.Info("New Relic is not enabled..")
-		config.Enabled = false
-	}
-	nr, err := newrelic.NewApplication(config)
-	if err != nil {
-		l.Error("Failed to initialize New Relic.", zap.Error(err))
-		return err
-	}
-
-	app.NewRelic = nr
-	l.Info("Initialized New Relic successfully.")
 
 	return nil
 }
@@ -264,13 +200,13 @@ func (app *App) loadConfiguration() error {
 	if err := app.Config.ReadInConfig(); err == nil {
 		app.Logger.Info("Loaded config file.", zap.String("configFile", app.Config.ConfigFileUsed()))
 	} else {
-		return fmt.Errorf("Could not load configuration file from: %s", app.ConfigPath)
+		return fmt.Errorf("could not load configuration file from: %s", app.ConfigPath)
 	}
 
 	return nil
 }
 
-//OnErrorHandler handles panics
+// OnErrorHandler handles panics
 func (app *App) OnErrorHandler(err error, stack []byte) {
 	app.Logger.Error(
 		"Panic occurred.",
@@ -343,7 +279,7 @@ func (app *App) createLeaderboardClient() lservice.Leaderboard {
 	return leaderboardService
 }
 
-//AddError rate statistics
+// AddError rate statistics
 func (app *App) AddError() {
 	app.Errors.Update(1)
 }
@@ -423,21 +359,18 @@ func (app *App) startGRPCServer(lis net.Listener) error {
 
 	basicAuthUser := app.Config.GetString("basicauth.username")
 	if basicAuthUser == "" {
-		basicAuthInterceptor = grpc.UnaryServerInterceptor(app.noAuthMiddleware)
+		basicAuthInterceptor = app.noAuthMiddleware
 	} else {
-		basicAuthInterceptor = grpc_auth.UnaryServerInterceptor(app.basicAuthMiddleware)
+		basicAuthInterceptor = grpcauth.UnaryServerInterceptor(app.basicAuthMiddleware)
 	}
 
 	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
-		grpc_middleware.ChainUnaryServer(
+		grpcmiddleware.ChainUnaryServer(
 			basicAuthInterceptor,
-			grpc.UnaryServerInterceptor(
-				otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer())),
-			grpc.UnaryServerInterceptor(app.loggerMiddleware),
-			grpc.UnaryServerInterceptor(app.recoveryMiddleware),
-			grpc.UnaryServerInterceptor(app.responseTimeMetricsMiddleware),
-			grpc.UnaryServerInterceptor(app.sentryMiddleware),
-			grpc.UnaryServerInterceptor(app.newRelicMiddleware),
+			otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
+			app.loggerMiddleware,
+			app.recoveryMiddleware,
+			app.responseTimeMetricsMiddleware,
 		),
 	))
 	api.RegisterPodiumServer(app.grpcServer, app)
@@ -450,11 +383,40 @@ func (app *App) startGRPCServer(lis net.Listener) error {
 	return nil
 }
 
+func (app *App) applicationErrorHandler(_ context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, _ *http.Request, rpcErr error) {
+
+	w.Header().Set("Content-Type", "application/json")
+	st, s := app.getStatusCodeFromError(rpcErr)
+
+	w.WriteHeader(s)
+
+	type errorBody struct {
+		Success bool   `json:"success"`
+		Reason  string `json:"reason"`
+	}
+
+	body := &errorBody{
+		Success: false,
+		Reason:  st.Message(),
+	}
+
+	buf, err := marshaler.Marshal(body)
+	if err != nil {
+		app.Logger.Error("Failed to marshal error body,", zap.Error(err))
+		return
+	}
+	if _, err := w.Write(buf); err != nil {
+		app.Logger.Error("Failed to write response.,", zap.Error(err))
+	}
+}
+
 func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
 	gatewayMux := runtime.NewServeMux(
-		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{EmitDefaults: true}))
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{MarshalOptions: protojson.MarshalOptions{EmitUnpopulated: true}}),
+		runtime.WithErrorHandler(app.applicationErrorHandler),
+	)
 	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
 	}
 
@@ -467,8 +429,9 @@ func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
 	mux.HandleFunc("/healthcheck", addVersionHandlerFunc(app.healthCheckHandler))
 	mux.HandleFunc("/status", addVersionHandlerFunc(app.statusHandler))
 	attachSpan := func(span opentracing.Span, r *http.Request) {
-		opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+		_ = opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 	}
+
 	muxWithTracing := nethttp.Middleware(opentracing.GlobalTracer(), mux, nethttp.MWSpanObserver(attachSpan))
 
 	app.httpServer = &http.Server{
