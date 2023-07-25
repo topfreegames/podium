@@ -14,6 +14,7 @@ PROTOTOOL := go run github.com/uber/prototool/cmd/prototool
 LOCAL_GO_MODCACHE = $(shell go env | grep GOMODCACHE | cut -d "=" -f 2 | sed 's/"//g')
 GINKGO := go run github.com/onsi/ginkgo/ginkgo@v1.16.5
 BUF := go run github.com/bufbuild/buf/cmd/buf@v1.24.0
+MOCKGENERATE := go run github.com/golang/mock/mockgen@v1.7.0-rc.1
 
 help: Makefile ## Show list of commands
 	@echo "Choose a command run in "$(PROJECT_NAME)":"
@@ -108,14 +109,15 @@ rtfd: ## Build and open podium documentation
 mock-lib: ## Generate mocks
 	@mockgen github.com/topfreegames/podium/lib PodiumInterface | sed 's/mock_lib/mocks/' > lib/mocks/podium.go
 
+mock-generate:
+	$(MOCKGENERATE) -source=leaderboard/enriching/interfaces.go -destination=leaderboard/mocks/enriching.go
+
 proto-setup:
 	@go install google.golang.org/protobuf/cmd/protoc-gen-go \
 		google.golang.org/grpc/cmd/protoc-gen-go-grpc \
 		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
 		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
 	@$(BUF) mod update
-
-
 
 proto: ## Generate protobuf files
 	@rm proto/podium/api/v1/*.go > /dev/null 2>&1 || true

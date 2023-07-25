@@ -84,7 +84,7 @@ func local_request_Podium_RemoveLeaderboard_0(ctx context.Context, marshaler run
 }
 
 var (
-	filter_Podium_BulkUpsertScores_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_scores": 0, "leaderboard_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_BulkUpsertScores_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_scores": 0, "memberScores": 1, "leaderboard_id": 2, "leaderboardId": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_Podium_BulkUpsertScores_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -170,7 +170,7 @@ func local_request_Podium_BulkUpsertScores_0(ctx context.Context, marshaler runt
 }
 
 var (
-	filter_Podium_UpsertScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_change": 0, "leaderboard_id": 1, "member_public_id": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+	filter_Podium_UpsertScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_change": 0, "scoreChange": 1, "leaderboard_id": 2, "leaderboardId": 3, "member_public_id": 4, "memberPublicId": 5}, Base: []int{1, 1, 2, 3, 4, 5, 6, 0, 0, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7}}
 )
 
 func request_Podium_UpsertScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -328,7 +328,7 @@ func local_request_Podium_TotalMembers_0(ctx context.Context, marshaler runtime.
 }
 
 var (
-	filter_Podium_IncrementScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"body": 0, "leaderboard_id": 1, "member_public_id": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+	filter_Podium_IncrementScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"body": 0, "leaderboard_id": 1, "leaderboardId": 2, "member_public_id": 3, "memberPublicId": 4}, Base: []int{1, 2, 3, 4, 5, 6, 0, 0, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 1, 2, 2, 3, 4, 5, 6}}
 )
 
 func request_Podium_IncrementScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -434,7 +434,7 @@ func local_request_Podium_IncrementScore_0(ctx context.Context, marshaler runtim
 }
 
 var (
-	filter_Podium_GetMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1, "member_public_id": 2, "memberPublicId": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_Podium_GetMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -524,7 +524,7 @@ func local_request_Podium_GetMember_0(ctx context.Context, marshaler runtime.Mar
 }
 
 var (
-	filter_Podium_GetMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_Podium_GetMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_Podium_GetMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -666,7 +666,7 @@ func local_request_Podium_RemoveMember_0(ctx context.Context, marshaler runtime.
 }
 
 var (
-	filter_Podium_RemoveMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_Podium_RemoveMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_Podium_RemoveMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -736,7 +736,7 @@ func local_request_Podium_RemoveMembers_0(ctx context.Context, marshaler runtime
 }
 
 var (
-	filter_Podium_GetRank_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetRank_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1, "member_public_id": 2, "memberPublicId": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_Podium_GetRank_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -826,7 +826,7 @@ func local_request_Podium_GetRank_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 var (
-	filter_Podium_GetAroundMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetAroundMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1, "member_public_id": 2, "memberPublicId": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_Podium_GetAroundMember_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -916,7 +916,7 @@ func local_request_Podium_GetAroundMember_0(ctx context.Context, marshaler runti
 }
 
 var (
-	filter_Podium_GetAroundScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "score": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetAroundScore_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1, "score": 2}, Base: []int{1, 1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4, 4}}
 )
 
 func request_Podium_GetAroundScore_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1006,7 +1006,7 @@ func local_request_Podium_GetAroundScore_0(ctx context.Context, marshaler runtim
 }
 
 var (
-	filter_Podium_GetTopMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "page_number": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetTopMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1, "page_number": 2, "pageNumber": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_Podium_GetTopMembers_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1096,7 +1096,7 @@ func local_request_Podium_GetTopMembers_0(ctx context.Context, marshaler runtime
 }
 
 var (
-	filter_Podium_GetTopPercentage_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "percentage": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_GetTopPercentage_0 = &utilities.DoubleArray{Encoding: map[string]int{"leaderboard_id": 0, "leaderboardId": 1, "percentage": 2}, Base: []int{1, 1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4, 4}}
 )
 
 func request_Podium_GetTopPercentage_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1186,7 +1186,7 @@ func local_request_Podium_GetTopPercentage_0(ctx context.Context, marshaler runt
 }
 
 var (
-	filter_Podium_UpsertScoreMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_multi_change": 0, "member_public_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Podium_UpsertScoreMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"score_multi_change": 0, "scoreMultiChange": 1, "member_public_id": 2, "memberPublicId": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_Podium_UpsertScoreMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1272,7 +1272,7 @@ func local_request_Podium_UpsertScoreMultiLeaderboards_0(ctx context.Context, ma
 }
 
 var (
-	filter_Podium_GetRankMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_public_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_Podium_GetRankMultiLeaderboards_0 = &utilities.DoubleArray{Encoding: map[string]int{"member_public_id": 0, "memberPublicId": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_Podium_GetRankMultiLeaderboards_0(ctx context.Context, marshaler runtime.Marshaler, client PodiumClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1753,7 +1753,7 @@ func RegisterPodiumHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 // RegisterPodiumHandlerFromEndpoint is same as RegisterPodiumHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterPodiumHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}

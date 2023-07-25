@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option go_package = "podium.leaderboard.webhooks.v1";
+import "google/api/annotations.proto";
+
+service LeaderboardsEnrichmentService {
+  // Receives an array of members and returns the same array enriched with
+  // the member's metadata.
+  rpc EnrichLeaderboards(EnrichLeaderboardsRequest) returns (EnrichLeaderboardsResponse){
+    option(google.api.http) = {
+      post: "/v1/leaderboards/enrich"
+      body: "members"
+    };
+  }
+}
+
+message EnrichLeaderboardsRequest {
+  // The members to enrich.
+  repeated Member members = 1;
+}
+
+message EnrichLeaderboardsResponse {
+  // The enriched members.
+  repeated Member members = 1;
+}
+
+message Member {
+  // The leaderboard's ID.
+  string leaderboard_id = 1;
+  // The member's ID.
+  string member_id = 2;
+  // The member's scores.
+  repeated Score scores = 3;
+  // The member's rank in the leaderboard.
+  int32 rank = 4;
+  // The member's metadata.
+  map<string, string> metadata = 5;
+}
+
+message Score {
+  // The score value.
+  int64 value = 1;
+}

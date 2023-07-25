@@ -12,6 +12,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/topfreegames/podium/config"
+	"github.com/topfreegames/podium/leaderboard/v2/enriching"
 	"google.golang.org/grpc/credentials/insecure"
 	"net"
 	"net/http"
@@ -42,7 +44,6 @@ import (
 
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	newrelic "github.com/newrelic/go-agent"
 	extnethttpmiddleware "github.com/topfreegames/extensions/middleware"
 	api "github.com/topfreegames/podium/proto/podium/api/v1"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
@@ -55,7 +56,8 @@ type JSON map[string]interface{}
 type App struct {
 	api.UnimplementedPodiumServer
 
-	Debug bool
+	ConfigPath string
+	Debug      bool
 
 	// HTTP endpoint for HTTP requests. Built after calling Start. Format: 127.0.0.1:8080
 	HTTPEndpoint string
@@ -65,16 +67,16 @@ type App struct {
 
 	httpReady, grpcReady chan bool
 
-	ConfigPath   string
+	Config       *viper.Viper
+	ParsedConfig *config.PodiumConfig
+	DDStatsD     *extnethttpmiddleware.DogStatsD
+	Enricher     enriching.Enricher
 	Errors       metrics.EWMA
 	grpcServer   *grpc.Server
 	httpServer   *http.Server
-	Config       *viper.Viper
+	ID           uuid.UUID
 	Logger       *zap.Logger
 	Leaderboards lservice.Leaderboard
-	NewRelic     newrelic.Application
-	DDStatsD     *extnethttpmiddleware.DogStatsD
-	ID           uuid.UUID
 }
 
 // New returns a new podium Application.
@@ -119,6 +121,8 @@ func (app *App) configure() error {
 	}
 
 	app.configureJaeger()
+
+	app.configureEnrichment()
 
 	err = app.configureStatsD()
 	if err != nil {
@@ -203,7 +207,16 @@ func (app *App) loadConfiguration() error {
 		return fmt.Errorf("could not load configuration file from: %s", app.ConfigPath)
 	}
 
+	app.ParsedConfig = &config.PodiumConfig{}
+	if err := app.Config.Unmarshal(app.ParsedConfig); err != nil {
+		return fmt.Errorf("could not parse configuration file: %w", err)
+	}
+
 	return nil
+}
+
+func (app *App) configureEnrichment() {
+	app.Enricher = enriching.NewEnricher(app.ParsedConfig.Enrichment)
 }
 
 // OnErrorHandler handles panics
@@ -414,6 +427,7 @@ func (app *App) startHTTPServer(ctx context.Context, lis net.Listener) error {
 	gatewayMux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{MarshalOptions: protojson.MarshalOptions{EmitUnpopulated: true}}),
 		runtime.WithErrorHandler(app.applicationErrorHandler),
+		runtime.WithIncomingHeaderMatcher(customHeadersMatcher),
 	)
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -474,5 +488,14 @@ func (app *App) GracefullStop() {
 		if err := app.httpServer.Shutdown(context.Background()); err != nil {
 			app.Logger.Error("HTTP server Shutdown.", zap.Error(err))
 		}
+	}
+}
+
+func customHeadersMatcher(key string) (string, bool) {
+	switch strings.ToLower(key) {
+	case "tenant-id":
+		return key, true
+	default:
+		return runtime.DefaultHeaderMatcher(key)
 	}
 }
