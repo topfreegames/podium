@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/go-redis/redis/v8 v8.8.2
-	github.com/golang/mock v1.3.1
+	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.1
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
