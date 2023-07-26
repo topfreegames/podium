@@ -40,17 +40,17 @@ func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.M
 	body := membersModelToProto(leaderboardID, members)
 	jsonData, err := json.Marshal(podium_leaderboard_webhooks_v1.EnrichLeaderboardsRequest{Members: body})
 	if err != nil {
-		return nil, fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentInternal))
+		return nil, fmt.Errorf("could not marshal request: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
 	webhookUrl, err := buildUrl(tenantUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentInternal))
+		return nil, fmt.Errorf("could not build webhook URL: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
 	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentInternal))
+		return nil, fmt.Errorf("could not create request: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -58,17 +58,17 @@ func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.M
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentCall))
+		return nil, fmt.Errorf("could not complete request to webhook: %w", errors.Join(err, ErrEnrichmentCall))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentCall))
+		return nil, fmt.Errorf("webhook returned non OK response: %w", errors.Join(err, ErrEnrichmentCall))
 	}
 
 	var result podium_leaderboard_webhooks_v1.EnrichLeaderboardsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentCall))
+		return nil, fmt.Errorf("could not unmarshal webhook response: %w", errors.Join(err, ErrEnrichmentCall))
 	}
 
 	return protoToMemberModels(result.Members), nil
@@ -84,12 +84,12 @@ func buildUrl(baseUrl string) (string, error) {
 
 	u, err := url.JoinPath(baseUrl, enrichURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentInternal))
+		return "", fmt.Errorf("could not join url paths: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
 	parsedUrl, err := url.ParseRequestURI(u)
 	if err != nil {
-		return "", fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentInternal))
+		return "", fmt.Errorf("could not parse url %s: %w", u, errors.Join(err, ErrEnrichmentInternal))
 	}
 
 	return parsedUrl.String(), nil
