@@ -38,7 +38,7 @@ func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.M
 	}
 
 	body := membersModelToProto(leaderboardID, members)
-	jsonData, err := json.Marshal(body)
+	jsonData, err := json.Marshal(podium_leaderboard_webhooks_v1.EnrichLeaderboardsRequest{Members: body})
 	if err != nil {
 		return nil, fmt.Errorf("failed to call webhook: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
