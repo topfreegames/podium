@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/topfreegames/podium/leaderboard/v2/enriching"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -21,3 +22,9 @@ func GetDefaultConfig(configFile string) (*viper.Viper, error) {
 	}
 	return config, nil
 }
+
+type (
+	PodiumConfig struct {
+		Enrichment enriching.EnrichmentConfig
+	}
+)

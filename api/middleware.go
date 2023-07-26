@@ -17,7 +17,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/getsentry/raven-go"
 	"github.com/topfreegames/podium/log"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -94,7 +93,7 @@ func (app *App) loggerMiddleware(ctx context.Context, req interface{}, info *grp
 	return h, err
 }
 
-//Serve executes on error handler when errors happen
+// Serve executes on error handler when errors happen
 func (app *App) recoveryMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -146,39 +145,6 @@ func addVersionHandlerFunc(f func(http.ResponseWriter, *http.Request)) func(http
 		addVersionHeaders(w)
 		f(w, r)
 	}
-}
-
-func (app *App) sentryMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	h, err := handler(ctx, req)
-	if err != nil {
-		_, statusCode := app.getStatusCodeFromError(err)
-		if statusCode < 500 {
-			return h, err
-		}
-
-		tags := map[string]string{
-			"source": "app",
-			"type":   "Internal server error",
-			"method": info.FullMethod,
-			"params": fmt.Sprintf("%v", req),
-			"status": fmt.Sprintf("%d", statusCode),
-		}
-		raven.CaptureError(err, tags)
-	}
-	return h, err
-}
-
-func (app *App) newRelicMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	txn := app.NewRelic.StartTransaction(info.FullMethod, nil, nil)
-	newCtx := context.WithValue(ctx, newRelicContextKey{"txn"}, txn)
-	defer func() {
-		txn.End()
-	}()
-	h, err := handler(newCtx, req)
-	if err != nil {
-		txn.NoticeError(err)
-	}
-	return h, err
 }
 
 type removeTrailingSlashMiddleware struct {
