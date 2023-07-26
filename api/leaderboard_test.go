@@ -12,7 +12,11 @@ package api_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	mock_enriching "github.com/topfreegames/podium/leaderboard/v2/mocks"
+	"github.com/topfreegames/podium/leaderboard/v2/model"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1770,7 +1774,53 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Top Members Handler", func() {
+		tenantID := "test-tenant-id"
 		It("Should get one page of top members from redis if leaderboard exists (http)", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			enricher := mock_enriching.NewMockEnricher(ctrl)
+			app.Enricher = enricher
+
+			enricher.EXPECT().Enrich(tenantID, testLeaderboardID, gomock.Any()).
+				DoAndReturn(func(_, _ string, members []*model.Member) ([]*model.Member, error) {
+					Expect(members).To(HaveLen(20))
+					return members, nil
+				})
+
+			for i := 1; i <= 100; i++ {
+				_, err := app.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			status, body := Get(app, "/l/testkey/top/1", "tenant-id", tenantID)
+			Expect(status).To(Equal(http.StatusOK), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeTrue())
+			members := result["members"].([]interface{})
+			Expect(len(members)).To(Equal(20))
+			for i, memberObj := range members {
+				member := memberObj.(map[string]interface{})
+				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
+				Expect(int(member["score"].(float64))).To(Equal(100 - i))
+
+				dbMember, err := app.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, member["publicID"].(string), "desc", false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbMember.Rank).To(Equal(int(member["rank"].(float64))))
+				Expect(dbMember.Score).To(Equal(int64(member["score"].(float64))))
+				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
+			}
+		})
+
+		It("Should succeed with no tenant-id sent for enrichment", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			enricher := mock_enriching.NewMockEnricher(ctrl)
+			app.Enricher = enricher
+
 			for i := 1; i <= 100; i++ {
 				_, err := app.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
 				Expect(err).NotTo(HaveOccurred())
@@ -1795,6 +1845,32 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(dbMember.Score).To(Equal(int64(member["score"].(float64))))
 				Expect(dbMember.PublicID).To(Equal(member["publicID"]))
 			}
+		})
+
+		It("Should return error if enrichment is configured but fails", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			enricher := mock_enriching.NewMockEnricher(ctrl)
+			app.Enricher = enricher
+
+			enricher.EXPECT().Enrich(tenantID, testLeaderboardID, gomock.Any()).
+				DoAndReturn(func(_, _ string, members []*model.Member) ([]*model.Member, error) {
+					Expect(members).To(HaveLen(20))
+					return nil, errors.New("enrichment error")
+				})
+
+			for i := 1; i <= 100; i++ {
+				_, err := app.Leaderboards.SetMemberScore(NewEmptyCtx(), testLeaderboardID, "member_"+strconv.Itoa(i), int64(101-i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			status, body := Get(app, "/l/testkey/top/1", "tenant-id", tenantID)
+			Expect(status).To(Equal(http.StatusInternalServerError), body)
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+			Expect(result["success"]).To(BeFalse())
+			Expect(result["members"]).To(BeNil())
 		})
 
 		It("Should get one page of top members from redis if leaderboard exists (grpc)", func() {

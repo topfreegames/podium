@@ -17,16 +17,16 @@ var client *http.Client
 var transport *http.Transport
 
 // Get from server
-func Get(app *api.App, url string) (int, string) {
-	return doRequest(app, "GET", url, "")
+func Get(app *api.App, url string, headersKv ...string) (int, string) {
+	return doRequest(app, "GET", url, "", headersKv...)
 }
 
-//Post to server
+// Post to server
 func Post(app *api.App, url, body string) (int, string) {
 	return doRequest(app, "POST", url, body)
 }
 
-//PostJSON to server
+// PostJSON to server
 func PostJSON(app *api.App, url string, body interface{}) (int, string) {
 	result, err := json.Marshal(body)
 	if err != nil {
@@ -35,12 +35,12 @@ func PostJSON(app *api.App, url string, body interface{}) (int, string) {
 	return Post(app, url, string(result))
 }
 
-//Put to server
+// Put to server
 func Put(app *api.App, url, body string) (int, string) {
 	return doRequest(app, "PUT", url, body)
 }
 
-//PutJSON to server
+// PutJSON to server
 func PutJSON(app *api.App, url string, body interface{}) (int, string) {
 	result, err := json.Marshal(body)
 	if err != nil {
@@ -49,12 +49,12 @@ func PutJSON(app *api.App, url string, body interface{}) (int, string) {
 	return Put(app, url, string(result))
 }
 
-//Patch to server
+// Patch to server
 func Patch(app *api.App, url, body string) (int, string) {
 	return doRequest(app, "PATCH", url, body)
 }
 
-//PatchJSON to server
+// PatchJSON to server
 func PatchJSON(app *api.App, url string, body interface{}) (int, string) {
 	result, err := json.Marshal(body)
 	if err != nil {
@@ -63,24 +63,29 @@ func PatchJSON(app *api.App, url string, body interface{}) (int, string) {
 	return Patch(app, url, string(result))
 }
 
-//Delete from server
+// Delete from server
 func Delete(app *api.App, url string) (int, string) {
 	return doRequest(app, "DELETE", url, "")
 }
 
-func doRequest(app *api.App, method, url, body string) (int, string) {
+func doRequest(app *api.App, method, url, body string, headersKv ...string) (int, string) {
 	InitializeTestServer(app)
-	req := getRequest(app, method, url, body)
+	req := getRequest(app, method, url, body, headersKv...)
 	return performRequest(req)
 }
 
-func getRequest(app *api.App, method, url, body string) *http.Request {
+func getRequest(app *api.App, method, url, body string, headersKv ...string) *http.Request {
 	var bodyBuff io.Reader
 	if body != "" {
 		bodyBuff = bytes.NewBuffer([]byte(body))
 	}
 	req, err := http.NewRequest(method, fmt.Sprintf("http://%s%s", app.HTTPEndpoint, url), bodyBuff)
 	req.Header.Set("Connection", "close")
+
+	for i := 0; i < len(headersKv); i += 2 {
+		req.Header.Set(headersKv[i], headersKv[i+1])
+	}
+
 	req.Close = true
 	Expect(err).NotTo(HaveOccurred())
 
