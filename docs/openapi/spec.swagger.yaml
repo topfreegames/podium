@@ -1,8 +1,9 @@
 swagger: "2.0"
 info:
-  title: proto/podium/api/v1/podium.proto
+  title: leaderboard/enriching/proto/webhook/v1/podium_webhook.proto
   version: version not set
 tags:
+  - name: LeaderboardsEnrichmentService
   - name: Podium
 consumes:
   - application/json
@@ -508,7 +509,58 @@ paths:
           type: boolean
       tags:
         - Podium
+  /v1/leaderboards/enrich:
+    post:
+      summary: |-
+        Receives an array of members and returns the same array enriched with
+        the member's metadata.
+      operationId: EnrichLeaderboards
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/EnrichLeaderboardsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/Status'
+      parameters:
+        - name: members
+          description: The members to enrich.
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: object
+              $ref: '#/definitions/.Member'
+      tags:
+        - LeaderboardsEnrichmentService
 definitions:
+  .Member:
+    type: object
+    properties:
+      leaderboardId:
+        type: string
+        description: The leaderboard's ID.
+      memberId:
+        type: string
+        description: The member's ID.
+      scores:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/Score'
+        description: The member's scores.
+      rank:
+        type: integer
+        format: int32
+        description: The member's rank in the leaderboard.
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+        description: The member's metadata.
   Any:
     type: object
     properties:
@@ -525,87 +577,108 @@ definitions:
   BulkUpsertScoresResponse:
     type: object
     properties:
+      success:
+        type: boolean
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/BulkUpsertScoresResponse.Member'
-      success:
-        type: boolean
   BulkUpsertScoresResponse.Member:
     type: object
     properties:
+      publicID:
+        type: string
+      score:
+        type: number
+        format: double
+      rank:
+        type: integer
+        format: int32
+      previousRank:
+        type: integer
+        format: int32
+        description: The previous rank of the player in the leaderboard, if requested.
       expireAt:
         type: integer
         format: int32
         description: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
+    description: Member information returned for BulkUpsertScores request.
+  EnrichLeaderboardsResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/.Member'
+        description: The enriched members.
+  GetAroundMemberResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1.Member'
+  GetAroundScoreResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1.Member'
+  GetMemberResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      publicID:
+        type: string
+      score:
+        type: number
+        format: double
+      rank:
+        type: integer
+        format: int32
       previousRank:
         type: integer
         format: int32
         description: The previous rank of the player in the leaderboard, if requested.
-      publicID:
-        type: string
-      rank:
-        type: integer
-        format: int32
-      score:
-        type: number
-        format: double
-    description: Member information returned for BulkUpsertScores request.
-  GetAroundMemberResponse:
-    type: object
-    properties:
-      members:
-        type: array
-        items:
-          $ref: '#/definitions/v1.Member'
-      success:
-        type: boolean
-  GetAroundScoreResponse:
-    type: object
-    properties:
-      members:
-        type: array
-        items:
-          $ref: '#/definitions/v1.Member'
-      success:
-        type: boolean
-  GetMemberResponse:
-    type: object
-    properties:
       expireAt:
         type: integer
         format: int32
         title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
-      previousRank:
-        type: integer
-        format: int32
-        description: The previous rank of the player in the leaderboard, if requested.
-      publicID:
-        type: string
-      rank:
-        type: integer
-        format: int32
-      score:
-        type: number
-        format: double
-      success:
-        type: boolean
   GetMembersResponse:
     type: object
     properties:
+      success:
+        type: boolean
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/GetMembersResponse.Member'
       notFound:
         type: array
         items:
           type: string
-      success:
-        type: boolean
   GetMembersResponse.Member:
     type: object
     properties:
+      publicID:
+        type: string
+      score:
+        type: number
+        format: double
+      rank:
+        type: integer
+        format: int32
       expireAt:
         type: integer
         format: int32
@@ -614,30 +687,20 @@ definitions:
         type: integer
         format: int32
         description: Member rank for all members returned in this request.
-      publicID:
-        type: string
-      rank:
-        type: integer
-        format: int32
-      score:
-        type: number
-        format: double
     description: Member information returned for GetMembers request.
   GetRankMultiLeaderboardsResponse:
     type: object
     properties:
+      success:
+        type: boolean
       scores:
         type: array
         items:
+          type: object
           $ref: '#/definitions/GetRankMultiLeaderboardsResponse.Member'
-      success:
-        type: boolean
   GetRankMultiLeaderboardsResponse.Member:
     type: object
     properties:
-      expireAt:
-        type: integer
-        format: int32
       leaderboardID:
         type: string
       rank:
@@ -646,35 +709,40 @@ definitions:
       score:
         type: number
         format: double
+      expireAt:
+        type: integer
+        format: int32
     description: Member represents member information retrieved from one the leaderboards during MultiGetRankResponse operation.
   GetRankResponse:
     type: object
     properties:
+      success:
+        type: boolean
       publicID:
         type: string
       rank:
         type: integer
         format: int32
-      success:
-        type: boolean
   GetTopMembersResponse:
     type: object
     properties:
+      success:
+        type: boolean
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1.Member'
-      success:
-        type: boolean
   GetTopPercentageResponse:
     type: object
     properties:
+      success:
+        type: boolean
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1.Member'
-      success:
-        type: boolean
   HealthCheckResponse:
     type: object
     properties:
@@ -684,24 +752,24 @@ definitions:
   IncrementScoreResponse:
     type: object
     properties:
-      expireAt:
+      success:
+        type: boolean
+      publicID:
+        type: string
+      score:
+        type: number
+        format: double
+      rank:
         type: integer
         format: int32
-        title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
       previousRank:
         type: integer
         format: int32
         description: The previous rank of the player in the leaderboard, if requested.
-      publicID:
-        type: string
-      rank:
+      expireAt:
         type: integer
         format: int32
-      score:
-        type: number
-        format: double
-      success:
-        type: boolean
+        title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
   MemberScore:
     type: object
     properties:
@@ -721,35 +789,43 @@ definitions:
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/MemberScore'
     description: ScoreUpserts represent multiple score submissions.
   RemoveLeaderboardResponse:
     type: object
     properties:
-      reason:
-        type: string
-        description: If the request failed the reason (as a error message) is written here.
       success:
         type: boolean
         description: If the request was successfull.
+      reason:
+        type: string
+        description: If the request failed the reason (as a error message) is written here.
   RemoveMemberResponse:
     type: object
     properties:
-      reason:
-        type: string
-        description: If the request failed the reason (as a error message) is written here.
       success:
         type: boolean
         description: If the request was successfull.
+      reason:
+        type: string
+        description: If the request failed the reason (as a error message) is written here.
   RemoveMembersResponse:
     type: object
     properties:
-      reason:
-        type: string
-        description: If the request failed the reason (as a error message) is written here.
       success:
         type: boolean
         description: If the request was successfull.
+      reason:
+        type: string
+        description: If the request failed the reason (as a error message) is written here.
+  Score:
+    type: object
+    properties:
+      value:
+        type: string
+        format: int64
+        description: The score value.
   ScoreChange:
     type: object
     properties:
@@ -760,13 +836,13 @@ definitions:
   ScoreMultiChange:
     type: object
     properties:
+      score:
+        type: number
+        format: double
       leaderboards:
         type: array
         items:
           type: string
-      score:
-        type: number
-        format: double
     description: ScoreMultiChange is the payload to update the score of a member on multiple leaderboards.
   Status:
     type: object
@@ -774,12 +850,13 @@ definitions:
       code:
         type: integer
         format: int32
+      message:
+        type: string
       details:
         type: array
         items:
+          type: object
           $ref: '#/definitions/Any'
-      message:
-        type: string
   StatusResponse:
     type: object
     properties:
@@ -790,74 +867,79 @@ definitions:
   TotalMembersResponse:
     type: object
     properties:
+      success:
+        type: boolean
       count:
         type: integer
         format: int32
-      success:
-        type: boolean
   UpsertScoreMultiLeaderboardsResponse:
     type: object
     properties:
+      success:
+        type: boolean
       scores:
         type: array
         items:
+          type: object
           $ref: '#/definitions/UpsertScoreMultiLeaderboardsResponse.Member'
-      success:
-        type: boolean
   UpsertScoreMultiLeaderboardsResponse.Member:
     type: object
     properties:
+      publicID:
+        type: string
+      score:
+        type: number
+        format: double
+      rank:
+        type: integer
+        format: int32
+      previousRank:
+        type: integer
+        format: int32
+        description: The previous rank of the player in the leaderboard, if requested.
       expireAt:
         type: integer
         format: int32
         description: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested).
       leaderboardID:
         type: string
-      previousRank:
-        type: integer
-        format: int32
-        description: The previous rank of the player in the leaderboard, if requested.
-      publicID:
-        type: string
-      rank:
-        type: integer
-        format: int32
-      score:
-        type: number
-        format: double
     description: Member represents the information regarding a single member in response to a multi upsert score.
   UpsertScoreResponse:
     type: object
     properties:
-      expireAt:
+      success:
+        type: boolean
+      publicID:
+        type: string
+      score:
+        type: number
+        format: double
+      rank:
         type: integer
         format: int32
-        title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
       previousRank:
         type: integer
         format: int32
         description: The previous rank of the player in the leaderboard, if requested.
-      publicID:
-        type: string
-      rank:
+      expireAt:
         type: integer
         format: int32
-      score:
-        type: number
-        format: double
-      success:
-        type: boolean
+        title: Unix timestamp of when the member's score will be erased (only if scoreTTL was requested)
   v1.Member:
     type: object
     properties:
       publicID:
         type: string
-      rank:
-        type: integer
-        format: int32
       score:
         type: number
         format: double
+      rank:
+        type: integer
+        format: int32
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
     description: |-
       TODO: Create a single Member structure and make all requests use the same structure (document parts of the requests that are not returned)
       Member is a basic payload for a leaderboard member used by some responses.

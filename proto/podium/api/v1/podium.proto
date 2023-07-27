@@ -194,6 +194,7 @@ message Member {
   string publicID = 1;
   double score = 2;
   int32 rank = 3;
+  map<string, string> metadata = 4;
 }
 
 message UpsertScoreRequest {

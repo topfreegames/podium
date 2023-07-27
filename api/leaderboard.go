@@ -12,6 +12,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/metadata"
 	"math"
 	"strings"
 
@@ -188,7 +189,7 @@ func (app *App) IncrementScore(ctx context.Context, req *api.IncrementScoreReque
 	}, nil
 }
 
-//TODO: Make this function use RemoveMembers
+// TODO: Make this function use RemoveMembers
 // RemoveMember removes a member from a leaderboard.
 func (app *App) RemoveMember(ctx context.Context, req *api.RemoveMemberRequest) (*api.RemoveMemberResponse, error) {
 	lg := app.Logger.With(
@@ -545,22 +546,21 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 		return nil, status.Errorf(codes.InvalidArgument, msg)
 	}
 
-	var members []*lmodel.Member
-	err := withSegment("Model", ctx, func() error {
-		var err error
-		lg.Debug("Getting top members.")
-		members, err = app.Leaderboards.GetLeaders(ctx, req.LeaderboardId, pageSize, pageNumber, order)
+	members, err := app.Leaderboards.GetLeaders(ctx, req.LeaderboardId, pageSize, pageNumber, order)
 
-		if err != nil {
-			lg.Error("Getting top members failed.", zap.Error(err))
-			app.AddError()
-			return err
-		}
-		lg.Debug("Getting top members succeeded.")
-		return nil
-	})
 	if err != nil {
+		lg.Error("Getting top members failed.", zap.Error(err))
+		app.AddError()
 		return nil, err
+	}
+
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		members, err = app.Enricher.Enrich(tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			lg.Error("Enriching members failed.", zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+		}
 	}
 
 	return &api.GetTopMembersResponse{
@@ -690,6 +690,7 @@ func newMemberRankResponseList(members []*lmodel.Member) []*api.Member {
 			PublicID: m.PublicID,
 			Score:    float64(m.Score),
 			Rank:     int32(m.Rank),
+			Metadata: m.Metadata,
 		}
 	}
 	return list
