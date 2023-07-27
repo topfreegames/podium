@@ -14,13 +14,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	mock_enriching "github.com/topfreegames/podium/leaderboard/v2/mocks"
-	"github.com/topfreegames/podium/leaderboard/v2/model"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	mock_enriching "github.com/topfreegames/podium/leaderboard/v2/mocks"
+	"github.com/topfreegames/podium/leaderboard/v2/model"
 
 	"github.com/topfreegames/podium/api"
 	"github.com/topfreegames/podium/leaderboard/v2/database/redis"
@@ -1782,9 +1783,16 @@ var _ = Describe("Leaderboard Handler", func() {
 			enricher := mock_enriching.NewMockEnricher(ctrl)
 			app.Enricher = enricher
 
+			expectedMetadataKey := "key"
+			expectedMetadataValue := "value"
+			expectedMetadata := map[string]string{expectedMetadataKey: expectedMetadataValue}
+
 			enricher.EXPECT().Enrich(tenantID, testLeaderboardID, gomock.Any()).
 				DoAndReturn(func(_, _ string, members []*model.Member) ([]*model.Member, error) {
 					Expect(members).To(HaveLen(20))
+					for _, member := range members {
+						member.Metadata = expectedMetadata
+					}
 					return members, nil
 				})
 
@@ -1802,9 +1810,11 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(len(members)).To(Equal(20))
 			for i, memberObj := range members {
 				member := memberObj.(map[string]interface{})
+				metadata := member["metadata"].(map[string]interface{})
 				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - i))
+				Expect(metadata[expectedMetadataKey]).To(Equal(expectedMetadataValue))
 
 				dbMember, err := app.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, member["publicID"].(string), "desc", false)
 				Expect(err).NotTo(HaveOccurred())
@@ -1835,9 +1845,12 @@ var _ = Describe("Leaderboard Handler", func() {
 			Expect(len(members)).To(Equal(20))
 			for i, memberObj := range members {
 				member := memberObj.(map[string]interface{})
+				metadata := member["metadata"].(map[string]interface{})
+
 				Expect(int(member["rank"].(float64))).To(Equal(i + 1))
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", i+1)))
 				Expect(int(member["score"].(float64))).To(Equal(100 - i))
+				Expect(metadata).To(BeEmpty())
 
 				dbMember, err := app.Leaderboards.GetMember(NewEmptyCtx(), testLeaderboardID, member["publicID"].(string), "desc", false)
 				Expect(err).NotTo(HaveOccurred())
