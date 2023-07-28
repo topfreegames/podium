@@ -209,7 +209,7 @@ func (app *App) loadConfiguration() error {
 	}
 
 	app.ParsedConfig = &config.PodiumConfig{}
-	if err := app.Config.Unmarshal(app.ParsedConfig); err != nil {
+	if err := app.Config.Unmarshal(app.ParsedConfig, config.DecodeHook()); err != nil {
 		return fmt.Errorf("could not parse configuration file: %w", err)
 	}
 
