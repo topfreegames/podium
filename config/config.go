@@ -1,10 +1,13 @@
 package config
 
 import (
-	"github.com/topfreegames/podium/leaderboard/v2/enriching"
+	"encoding/json"
+	"reflect"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+	"github.com/topfreegames/podium/leaderboard/v2/enriching"
 )
 
 // GetDefaultConfig configure viper to use the config file
@@ -28,3 +31,39 @@ type (
 		Enrichment enriching.EnrichmentConfig
 	}
 )
+
+func DecodeHook() viper.DecoderConfigOption {
+	decodeHook := mapstructure.ComposeDecodeHookFunc(
+		mapstructure.StringToTimeDurationHookFunc(),
+		mapstructure.StringToSliceHookFunc(","),
+		StringToMapHookFunc(),
+	)
+
+	return viper.DecodeHook(decodeHook)
+
+}
+
+func StringToMapHookFunc() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{},
+	) (interface{}, error) {
+		if f.Kind() != reflect.String || t.Kind() != reflect.Map {
+			return data, nil
+		}
+
+		if t.Key().Kind() != reflect.String || t.Elem().Kind() != reflect.String {
+			return data, nil
+		}
+
+		raw := data.(string)
+		if raw == "" {
+			return map[string]string{}, nil
+		}
+
+		m := map[string]string{}
+		err := json.Unmarshal([]byte(raw), &m)
+		return m, err
+	}
+}
