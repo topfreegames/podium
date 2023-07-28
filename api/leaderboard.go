@@ -12,9 +12,10 @@ package api
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"math"
 	"strings"
+
+	"google.golang.org/grpc/metadata"
 
 	lmodel "github.com/topfreegames/podium/leaderboard/v2/model"
 	"github.com/topfreegames/podium/leaderboard/v2/service"

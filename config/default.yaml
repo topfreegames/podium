@@ -32,3 +32,6 @@ extensions:
     prefix: podium.
     tags_prefix: ""
     rate: 1
+
+enrichment:
+  webhook_urls:

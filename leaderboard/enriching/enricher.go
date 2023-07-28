@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	podium_leaderboard_webhooks_v1 "github.com/topfreegames/podium/leaderboard/v2/enriching/proto/webhook/v1"
-	"github.com/topfreegames/podium/leaderboard/v2/model"
 	"net/http"
 	"net/url"
 	"strings"
+
+	podium_leaderboard_webhooks_v1 "github.com/topfreegames/podium/leaderboard/v2/enriching/proto/webhook/v1"
+	"github.com/topfreegames/podium/leaderboard/v2/model"
+	"go.uber.org/zap"
 )
 
 const enrichURL = "/leaderboards/enrich"
@@ -22,18 +24,25 @@ type EnrichmentConfig struct {
 
 type enricherImpl struct {
 	config EnrichmentConfig
+	lg     *zap.Logger
 }
 
 // NewEnricher returns a new Enricher implementation.
-func NewEnricher(config EnrichmentConfig) Enricher {
+func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 	return &enricherImpl{
 		config: config,
+		lg:     logger,
 	}
 }
 
 func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
 	tenantUrl, exists := e.config.WebhookUrls[tenantID]
 	if !exists {
+		e.lg.Info(fmt.Sprintf("tenantID '%s' enrichment webhook url not found", tenantID))
+		return members, nil
+	}
+
+	if len(members) == 0 {
 		return members, nil
 	}
 
@@ -55,6 +64,7 @@ func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.M
 
 	req.Header.Set("Content-Type", "application/json")
 
+	e.lg.Info(fmt.Sprintf("calling enrichment webhook '%s' for tenantID '%s'", webhookUrl, tenantID))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
