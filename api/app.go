@@ -12,9 +12,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/topfreegames/podium/config"
-	"github.com/topfreegames/podium/leaderboard/v2/enriching"
-	"google.golang.org/grpc/credentials/insecure"
 	"net"
 	"net/http"
 	"os"
@@ -23,6 +20,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/topfreegames/podium/config"
+	"github.com/topfreegames/podium/leaderboard/v2/enriching"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -122,7 +123,7 @@ func (app *App) configure() error {
 
 	app.configureJaeger()
 
-	app.configureEnrichment()
+	app.configureEnrichment(app.Logger)
 
 	err = app.configureStatsD()
 	if err != nil {
@@ -215,8 +216,8 @@ func (app *App) loadConfiguration() error {
 	return nil
 }
 
-func (app *App) configureEnrichment() {
-	app.Enricher = enriching.NewEnricher(app.ParsedConfig.Enrichment)
+func (app *App) configureEnrichment(logger *zap.Logger) {
+	app.Enricher = enriching.NewEnricher(app.ParsedConfig.Enrichment, app.Logger)
 }
 
 // OnErrorHandler handles panics
