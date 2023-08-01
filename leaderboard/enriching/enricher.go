@@ -40,7 +40,7 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 	tenantUrl, exists := e.config.WebhookUrls[tenantID]
 	if !exists {
 		e.lg.Info(fmt.Sprintf("tenantID '%s' enrichment webhook url not found", tenantID))
-		return members, nil
+		return nil, ErrNotConfigured
 	}
 
 	if len(members) == 0 {
@@ -58,7 +58,8 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 		return nil, fmt.Errorf("could not build webhook URL: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
-	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookUrl, bytes.NewBuffer(jsonData))
+
 	if err != nil {
 		return nil, fmt.Errorf("could not create request: %w", errors.Join(err, ErrEnrichmentInternal))
 	}

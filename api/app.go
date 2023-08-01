@@ -123,7 +123,7 @@ func (app *App) configure() error {
 
 	app.configureJaeger()
 
-	app.configureEnrichment(app.Logger)
+	app.configureEnrichment()
 
 	err = app.configureStatsD()
 	if err != nil {
@@ -216,8 +216,9 @@ func (app *App) loadConfiguration() error {
 	return nil
 }
 
-func (app *App) configureEnrichment(logger *zap.Logger) {
-	app.Enricher = enriching.NewEnricher(app.ParsedConfig.Enrichment, app.Logger)
+func (app *App) configureEnrichment() {
+	enricher := enriching.NewEnricher(app.ParsedConfig.Enrichment, app.Logger)
+	app.Enricher = enriching.NewInstrumentedEnricher(enricher, app.DDStatsD)
 }
 
 // OnErrorHandler handles panics

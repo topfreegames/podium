@@ -3,6 +3,7 @@
 package enriching
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
@@ -27,7 +28,7 @@ var _ = Describe("Enricher tests", func() {
 	leaderboardID := "leaderboardID"
 	tenantID := "tenantID"
 
-	It("should do nothing if tenantID is not configured", func() {
+	It("should return correct error if tenantID is not configured", func() {
 		enrich := &enricherImpl{
 			config: EnrichmentConfig{},
 		}
@@ -41,9 +42,9 @@ var _ = Describe("Enricher tests", func() {
 			},
 		}
 
-		res, err := enrich.Enrich(tenantID, leaderboardID, members)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(res).To(Equal(members))
+		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
+		Expect(err).To(MatchError(ErrNotConfigured))
+		Expect(res).To(BeNil())
 	})
 
 	It("should return error if webhook call fails", func() {
@@ -69,7 +70,7 @@ var _ = Describe("Enricher tests", func() {
 			},
 		}
 
-		res, err := enrich.Enrich(tenantID, leaderboardID, members)
+		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(err).To(HaveOccurred())
 		Expect(res).To(BeNil())
@@ -94,7 +95,7 @@ var _ = Describe("Enricher tests", func() {
 			},
 		}
 
-		res, err := enrich.Enrich(tenantID, leaderboardID, members)
+		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError(ErrEnrichmentCall))
@@ -129,7 +130,7 @@ var _ = Describe("Enricher tests", func() {
 			},
 		}
 
-		res, err := enrich.Enrich(tenantID, leaderboardID, members)
+		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(res).To(Equal(expectedResult))

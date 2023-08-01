@@ -1788,7 +1788,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			expectedMetadata := map[string]string{expectedMetadataKey: expectedMetadataValue}
 
 			enricher.EXPECT().Enrich(gomock.Any(), tenantID, testLeaderboardID, gomock.Any()).
-				DoAndReturn(func(_, _ string, members []*model.Member) ([]*model.Member, error) {
+				DoAndReturn(func(_ context.Context, _, _ string, members []*model.Member) ([]*model.Member, error) {
 					Expect(members).To(HaveLen(20))
 					for _, member := range members {
 						member.Metadata = expectedMetadata
@@ -1868,7 +1868,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			app.Enricher = enricher
 
 			enricher.EXPECT().Enrich(gomock.Any(), tenantID, testLeaderboardID, gomock.Any()).
-				DoAndReturn(func(_, _ string, members []*model.Member) ([]*model.Member, error) {
+				DoAndReturn(func(_ context.Context, _, _ string, members []*model.Member) ([]*model.Member, error) {
 					Expect(members).To(HaveLen(20))
 					return nil, errors.New("enrichment error")
 				})

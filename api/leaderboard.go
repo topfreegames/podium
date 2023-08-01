@@ -11,7 +11,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/topfreegames/podium/leaderboard/v2/enriching"
 	"math"
 	"strings"
 
@@ -557,11 +559,16 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
-			lg.Error("Enriching members failed.", zap.Error(err))
-			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+			if errors.Is(err, enriching.ErrNotConfigured) {
+				lg.Debug("Enrichment not configured.", zap.Error(err))
+			} else {
+				lg.Error("Enriching members failed.", zap.Error(err))
+				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+			}
 		}
+		members = result
 	}
 
 	return &api.GetTopMembersResponse{
