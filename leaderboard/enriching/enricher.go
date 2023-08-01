@@ -2,6 +2,7 @@ package enriching
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,7 +36,7 @@ func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 	}
 }
 
-func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
+func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
 	tenantUrl, exists := e.config.WebhookUrls[tenantID]
 	if !exists {
 		e.lg.Info(fmt.Sprintf("tenantID '%s' enrichment webhook url not found", tenantID))
