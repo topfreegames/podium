@@ -438,6 +438,15 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 		return nil, err
 	}
 
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			lg.Error("Enriching members failed.", zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+		}
+	}
+
 	return &api.GetAroundMemberResponse{
 		Success: true,
 		Members: newMemberRankResponseList(members),
