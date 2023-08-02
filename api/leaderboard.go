@@ -568,7 +568,9 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 			}
 		}
-		members = result
+		if result != nil {
+			members = result
+		}
 	}
 
 	return &api.GetTopMembersResponse{
