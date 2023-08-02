@@ -123,12 +123,12 @@ func (app *App) configure() error {
 
 	app.configureJaeger()
 
-	app.configureEnrichment()
-
 	err = app.configureStatsD()
 	if err != nil {
 		return err
 	}
+
+	app.configureEnrichment()
 
 	err = app.configureApplication()
 	if err != nil {
