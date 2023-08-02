@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	podium_leaderboard_webhooks_v1 "github.com/topfreegames/podium/leaderboard/v2/enriching/proto/webhook/v1"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
@@ -26,6 +27,7 @@ type EnrichmentConfig struct {
 type enricherImpl struct {
 	config EnrichmentConfig
 	lg     *zap.Logger
+	client *http.Client
 }
 
 // NewEnricher returns a new Enricher implementation.
@@ -33,6 +35,9 @@ func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 	return &enricherImpl{
 		config: config,
 		lg:     logger,
+		client: &http.Client{
+			Timeout: 500 * time.Millisecond,
+		},
 	}
 }
 
@@ -67,8 +72,7 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 	req.Header.Set("Content-Type", "application/json")
 
 	e.lg.Info(fmt.Sprintf("calling enrichment webhook '%s' for tenantID '%s'", webhookUrl, tenantID))
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := e.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("could not complete request to webhook: %w", errors.Join(err, ErrEnrichmentCall))
 	}
