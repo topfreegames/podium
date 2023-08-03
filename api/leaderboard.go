@@ -561,13 +561,15 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 	if tenantID != nil {
 		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
-			if errors.Is(err, enriching.ErrNotConfigured) {
-				lg.Debug("Enrichment not configured.", zap.Error(err))
-			} else {
+			if !errors.Is(err, enriching.ErrNotConfigured) {
 				lg.Error("Enriching members failed.", zap.Error(err))
+				app.AddError()
 				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 			}
+
+			lg.Debug("Enrichment not configured.", zap.Error(err))
 		}
+
 		if result != nil {
 			members = result
 		}
