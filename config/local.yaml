@@ -36,3 +36,4 @@ extensions:
 enrichment:
   webhook_urls:
     dummy_tenant_id: "localhost:8080/"
+  webhook_timeout: 2s

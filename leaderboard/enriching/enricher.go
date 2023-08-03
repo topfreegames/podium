@@ -2,12 +2,14 @@ package enriching
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	podium_leaderboard_webhooks_v1 "github.com/topfreegames/podium/leaderboard/v2/enriching/proto/webhook/v1"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
@@ -20,11 +22,15 @@ type EnrichmentConfig struct {
 	// WebhookUrls contains the necessary parameters to call a webhook for a given game.
 	// The key should be the game tenantID.
 	WebhookUrls map[string]string `mapstructure:"webhook_urls"`
+
+	// WebhookTimeout is the timeout for the webhook call.
+	WebhookTimeout time.Duration `mapstructure:"webhook_timeout,default=2s"`
 }
 
 type enricherImpl struct {
 	config EnrichmentConfig
 	lg     *zap.Logger
+	client *http.Client
 }
 
 // NewEnricher returns a new Enricher implementation.
@@ -32,14 +38,17 @@ func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 	return &enricherImpl{
 		config: config,
 		lg:     logger,
+		client: &http.Client{
+			Timeout: config.WebhookTimeout,
+		},
 	}
 }
 
-func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
+func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
 	tenantUrl, exists := e.config.WebhookUrls[tenantID]
 	if !exists {
 		e.lg.Info(fmt.Sprintf("tenantID '%s' enrichment webhook url not found", tenantID))
-		return members, nil
+		return nil, ErrNotConfigured
 	}
 
 	if len(members) == 0 {
@@ -57,7 +66,8 @@ func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.M
 		return nil, fmt.Errorf("could not build webhook URL: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
-	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookUrl, bytes.NewBuffer(jsonData))
+
 	if err != nil {
 		return nil, fmt.Errorf("could not create request: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
@@ -65,8 +75,7 @@ func (e *enricherImpl) Enrich(tenantID, leaderboardID string, members []*model.M
 	req.Header.Set("Content-Type", "application/json")
 
 	e.lg.Info(fmt.Sprintf("calling enrichment webhook '%s' for tenantID '%s'", webhookUrl, tenantID))
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := e.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("could not complete request to webhook: %w", errors.Join(err, ErrEnrichmentCall))
 	}

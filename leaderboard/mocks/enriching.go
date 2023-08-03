@@ -5,6 +5,7 @@
 package mock_enriching
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,16 +36,16 @@ func (m *MockEnricher) EXPECT() *MockEnricherMockRecorder {
 }
 
 // Enrich mocks base method.
-func (m *MockEnricher) Enrich(tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
+func (m *MockEnricher) Enrich(ctx context.Context, tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enrich", tenantID, leaderboardID, members)
+	ret := m.ctrl.Call(m, "Enrich", ctx, tenantID, leaderboardID, members)
 	ret0, _ := ret[0].([]*model.Member)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Enrich indicates an expected call of Enrich.
-func (mr *MockEnricherMockRecorder) Enrich(tenantID, leaderboardID, members interface{}) *gomock.Call {
+func (mr *MockEnricherMockRecorder) Enrich(ctx, tenantID, leaderboardID, members interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enrich", reflect.TypeOf((*MockEnricher)(nil).Enrich), tenantID, leaderboardID, members)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enrich", reflect.TypeOf((*MockEnricher)(nil).Enrich), ctx, tenantID, leaderboardID, members)
 }
