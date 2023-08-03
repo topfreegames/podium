@@ -22,6 +22,9 @@ type EnrichmentConfig struct {
 	// WebhookUrls contains the necessary parameters to call a webhook for a given game.
 	// The key should be the game tenantID.
 	WebhookUrls map[string]string `mapstructure:"webhook_urls"`
+
+	// WebhookTimeout is the timeout for the webhook call.
+	WebhookTimeout time.Duration `mapstructure:"webhook_timeout,default=2s"`
 }
 
 type enricherImpl struct {
@@ -36,7 +39,7 @@ func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 		config: config,
 		lg:     logger,
 		client: &http.Client{
-			Timeout: 500 * time.Millisecond,
+			Timeout: config.WebhookTimeout,
 		},
 	}
 }
