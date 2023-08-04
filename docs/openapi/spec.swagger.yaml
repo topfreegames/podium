@@ -687,6 +687,10 @@ definitions:
         type: integer
         format: int32
         description: Member rank for all members returned in this request.
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
     description: Member information returned for GetMembers request.
   GetRankMultiLeaderboardsResponse:
     type: object
