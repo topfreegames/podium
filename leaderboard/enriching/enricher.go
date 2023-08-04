@@ -119,7 +119,7 @@ func membersModelToProto(leaderboardID string, members []*model.Member) []*podiu
 	for i, m := range members {
 		protoMembers[i] = &podium_leaderboard_webhooks_v1.Member{
 			LeaderboardId: leaderboardID,
-			MemberId:      m.PublicID,
+			Id:            m.PublicID,
 			Scores:        []*podium_leaderboard_webhooks_v1.Score{{Value: m.Score}},
 			Rank:          int32(m.Rank),
 		}
@@ -136,7 +136,7 @@ func protoToMemberModels(protoMembers []*podium_leaderboard_webhooks_v1.Member) 
 			score = m.Scores[0].Value
 		}
 		members[i] = &model.Member{
-			PublicID: m.MemberId,
+			PublicID: m.Id,
 			Score:    score,
 			Rank:     int(m.Rank),
 			Metadata: m.Metadata,

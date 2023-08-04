@@ -26,9 +26,9 @@ message EnrichLeaderboardsResponse {
 
 message Member {
   // The leaderboard's ID.
-  string leaderboard_id = 1;
+  string leaderboardId = 1;
   // The member's ID.
-  string member_id = 2;
+  string id = 2;
   // The member's scores.
   repeated Score scores = 3;
   // The member's rank in the leaderboard.
