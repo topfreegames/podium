@@ -652,6 +652,7 @@ func newGetMembersResponseList(members []*lmodel.Member) []*api.GetMembersRespon
 			Rank:     int32(m.Rank),
 			ExpireAt: int32(m.ExpireAt),
 			Position: int32(i),
+			Metadata: m.Metadata,
 		}
 	}
 	return list

@@ -2650,9 +2650,9 @@ var _ = Describe("Leaderboard Handler", func() {
 			expectedMetadataValue := "value"
 			expectedMetadata := map[string]string{expectedMetadataKey: expectedMetadataValue}
 
-			enricher.EXPECT().Enrich(gomock.Any(), tenantID, testLeaderboardID, gomock.Any()).
+			enricher.EXPECT().Enrich(gomock.Any(), tenantID, leaderboardID, gomock.Any()).
 				DoAndReturn(func(_ context.Context, _, _ string, members []*model.Member) ([]*model.Member, error) {
-					Expect(members).To(HaveLen(20))
+					Expect(members).To(HaveLen(3))
 					for _, member := range members {
 						member.Metadata = expectedMetadata
 					}
