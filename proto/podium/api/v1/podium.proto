@@ -311,6 +311,7 @@ message GetMembersResponse {
 
     // Member rank for all members returned in this request.
     int32 position = 6;
+    map<string, string> metadata = 7;
   }
 
   repeated Member members = 2;

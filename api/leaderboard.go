@@ -706,6 +706,15 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 		}
 	}
 
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			lg.Error("Enriching members failed.", zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+		}
+	}
+
 	return &api.GetMembersResponse{
 		Success:  true,
 		Members:  newGetMembersResponseList(members),

@@ -2636,8 +2636,70 @@ var _ = Describe("Leaderboard Handler", func() {
 	})
 
 	Describe("Get Members Handler", func() {
+		tenantID := "test-tenant-id"
 		It("should get several members from leaderboard (http)", func() {
 			leaderboardID := uuid.NewV4().String()
+
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			enricher := mock_enriching.NewMockEnricher(ctrl)
+			app.Enricher = enricher
+
+			expectedMetadataKey := "key"
+			expectedMetadataValue := "value"
+			expectedMetadata := map[string]string{expectedMetadataKey: expectedMetadataValue}
+
+			enricher.EXPECT().Enrich(gomock.Any(), tenantID, testLeaderboardID, gomock.Any()).
+				DoAndReturn(func(_ context.Context, _, _ string, members []*model.Member) ([]*model.Member, error) {
+					Expect(members).To(HaveLen(20))
+					for _, member := range members {
+						member.Metadata = expectedMetadata
+					}
+					return members, nil
+				})
+
+			for i := 1; i <= 100; i++ {
+				_, err := app.Leaderboards.SetMemberScore(NewEmptyCtx(), leaderboardID, fmt.Sprintf("member_%d", i), int64(101-i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			status, body := Get(
+				app,
+				fmt.Sprintf("/l/%s/members?ids=member_10,member_20,member_30", leaderboardID),
+				"tenant-id", tenantID,
+			)
+			Expect(status).To(Equal(http.StatusOK), body)
+
+			var result map[string]interface{}
+			json.Unmarshal([]byte(body), &result)
+
+			Expect(result["success"]).To(BeTrue())
+			Expect(result["notFound"]).To(BeEmpty())
+			members := result["members"].([]interface{})
+			Expect(members).To(HaveLen(3))
+
+			for i := 0; i < 3; i++ {
+				By(fmt.Sprintf("Member %d", i))
+				member := members[i].(map[string]interface{})
+				metadata := member["metadata"].(map[string]interface{})
+
+				Expect(metadata[expectedMetadataKey]).To(Equal(expectedMetadataValue))
+				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", (i+1)*10)))
+				Expect(member["rank"]).To(BeEquivalentTo((i + 1) * 10))
+				Expect(member["score"]).To(BeEquivalentTo(101 - (i+1)*10))
+				Expect(member["position"]).To(BeEquivalentTo(i))
+			}
+		})
+
+		It("should get several members from leaderboard without tenant-id (http)", func() {
+			leaderboardID := uuid.NewV4().String()
+
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			enricher := mock_enriching.NewMockEnricher(ctrl)
+			app.Enricher = enricher
 
 			for i := 1; i <= 100; i++ {
 				_, err := app.Leaderboards.SetMemberScore(NewEmptyCtx(), leaderboardID, fmt.Sprintf("member_%d", i), int64(101-i), false, "")
@@ -2661,11 +2723,37 @@ var _ = Describe("Leaderboard Handler", func() {
 			for i := 0; i < 3; i++ {
 				By(fmt.Sprintf("Member %d", i))
 				member := members[i].(map[string]interface{})
+				metadata := member["metadata"].(map[string]interface{})
+
+				Expect(metadata).To(BeEmpty())
 				Expect(member["publicID"]).To(Equal(fmt.Sprintf("member_%d", (i+1)*10)))
 				Expect(member["rank"]).To(BeEquivalentTo((i + 1) * 10))
 				Expect(member["score"]).To(BeEquivalentTo(101 - (i+1)*10))
 				Expect(member["position"]).To(BeEquivalentTo(i))
 			}
+		})
+
+		It("Should return error if enricher fails to enrich", func() {
+			leaderboardID := uuid.NewV4().String()
+
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			enricher := mock_enriching.NewMockEnricher(ctrl)
+			app.Enricher = enricher
+			enricher.EXPECT().Enrich(gomock.Any(), tenantID, leaderboardID, gomock.Any()).Return(nil, errors.New("failed to enrich"))
+
+			for i := 1; i <= 100; i++ {
+				_, err := app.Leaderboards.SetMemberScore(NewEmptyCtx(), leaderboardID, fmt.Sprintf("member_%d", i), int64(101-i), false, "")
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			status, body := Get(
+				app,
+				fmt.Sprintf("/l/%s/members?ids=member_10,member_20,member_30", leaderboardID),
+				"tenant-id", tenantID,
+			)
+			Expect(status).To(Equal(http.StatusInternalServerError), body)
 		})
 
 		It("should get several members from leaderboard (grpc)", func() {
