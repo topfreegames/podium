@@ -655,6 +655,26 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 		return nil, err
 	}
 
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			lg.Error("Enriching members failed.", zap.Error(err))
+
+			if !errors.Is(err, enriching.ErrNotConfigured) {
+				lg.Error("Enriching members failed.", zap.Error(err))
+				app.AddError()
+				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+			}
+
+			lg.Debug("Enrichment not configured.", zap.Error(err))
+		}
+
+		if result != nil {
+			members = result
+		}
+	}
+
 	return &api.GetTopPercentageResponse{
 		Success: true,
 		Members: newMemberRankResponseList(members),
