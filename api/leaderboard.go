@@ -438,6 +438,24 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 		return nil, err
 	}
 
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			if !errors.Is(err, enriching.ErrNotConfigured) {
+				lg.Error("Enriching members failed.", zap.Error(err))
+				app.AddError()
+				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+			}
+
+			lg.Debug("Enrichment not configured.", zap.Error(err))
+		}
+
+		if result != nil {
+			members = result
+		}
+	}
+
 	return &api.GetAroundMemberResponse{
 		Success: true,
 		Members: newMemberRankResponseList(members),
@@ -490,6 +508,24 @@ func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreReque
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			if !errors.Is(err, enriching.ErrNotConfigured) {
+				lg.Error("Enriching members failed.", zap.Error(err))
+				app.AddError()
+				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+			}
+
+			lg.Debug("Enrichment not configured.", zap.Error(err))
+		}
+
+		if result != nil {
+			members = result
+		}
 	}
 
 	return &api.GetAroundScoreResponse{
@@ -619,6 +655,26 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 		return nil, err
 	}
 
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			lg.Error("Enriching members failed.", zap.Error(err))
+
+			if !errors.Is(err, enriching.ErrNotConfigured) {
+				lg.Error("Enriching members failed.", zap.Error(err))
+				app.AddError()
+				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+			}
+
+			lg.Debug("Enrichment not configured.", zap.Error(err))
+		}
+
+		if result != nil {
+			members = result
+		}
+	}
+
 	return &api.GetTopPercentageResponse{
 		Success: true,
 		Members: newMemberRankResponseList(members),
@@ -634,6 +690,7 @@ func newGetMembersResponseList(members []*lmodel.Member) []*api.GetMembersRespon
 			Rank:     int32(m.Rank),
 			ExpireAt: int32(m.ExpireAt),
 			Position: int32(i),
+			Metadata: m.Metadata,
 		}
 	}
 	return list
@@ -685,6 +742,24 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 		}
 		if !found {
 			notFound = append(notFound, memberID)
+		}
+	}
+
+	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
+	if tenantID != nil {
+		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		if err != nil {
+			if !errors.Is(err, enriching.ErrNotConfigured) {
+				lg.Error("Enriching members failed.", zap.Error(err))
+				app.AddError()
+				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
+			}
+
+			lg.Debug("Enrichment not configured.", zap.Error(err))
+		}
+
+		if result != nil {
+			members = result
 		}
 	}
 
