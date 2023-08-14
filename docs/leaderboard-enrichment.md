@@ -12,10 +12,10 @@ To enable Leaderboard Enrichment, follow these steps:
 
 ```yaml
 webhook_urls:
-    tenant_id: "base_webhook_url"
+    "{TENANT_ID}": "{BASE_WEBHOOK_URL}"
 ```
 
-Replace `tenant_id` with the unique identifier of the tenant and `"base_webhook_url"` with the base URL of the webhook endpoint.
+> Replace `{TENANT_ID}` with the unique identifier of the tenant and `{BASE_WEBHOOK_URL}` with the base URL of the webhook endpoint.
 
 ## Webhook Endpoint
 
@@ -27,8 +27,12 @@ The webhook endpoint will receive a `POST` request with the following JSON body:
 
 ```json
 {
-  "leaderboard_id": "leaderboard_id",
-  "member_public_id": "member_public_id"
+  "members": [
+    {
+      "leaderboard_id": "leaderboard_id",
+      "id": "id"
+    }
+  ]
 }
 ```
 
@@ -41,11 +45,16 @@ The webhook endpoint is expected to return a `JSON` response with metadata for t
 
 ```json
 {
-  "publicID": "member_public_id",
-  "metadata": {
-    "custom_field1": "value1",
-    "custom_field2": "value2"
-  }
+  "members": [
+    {
+      "leaderboard_id": "leaderboard_id",
+      "id": "id",
+      "metadata": {
+        "custom_field1": "value1",
+        "custom_field2": "value2"
+      }
+    }
+  ]
 }
 ```
 
@@ -54,4 +63,10 @@ The webhook endpoint is expected to return a `JSON` response with metadata for t
 
 ## Enabling Enrichment
 
-Once the webhook endpoint is set up, Podium will automatically call the endpoint for each read operation that retrieves information about leaderboard members. The enriched metadata will be included in the response, enhancing the details available for each member.
+Once the webhook endpoint is set up, you will need to add the information to your header when making read requests to the Podium API:
+
+```json
+"tenant-id": "tenant-id",
+```
+
+Podium will automatically call the endpoint for each read operation that retrieves information about leaderboard members. The enriched metadata will be included in the response, enhancing the details available for each member.
