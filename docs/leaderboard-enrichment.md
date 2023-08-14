@@ -69,4 +69,4 @@ Once the webhook endpoint is set up, you will need to add the information to you
 "tenant-id": "tenant-id",
 ```
 
-Podium will automatically call the endpoint for each read operation that retrieves information about leaderboard members. The enriched metadata will be included in the response, enhancing the details available for each member.
+Podium will automatically call the endpoint for each read operation that retrieves information about leaderboard members. The enriched metadata will be included in the response, enhancing the details available for each member. If the corresponding configuration for the tenant-id sent is not found, of if none is specified, Podium will  return the response without any metadata.
