@@ -30,14 +30,14 @@ The webhook endpoint will receive a `POST` request with the following JSON body:
   "members": [
     {
       "leaderboard_id": "leaderboard_id",
-      "id": "id"
+      "id": "member-id"
     }
   ]
 }
 ```
 
-- `"leaderboard_id"`: The unique identifier of the leaderboard.
-- `"member_public_id"`: The public identifier of the member.
+- `leaderboard_id`: The unique identifier of the leaderboard.
+- `id`: The public identifier of the member.  
 
 ### Response
 
@@ -48,7 +48,13 @@ The webhook endpoint is expected to return a `JSON` response with metadata for t
   "members": [
     {
       "leaderboard_id": "leaderboard_id",
-      "id": "id",
+      "id": "member-id",
+      "scores": [
+        {
+          "value": 1,
+        },
+      ],
+      "rank": 2,
       "metadata": {
         "custom_field1": "value1",
         "custom_field2": "value2"
@@ -58,7 +64,7 @@ The webhook endpoint is expected to return a `JSON` response with metadata for t
 }
 ```
 
-- `"publicID"`: The public identifier of the member (must match the request).
+- `"id"`: The public identifier of the member (must match the request).
 - `"metadata"`: Additional metadata fields to enrich the member's information.
 
 ## Enabling Enrichment
