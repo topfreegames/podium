@@ -4,9 +4,12 @@ package enriching
 
 import (
 	"context"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	mock_enriching "github.com/topfreegames/podium/leaderboard/v2/mocks"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 )
@@ -31,6 +34,7 @@ var _ = Describe("Enricher tests", func() {
 	It("should return correct error if tenantID is not configured", func() {
 		enrich := &enricherImpl{
 			config: EnrichmentConfig{},
+			logger: zap.NewNop(),
 		}
 
 		members := []*model.Member{
@@ -48,6 +52,8 @@ var _ = Describe("Enricher tests", func() {
 	})
 
 	It("should return error if webhook call fails", func() {
+		ctrl := gomock.NewController(GinkgoT())
+		cache := mock_enriching.NewMockEnricherCache(ctrl)
 		mux.HandleFunc(enrichURL, func(writer http.ResponseWriter, _ *http.Request) {
 			writer.WriteHeader(http.StatusBadRequest)
 			writer.Write([]byte("{}"))
@@ -59,6 +65,9 @@ var _ = Describe("Enricher tests", func() {
 					tenantID: server.URL,
 				},
 			},
+			cache:  cache,
+			logger: zap.NewNop(),
+			client: &http.Client{},
 		}
 
 		members := []*model.Member{
@@ -70,6 +79,8 @@ var _ = Describe("Enricher tests", func() {
 			},
 		}
 
+		cache.EXPECT().Get(gomock.Any(), tenantID, leaderboardID, members).Return(nil, false, nil)
+
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(err).To(HaveOccurred())
@@ -77,16 +88,21 @@ var _ = Describe("Enricher tests", func() {
 	})
 
 	It("should fail if webhook returns invalid json", func() {
+		ctrl := gomock.NewController(GinkgoT())
+		cache := mock_enriching.NewMockEnricherCache(ctrl)
 		mux.HandleFunc(enrichURL, func(writer http.ResponseWriter, _ *http.Request) {
-			writer.WriteHeader(http.StatusBadRequest)
+			writer.WriteHeader(http.StatusOK)
 			writer.Write([]byte("invalid"))
 		})
 		enrich := &enricherImpl{
 			config: EnrichmentConfig{
 				WebhookUrls: map[string]string{
-					tenantID: "url",
+					tenantID: server.URL,
 				},
 			},
+			cache:  cache,
+			logger: zap.NewNop(),
+			client: &http.Client{},
 		}
 
 		members := []*model.Member{
@@ -94,6 +110,8 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID",
 			},
 		}
+
+		cache.EXPECT().Get(gomock.Any(), tenantID, leaderboardID, members).Return(nil, false, nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
@@ -103,9 +121,12 @@ var _ = Describe("Enricher tests", func() {
 	})
 
 	It("should return members with metadata if call succeeds", func() {
+		ctrl := gomock.NewController(GinkgoT())
+		cache := mock_enriching.NewMockEnricherCache(ctrl)
+
 		mux.HandleFunc(enrichURL, func(writer http.ResponseWriter, _ *http.Request) {
 			writer.WriteHeader(http.StatusOK)
-			writer.Write([]byte("{\"members\": [{ \"member_id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }]}"))
+			writer.Write([]byte("{\"members\": [{ \"id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }]}"))
 		})
 		enrich := &enricherImpl{
 			config: EnrichmentConfig{
@@ -113,6 +134,9 @@ var _ = Describe("Enricher tests", func() {
 					tenantID: server.URL,
 				},
 			},
+			cache:  cache,
+			logger: zap.NewNop(),
+			client: &http.Client{},
 		}
 
 		members := []*model.Member{
@@ -129,6 +153,9 @@ var _ = Describe("Enricher tests", func() {
 				},
 			},
 		}
+
+		cache.EXPECT().Get(gomock.Any(), tenantID, leaderboardID, members).Return(nil, false, nil)
+		cache.EXPECT().Set(gomock.Any(), tenantID, leaderboardID, expectedResult).Return(nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 

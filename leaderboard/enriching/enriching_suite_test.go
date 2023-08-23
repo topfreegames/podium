@@ -1,4 +1,6 @@
-package enriching_test
+//go:build unit
+
+package enriching
 
 import (
 	"testing"

@@ -29,15 +29,16 @@ type EnrichmentConfig struct {
 
 type enricherImpl struct {
 	config EnrichmentConfig
-	lg     *zap.Logger
+	logger *zap.Logger
 	client *http.Client
+	cache  EnricherCache
 }
 
 // NewEnricher returns a new Enricher implementation.
 func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 	return &enricherImpl{
 		config: config,
-		lg:     logger,
+		logger: logger,
 		client: &http.Client{
 			Timeout: config.WebhookTimeout,
 		},
@@ -47,11 +48,27 @@ func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
 	tenantUrl, exists := e.config.WebhookUrls[tenantID]
 	if !exists {
-		e.lg.Info(fmt.Sprintf("tenantID '%s' enrichment webhook url not found", tenantID))
+		e.logger.Info(fmt.Sprintf("tenantID '%s' enrichment webhook url not found", tenantID))
 		return nil, ErrNotConfigured
 	}
 
 	if len(members) == 0 {
+		return members, nil
+	}
+
+	cached, hit, error := e.cache.Get(ctx, tenantID, leaderboardID, members)
+	if error != nil {
+		e.logger.Error("could not get cached enrichment data", zap.Error(error))
+	}
+
+	if hit {
+		e.logger.Info("returned cached enrich data")
+		for _, m := range members {
+			if metadata, exists := cached[m.PublicID]; exists {
+				m.Metadata = metadata
+			}
+		}
+
 		return members, nil
 	}
 
@@ -74,7 +91,7 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 
 	req.Header.Set("Content-Type", "application/json")
 
-	e.lg.Info(fmt.Sprintf("calling enrichment webhook '%s' for tenantID '%s'", webhookUrl, tenantID))
+	e.logger.Info(fmt.Sprintf("calling enrichment webhook '%s' for tenantID '%s'", webhookUrl, tenantID))
 	resp, err := e.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("could not complete request to webhook: %w", errors.Join(err, ErrEnrichmentCall))
@@ -90,7 +107,11 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 		return nil, fmt.Errorf("could not unmarshal webhook response: %w", errors.Join(err, ErrEnrichmentCall))
 	}
 
-	return protoToMemberModels(result.Members), nil
+	enrichedMembers := protoToMemberModels(result.Members)
+
+	go e.cache.Set(ctx, tenantID, leaderboardID, enrichedMembers)
+
+	return enrichedMembers, nil
 }
 
 func buildUrl(baseUrl string) (string, error) {
