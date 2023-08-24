@@ -35,3 +35,6 @@ extensions:
 
 enrichment:
   webhook_urls:
+  webhook_timeout: 500ms
+  cloud_save:
+    enabled: false
