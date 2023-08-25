@@ -100,7 +100,7 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("webhook returned non OK response: %w", errors.Join(err, ErrEnrichmentCall))
+		return nil, fmt.Errorf("webhook returned %d %s response: %w", resp.StatusCode, resp.Status, ErrEnrichmentCall)
 	}
 
 	var result podium_leaderboard_webhooks_v1.EnrichLeaderboardsResponse
@@ -168,7 +168,7 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 	defer raw.Body.Close()
 
 	if raw.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("cloud save returned non OK response: %w", errors.Join(err, ErrEnrichmentCall))
+		return nil, fmt.Errorf("cloud save returned %d %s response: %w", raw.StatusCode, raw.Status, ErrEnrichmentCall)
 	}
 
 	res := &CloudSaveGetProfilesResponse{}
