@@ -38,7 +38,7 @@ func (en *instrumentedEnricher) Enrich(ctx context.Context, tenantID, leaderboar
 	})
 	defer span.Finish()
 
-	res, err := en.impl.Enrich(ctx, tenantID, leaderboardID, members)
+	members, err := en.impl.Enrich(ctx, tenantID, leaderboardID, members)
 
 	if err != nil {
 		span.SetTag("error", true)
@@ -50,7 +50,7 @@ func (en *instrumentedEnricher) Enrich(ctx context.Context, tenantID, leaderboar
 	en.metricsReporter.Increment(enrichmentCalls)
 	en.metricsReporter.Timing(enrichmentTimingMilli, time.Since(start))
 
-	return res, err
+	return members, err
 }
 
 var _ Enricher = (*instrumentedEnricher)(nil)
