@@ -147,7 +147,7 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 
 	jsonData, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("could not marshal request: %w", errors.Join(err, ErrEnrichmentInternal))
+		return nil, fmt.Errorf("could not marshal request: %w", errors.Join(ErrEnrichmentInternal, err))
 	}
 
 	url, err := buildUrl(e.config.CloudSave.Url, cloudSaveEndpoint)
