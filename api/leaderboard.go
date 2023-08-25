@@ -438,14 +438,12 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
 			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
-
-		members = result
 	}
 
 	return &api.GetAroundMemberResponse{
@@ -504,14 +502,12 @@ func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreReque
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
 			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
-
-		members = result
 	}
 
 	return &api.GetAroundScoreResponse{
@@ -581,14 +577,12 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
 			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
-
-		members = result
 	}
 
 	return &api.GetTopMembersResponse{
@@ -637,7 +631,7 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 
@@ -645,8 +639,6 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 			app.AddError()
 			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
-
-		members = result
 	}
 
 	return &api.GetTopPercentageResponse{
@@ -721,14 +713,12 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
 			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
-
-		members = result
 	}
 
 	return &api.GetMembersResponse{
