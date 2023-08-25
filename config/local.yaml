@@ -36,4 +36,8 @@ extensions:
 enrichment:
   webhook_urls:
     dummy_tenant_id: "localhost:8080/"
-  webhook_timeout: 2s
+  webhook_timeout: 500ms
+  cloud_save:
+    url: "localhost:8888/"
+    disabled:
+      dummy_tenant_id: false

@@ -11,9 +11,7 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/topfreegames/podium/leaderboard/v2/enriching"
 	"math"
 	"strings"
 
@@ -440,19 +438,11 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
-			if !errors.Is(err, enriching.ErrNotConfigured) {
-				lg.Error("Enriching members failed.", zap.Error(err))
-				app.AddError()
-				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
-			}
-
-			lg.Debug("Enrichment not configured.", zap.Error(err))
-		}
-
-		if result != nil {
-			members = result
+			lg.Error("Enriching members failed.", zap.Error(err))
+			app.AddError()
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
 	}
 
@@ -512,19 +502,11 @@ func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreReque
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
-			if !errors.Is(err, enriching.ErrNotConfigured) {
-				lg.Error("Enriching members failed.", zap.Error(err))
-				app.AddError()
-				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
-			}
-
-			lg.Debug("Enrichment not configured.", zap.Error(err))
-		}
-
-		if result != nil {
-			members = result
+			lg.Error("Enriching members failed.", zap.Error(err))
+			app.AddError()
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
 	}
 
@@ -595,19 +577,11 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
-			if !errors.Is(err, enriching.ErrNotConfigured) {
-				lg.Error("Enriching members failed.", zap.Error(err))
-				app.AddError()
-				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
-			}
-
-			lg.Debug("Enrichment not configured.", zap.Error(err))
-		}
-
-		if result != nil {
-			members = result
+			lg.Error("Enriching members failed.", zap.Error(err))
+			app.AddError()
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
 	}
 
@@ -657,21 +631,13 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 
-			if !errors.Is(err, enriching.ErrNotConfigured) {
-				lg.Error("Enriching members failed.", zap.Error(err))
-				app.AddError()
-				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
-			}
-
-			lg.Debug("Enrichment not configured.", zap.Error(err))
-		}
-
-		if result != nil {
-			members = result
+			lg.Error("Enriching members failed.", zap.Error(err))
+			app.AddError()
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
 	}
 
@@ -747,19 +713,11 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 
 	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
 	if tenantID != nil {
-		result, err := app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
 		if err != nil {
-			if !errors.Is(err, enriching.ErrNotConfigured) {
-				lg.Error("Enriching members failed.", zap.Error(err))
-				app.AddError()
-				return nil, status.Errorf(codes.Internal, "Unable to enrich members")
-			}
-
-			lg.Debug("Enrichment not configured.", zap.Error(err))
-		}
-
-		if result != nil {
-			members = result
+			lg.Error("Enriching members failed.", zap.Error(err))
+			app.AddError()
+			return nil, status.Errorf(codes.Internal, "Unable to enrich members")
 		}
 	}
 

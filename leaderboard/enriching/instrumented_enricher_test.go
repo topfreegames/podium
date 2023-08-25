@@ -29,16 +29,6 @@ var _ = Describe("Instrumented enricher", func() {
 		ctrl.Finish()
 	})
 
-	It("should not send metrics if tenant ID is not configured", func() {
-		mockReporter := extmocks.NewMockMetricsReporter(ctrl)
-		impl := mock_enriching.NewMockEnricher(ctrl)
-
-		enricher := NewInstrumentedEnricher(impl, mockReporter)
-
-		impl.EXPECT().Enrich(gomock.Any(), tenantID, leaderboardID, members).Return(nil, ErrNotConfigured)
-		_, _ = enricher.Enrich(ctx, tenantID, leaderboardID, members)
-	})
-
 	It("should send metrics if tenant ID is configured", func() {
 		mockReporter := extmocks.NewMockMetricsReporter(ctrl)
 		impl := mock_enriching.NewMockEnricher(ctrl)

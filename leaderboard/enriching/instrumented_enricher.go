@@ -2,7 +2,6 @@ package enriching
 
 import (
 	"context"
-	"errors"
 	"github.com/opentracing/opentracing-go"
 	extensions "github.com/topfreegames/extensions/middleware"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
@@ -42,9 +41,6 @@ func (en *instrumentedEnricher) Enrich(ctx context.Context, tenantID, leaderboar
 	members, err := en.impl.Enrich(ctx, tenantID, leaderboardID, members)
 
 	if err != nil {
-		if errors.Is(err, ErrNotConfigured) {
-			return members, err
-		}
 		span.SetTag("error", true)
 		span.SetTag("error.message", err.Error())
 

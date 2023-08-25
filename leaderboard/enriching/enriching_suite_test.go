@@ -1,4 +1,4 @@
-package enriching_test
+package enriching
 
 import (
 	"testing"
