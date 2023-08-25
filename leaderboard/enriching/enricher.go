@@ -178,11 +178,11 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 
 	cloudSaveMetadataMap := make(map[string]map[string]string)
 	for _, d := range res.Documents {
-		cloudSaveMap[d.AccountID] = d.Data
+		cloudSaveMetadataMap[d.AccountID] = d.Data
 	}
 
 	for _, m := range members {
-		if data, ok := cloudSaveMap[m.PublicID]; ok {
+		if data, ok := cloudSaveMetadataMap[m.PublicID]; ok {
 			m.Metadata = data
 		}
 	}
