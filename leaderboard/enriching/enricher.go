@@ -71,6 +71,8 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 		return e.enrichWithCloudSave(ctx, tenantID, members)
 	}
 
+	e.logger.Debug(fmt.Sprintf("Calling webhook for tenantID '%s'.", tenantID))
+
 	body := membersModelToProto(leaderboardID, members)
 	jsonData, err := json.Marshal(podium_leaderboard_webhooks_v1.EnrichLeaderboardsRequest{Members: body})
 	if err != nil {
@@ -130,6 +132,8 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 		e.logger.Debug("Cloud Save URL not configured. Skipping enrichment.")
 		return members, nil
 	}
+
+	e.logger.Debug(fmt.Sprintf("calling cloud save for tenantID '%s'", tenantID))
 
 	ids := make([]string, len(members))
 	for i, m := range members {
