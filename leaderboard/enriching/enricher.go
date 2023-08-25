@@ -122,6 +122,12 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 
 func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string, members []*model.Member) ([]*model.Member, error) {
 	if e.config.CloudSave.Disabled[tenantID] {
+		e.logger.Debug(fmt.Sprintf("Cloud Save enrich disabled for tenant %s. Skipping enrichment.", tenantID))
+		return members, nil
+	}
+
+	if e.config.CloudSave.Url == "" {
+		e.logger.Debug("Cloud Save URL not configured. Skipping enrichment.")
 		return members, nil
 	}
 
