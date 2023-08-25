@@ -150,7 +150,7 @@ var _ = Describe("Enricher tests", func() {
 	})
 
 	It("should return error if webhook call fails", func() {
-		mux.HandleFunc(enrichWebhookUrl, func(writer http.ResponseWriter, _ *http.Request) {
+		mux.HandleFunc(enrichWebhookEndpoint, func(writer http.ResponseWriter, _ *http.Request) {
 			writer.WriteHeader(http.StatusBadRequest)
 			writer.Write([]byte("{}"))
 		})
@@ -179,7 +179,7 @@ var _ = Describe("Enricher tests", func() {
 	})
 
 	It("should fail if webhook returns invalid json", func() {
-		mux.HandleFunc(enrichWebhookUrl, func(writer http.ResponseWriter, _ *http.Request) {
+		mux.HandleFunc(enrichWebhookEndpoint, func(writer http.ResponseWriter, _ *http.Request) {
 			writer.WriteHeader(http.StatusBadRequest)
 			writer.Write([]byte("invalid"))
 		})
@@ -205,7 +205,7 @@ var _ = Describe("Enricher tests", func() {
 	})
 
 	It("should return members with metadata if call succeeds", func() {
-		mux.HandleFunc(enrichWebhookUrl, func(writer http.ResponseWriter, _ *http.Request) {
+		mux.HandleFunc(enrichWebhookEndpoint, func(writer http.ResponseWriter, _ *http.Request) {
 			writer.WriteHeader(http.StatusOK)
 			writer.Write([]byte("{\"members\": [{ \"id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }]}"))
 		})
@@ -240,10 +240,10 @@ var _ = Describe("Enricher tests", func() {
 })
 
 var _ = Describe("test url builder", func() {
-	correctUrl := "http://localhost:8080" + enrichWebhookUrl
+	correctUrl := "http://localhost:8080" + enrichWebhookEndpoint
 	It("should work if base url has no http", func() {
 		baseUrl := "localhost:8080"
-		res, err := buildUrl(baseUrl, enrichWebhookUrl)
+		res, err := buildUrl(baseUrl, enrichWebhookEndpoint)
 
 		Expect(res).To(Equal(correctUrl))
 		Expect(err).NotTo(HaveOccurred())
@@ -251,7 +251,7 @@ var _ = Describe("test url builder", func() {
 
 	It("should work if base url ends with slash", func() {
 		baseUrl := "http://localhost:8080/"
-		res, err := buildUrl(baseUrl, enrichWebhookUrl)
+		res, err := buildUrl(baseUrl, enrichWebhookEndpoint)
 
 		Expect(res).To(Equal(correctUrl))
 		Expect(err).NotTo(HaveOccurred())
@@ -259,7 +259,7 @@ var _ = Describe("test url builder", func() {
 
 	It("should work if base url does not end with slash", func() {
 		baseUrl := "http://localhost:8080"
-		res, err := buildUrl(baseUrl, enrichWebhookUrl)
+		res, err := buildUrl(baseUrl, enrichWebhookEndpoint)
 
 		Expect(res).To(Equal(correctUrl))
 		Expect(err).NotTo(HaveOccurred())

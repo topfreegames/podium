@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const enrichWebhookUrl = "/leaderboards/enrich"
+const enrichWebhookEndpoint = "/leaderboards/enrich"
 const cloudSaveEndpoint = "/get-public-documents/profile"
 
 type (
@@ -67,11 +67,11 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 
 	tenantUrl, exists := e.config.WebhookUrls[tenantID]
 	if !exists {
-		e.logger.Debug(fmt.Sprintf("No webhook configured for tentantID '%s'. Will call Cloud Save.", tenantID))
+		e.logger.Debug(fmt.Sprintf("no webhook configured for tentantID '%s'. Will call Cloud Save.", tenantID))
 		return e.enrichWithCloudSave(ctx, tenantID, members)
 	}
 
-	e.logger.Debug(fmt.Sprintf("Calling webhook for tenantID '%s'.", tenantID))
+	e.logger.Debug(fmt.Sprintf("calling webhook for tenantID '%s'.", tenantID))
 
 	body := membersModelToProto(leaderboardID, members)
 	jsonData, err := json.Marshal(podium_leaderboard_webhooks_v1.EnrichLeaderboardsRequest{Members: body})
@@ -79,7 +79,7 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 		return nil, fmt.Errorf("could not marshal request: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
-	webhookUrl, err := buildUrl(tenantUrl, enrichWebhookUrl)
+	webhookUrl, err := buildUrl(tenantUrl, enrichWebhookEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("could not build webhook URL: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
@@ -124,12 +124,12 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 
 func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string, members []*model.Member) ([]*model.Member, error) {
 	if e.config.CloudSave.Disabled[tenantID] {
-		e.logger.Debug(fmt.Sprintf("Cloud Save enrich disabled for tenant %s. Skipping enrichment.", tenantID))
+		e.logger.Debug(fmt.Sprintf("cloud save enrich disabled for tenant %s. Skipping enrichment.", tenantID))
 		return members, nil
 	}
 
 	if e.config.CloudSave.Url == "" {
-		e.logger.Debug("Cloud Save URL not configured. Skipping enrichment.")
+		e.logger.Debug("cloud Save URL not configured. Skipping enrichment.")
 		return members, nil
 	}
 
