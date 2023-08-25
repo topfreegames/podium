@@ -152,18 +152,18 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 
 	url, err := buildUrl(e.config.CloudSave.Url, cloudSaveEndpoint)
 	if err != nil {
-		return nil, fmt.Errorf("could not build cloud save url: %w", errors.Join(err, ErrEnrichmentInternal))
+		return nil, fmt.Errorf("could not build cloud save url: %w", errors.Join(ErrEnrichmentInternal, err))
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, fmt.Errorf("could not create request: %w", errors.Join(err, ErrEnrichmentInternal))
+		return nil, fmt.Errorf("could not create request: %w", errors.Join(ErrEnrichmentInternal, err))
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	raw, err := e.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("could not complete request to cloud save: %w", errors.Join(err, ErrEnrichmentCall))
+		return nil, fmt.Errorf("could not complete request to cloud save: %w", errors.Join(ErrEnrichmentCall, err))
 	}
 	defer raw.Body.Close()
 
@@ -173,10 +173,10 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 
 	res := &CloudSaveGetProfilesResponse{}
 	if err := json.NewDecoder(raw.Body).Decode(res); err != nil {
-		return nil, fmt.Errorf("could not unmarshal cloud save response: %w", errors.Join(err, ErrEnrichmentCall))
+		return nil, fmt.Errorf("could not unmarshal cloud save response: %w", errors.Join(ErrEnrichmentCall, err))
 	}
 
-	cloudSaveMap := make(map[string]map[string]string)
+	cloudSaveMetadataMap := make(map[string]map[string]string)
 	for _, d := range res.Documents {
 		cloudSaveMap[d.AccountID] = d.Data
 	}
