@@ -17,7 +17,7 @@ import (
 )
 
 const enrichWebhookEndpoint = "/leaderboards/enrich"
-const cloudSaveEndpoint = "/get-public-documents/profile"
+const cloudSaveEndpoint = "/get-public-documents/PlayerProfile"
 
 type (
 	EnrichmentConfig struct {
