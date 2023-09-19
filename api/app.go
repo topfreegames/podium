@@ -370,24 +370,18 @@ func (app *App) Start(ctx context.Context) error {
 }
 
 func (app *App) startGRPCServer(lis net.Listener) error {
-	var basicAuthInterceptor grpc.UnaryServerInterceptor
-
+	interceptors := []grpc.UnaryServerInterceptor{
+		otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
+		app.loggerMiddleware,
+		app.recoveryMiddleware,
+		app.responseTimeMetricsMiddleware,
+	}
 	basicAuthUser := app.Config.GetString("basicauth.username")
-	if basicAuthUser == "" {
-		basicAuthInterceptor = app.noAuthMiddleware
-	} else {
-		basicAuthInterceptor = grpcauth.UnaryServerInterceptor(app.basicAuthMiddleware)
+	if basicAuthUser != "" {
+		interceptors = append(interceptors, grpcauth.UnaryServerInterceptor(app.basicAuthMiddleware))
 	}
 
-	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(
-		grpcmiddleware.ChainUnaryServer(
-			basicAuthInterceptor,
-			otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
-			app.loggerMiddleware,
-			app.recoveryMiddleware,
-			app.responseTimeMetricsMiddleware,
-		),
-	))
+	app.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
 	api.RegisterPodiumServer(app.grpcServer, app)
 
 	app.grpcReady <- true

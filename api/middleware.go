@@ -30,10 +30,6 @@ type newRelicContextKey struct {
 	key string
 }
 
-func (app *App) noAuthMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return handler(ctx, req)
-}
-
 func (app *App) basicAuthMiddleware(ctx context.Context) (context.Context, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "basic")
 	if err != nil {
