@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -52,6 +53,8 @@ func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
 	b, _ := json.Marshal(config)
 	logger.Info(fmt.Sprintf("enrichment config: %s", string(b)))
 
+	disabled := os.Getenv("PODIUM_ENRICHMENT_CLOUD_SAVE_DISABLED")
+	logger.Info(fmt.Sprintf("enrichment cloud save disabled: %s", disabled))
 	return &enricherImpl{
 		config: config,
 		logger: logger,
