@@ -49,6 +49,9 @@ type enricherImpl struct {
 
 // NewEnricher returns a new Enricher implementation.
 func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
+	b, _ := json.Marshal(config)
+	logger.Info(fmt.Sprintf("enrichment config: %s", string(b)))
+
 	return &enricherImpl{
 		config: config,
 		logger: logger,
