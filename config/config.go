@@ -88,8 +88,17 @@ func StringToMapBoolHookFunc() mapstructure.DecodeHookFunc {
 			return map[string]bool{}, nil
 		}
 
-		m := map[string]bool{}
-		err := json.Unmarshal([]byte(raw), &m)
-		return m, err
+		unmarshalled := map[string]string{}
+		err := json.Unmarshal([]byte(raw), &unmarshalled)
+		if err != nil {
+			return map[string]bool{}, err
+		}
+
+		result := map[string]bool{}
+		for k, v := range unmarshalled {
+			result[k] = v == "true"
+		}
+
+		return result, err
 	}
 }
