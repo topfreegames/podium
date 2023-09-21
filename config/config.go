@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -83,10 +84,14 @@ func StringToMapBoolHookFunc() mapstructure.DecodeHookFunc {
 			return data, nil
 		}
 
+		fmt.Println(" ====> executing string to map bool hook func <====")
+
 		raw := data.(string)
 		if raw == "" {
 			return map[string]bool{}, nil
 		}
+
+		fmt.Println(" ====> raw: ", raw)
 
 		unmarshalled := map[string]string{}
 		err := json.Unmarshal([]byte(raw), &unmarshalled)
