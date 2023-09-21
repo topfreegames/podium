@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -34,7 +33,7 @@ type (
 	}
 
 	CloudSaveConfig struct {
-		// Enabled indicates wheter the Cloud Save service should be used for enrichment.
+		// Enabled indicates whether the Cloud Save service should be used for enrichment.
 		Disabled map[string]bool `mapstructure:"disabled"`
 
 		// URL is the URL to call the Cloud Save service.
@@ -50,11 +49,6 @@ type enricherImpl struct {
 
 // NewEnricher returns a new Enricher implementation.
 func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
-	b, _ := json.Marshal(config)
-	logger.Info(fmt.Sprintf("enrichment config: %s", string(b)))
-
-	disabled := os.Getenv("PODIUM_ENRICHMENT_CLOUD_SAVE_DISABLED")
-	logger.Info(fmt.Sprintf("enrichment cloud save disabled: %s", disabled))
 	return &enricherImpl{
 		config: config,
 		logger: logger,

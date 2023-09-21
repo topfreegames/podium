@@ -2,8 +2,8 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -84,14 +84,10 @@ func StringToMapBoolHookFunc() mapstructure.DecodeHookFunc {
 			return data, nil
 		}
 
-		fmt.Println(" ====> executing string to map bool hook func <====")
-
 		raw := data.(string)
 		if raw == "" {
 			return map[string]bool{}, nil
 		}
-
-		fmt.Println(" ====> raw: ", raw)
 
 		unmarshalled := map[string]string{}
 		err := json.Unmarshal([]byte(raw), &unmarshalled)
@@ -101,7 +97,11 @@ func StringToMapBoolHookFunc() mapstructure.DecodeHookFunc {
 
 		result := map[string]bool{}
 		for k, v := range unmarshalled {
-			result[k] = v == "true"
+			boolValue, err := strconv.ParseBool(v)
+			if err != nil {
+				continue
+			}
+			result[k] = boolValue
 		}
 
 		return result, err
