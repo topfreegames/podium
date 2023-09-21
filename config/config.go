@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -36,14 +37,15 @@ func DecodeHook() viper.DecoderConfigOption {
 	decodeHook := mapstructure.ComposeDecodeHookFunc(
 		mapstructure.StringToTimeDurationHookFunc(),
 		mapstructure.StringToSliceHookFunc(","),
-		StringToMapHookFunc(),
+		StringToMapStringHookFunc(),
+		StringToMapBoolHookFunc(),
 	)
 
 	return viper.DecodeHook(decodeHook)
 
 }
 
-func StringToMapHookFunc() mapstructure.DecodeHookFunc {
+func StringToMapStringHookFunc() mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,
 		t reflect.Type,
@@ -65,5 +67,43 @@ func StringToMapHookFunc() mapstructure.DecodeHookFunc {
 		m := map[string]string{}
 		err := json.Unmarshal([]byte(raw), &m)
 		return m, err
+	}
+}
+
+func StringToMapBoolHookFunc() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{},
+	) (interface{}, error) {
+		if f.Kind() != reflect.String || t.Kind() != reflect.Map {
+			return data, nil
+		}
+
+		if t.Key().Kind() != reflect.String || t.Elem().Kind() != reflect.Bool {
+			return data, nil
+		}
+
+		raw := data.(string)
+		if raw == "" {
+			return map[string]bool{}, nil
+		}
+
+		unmarshalled := map[string]string{}
+		err := json.Unmarshal([]byte(raw), &unmarshalled)
+		if err != nil {
+			return map[string]bool{}, err
+		}
+
+		result := map[string]bool{}
+		for k, v := range unmarshalled {
+			boolValue, err := strconv.ParseBool(v)
+			if err != nil {
+				continue
+			}
+			result[k] = boolValue
+		}
+
+		return result, err
 	}
 }

@@ -38,4 +38,4 @@ enrichment:
   webhook_timeout: 500ms
   cloud_save:
     url:
-    enabled:
+    disabled:

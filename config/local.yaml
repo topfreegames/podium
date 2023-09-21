@@ -40,4 +40,3 @@ enrichment:
   cloud_save:
     url: "localhost:8888/"
     disabled:
-      dummy_tenant_id: false
