@@ -30,7 +30,7 @@ type (
 		WebhookUrls map[string]string `mapstructure:"webhook_urls"`
 
 		// WebhookTimeout is the timeout for the webhook call.
-		WebhookTimeout time.Duration `mapstructure:"webhook_timeout,default=2s"`
+		WebhookTimeout time.Duration `mapstructure:"webhook_timeout"`
 
 		Cache *Cache `mapstructure:"cache"`
 	}
@@ -39,7 +39,7 @@ type (
 		database.RedisOptions
 
 		// TTL is the time to live for the cached data.
-		TTL time.Duration `mapstructure:"ttl,default=24h"`
+		TTL time.Duration `mapstructure:"ttl"`
 	}
 
 	CloudSaveConfig struct {
