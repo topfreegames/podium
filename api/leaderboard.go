@@ -29,7 +29,7 @@ import (
 const (
 	notFoundError     = "Could not find data for member"
 	defaultPageSize   = 20
-	TenantIDHeaderKey = "Wildlife-Platform-Tenant-Id"
+	TenantIDHeaderKey = "wildlife-platform-tenant-id"
 )
 
 func validateBulkUpsertScoresRequest(req *api.BulkUpsertScoresRequest) error {
