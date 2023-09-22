@@ -497,6 +497,8 @@ func customHeadersMatcher(key string) (string, bool) {
 	switch strings.ToLower(key) {
 	case "tenant-id":
 		return key, true
+	case TenantIDHeaderKey:
+		return key, true
 	default:
 		return runtime.DefaultHeaderMatcher(key)
 	}
