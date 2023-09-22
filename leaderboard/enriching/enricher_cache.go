@@ -11,7 +11,7 @@ import (
 )
 
 // cacheKeyFormat is {tenantID}:{leaderboardID}:{memberID}
-const cacheKeyFormat = "%s:%s:%s"
+const cacheKeyFormat = "leaderboards-enrich-caching:%s:%s:%s"
 
 type enricherCache struct {
 	redis  *redis.Client

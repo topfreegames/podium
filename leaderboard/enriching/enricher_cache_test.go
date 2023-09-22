@@ -3,6 +3,7 @@ package enriching
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-redis/redis/v8"
 	redismock "github.com/go-redis/redismock/v8"
 	. "github.com/onsi/ginkgo"
@@ -28,8 +29,8 @@ var _ = Describe("Members array to keys array test", func() {
 		keys := getKeysFromMemberArray(tenantID, leaderboardID, members)
 
 		Expect(keys).To(HaveLen(2))
-		Expect(keys[0]).To(Equal("tenantID:leaderboardID:member1"))
-		Expect(keys[1]).To(Equal("tenantID:leaderboardID:member2"))
+		Expect(keys[0]).To(Equal("leaderboards-enrich-caching:tenantID:leaderboardID:member1"))
+		Expect(keys[1]).To(Equal("leaderboards-enrich-caching:tenantID:leaderboardID:member2"))
 	})
 })
 
@@ -176,18 +177,18 @@ var _ = Describe("Ericher cache Set tests", func() {
 
 		err := cache.Set(context.Background(), tenantID, leaderboardID, members, 0)
 
-		res, err := redis.Get(context.Background(), "tenantID:leaderboardID:member1").Result()
+		res, err := redis.Get(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member1")).Result()
 		Expect(res).To(Equal("{\"key1\":\"value1\"}"))
 		Expect(err).To(BeNil())
 
-		res, err = redis.Get(context.Background(), "tenantID:leaderboardID:member2").Result()
+		res, err = redis.Get(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member2")).Result()
 		Expect(res).To(Equal("{\"key2\":\"value2\"}"))
 		Expect(err).To(BeNil())
 	})
 
 	AfterEach(func() {
 		redis := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
-		redis.Del(context.Background(), "tenantID:leaderboardID:member1")
-		redis.Del(context.Background(), "tenantID:leaderboardID:member2")
+		redis.Del(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member1"))
+		redis.Del(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member2"))
 	})
 })
