@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
 	"net/http"
 	"net/url"
 	"strings"
@@ -30,6 +31,15 @@ type (
 
 		// WebhookTimeout is the timeout for the webhook call.
 		WebhookTimeout time.Duration `mapstructure:"webhook_timeout,default=2s"`
+
+		Cache *Cache `mapstructure:"cache"`
+	}
+
+	Cache struct {
+		database.RedisOptions
+
+		// TTL is the time to live for the cached data.
+		TTL time.Duration `mapstructure:"ttl,default=24h"`
 	}
 
 	CloudSaveConfig struct {
@@ -45,33 +55,90 @@ type enricherImpl struct {
 	config EnrichmentConfig
 	logger *zap.Logger
 	client *http.Client
+	cache  EnricherCache
 }
 
 // NewEnricher returns a new Enricher implementation.
-func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
+func NewEnricher(
+	config EnrichmentConfig,
+	logger *zap.Logger,
+	cache EnricherCache,
+) Enricher {
 	return &enricherImpl{
 		config: config,
-		logger: logger,
+		logger: logger.With(zap.String("source", "enricher")),
 		client: &http.Client{
 			Timeout: config.WebhookTimeout,
 		},
+		cache: cache,
 	}
 }
 
-// Enrich enriches the members list with some metadata. By default, it will call the Cloud Save service.
-// If there's a webhook configured for the tenantID, it will call it instead.
-func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
+// Enrich enriches the members list with some metadata.
+// By default, it will call the Cloud Save service, unless it's disabled for the tenantID or if there's a webhook for the tenantID.
+// If there's a webhook configured for the tenantID, it will be called instead.
+func (e *enricherImpl) Enrich(
+	ctx context.Context,
+	tenantID,
+	leaderboardID string,
+	members []*model.Member,
+) ([]*model.Member, error) {
 	if len(members) == 0 {
 		return members, nil
 	}
 
-	tenantUrl, exists := e.config.WebhookUrls[tenantID]
-	if !exists {
-		e.logger.Debug(fmt.Sprintf("no webhook configured for tentantID '%s'. will call Cloud Save.", tenantID))
-		return e.enrichWithCloudSave(ctx, tenantID, members)
+	cached, hit, err := e.cache.Get(ctx, tenantID, leaderboardID, members)
+	if err != nil {
+		e.logger.Error("could not get cached enrichment data", zap.Error(err))
 	}
 
+	if hit {
+		e.logger.Debug("returning cached enrich data")
+		for _, m := range members {
+			if metadata, exists := cached[m.PublicID]; exists {
+				m.Metadata = metadata
+			}
+		}
+
+		return members, nil
+	}
+
+	tenantUrl, webHookExists := e.config.WebhookUrls[tenantID]
+	cloudSaveDisabled := e.config.CloudSave.Disabled[tenantID]
+
+	if !webHookExists && cloudSaveDisabled {
+		return members, nil
+	}
+
+	if webHookExists && tenantUrl != "" {
+		members, err = e.enrichWithWebhook(ctx, tenantID, leaderboardID, members)
+
+		if err != nil {
+			return nil, err
+		}
+	} else if !cloudSaveDisabled {
+		e.logger.Debug(fmt.Sprintf("no webhook configured for tentantID '%s'. will call Cloud Save.", tenantID))
+		members, err = e.enrichWithCloudSave(ctx, tenantID, members)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	e.cache.Set(ctx, tenantID, leaderboardID, members, e.config.Cache.TTL)
+
+	return members, nil
+}
+
+func (e *enricherImpl) enrichWithWebhook(
+	ctx context.Context,
+	tenantID,
+	leaderboardID string,
+	members []*model.Member,
+) ([]*model.Member, error) {
 	e.logger.Debug(fmt.Sprintf("calling webhook for tenantID '%s'.", tenantID))
+
+	tenantUrl := e.config.WebhookUrls[tenantID]
 
 	body := membersModelToProto(leaderboardID, members)
 	jsonData, err := json.Marshal(podium_leaderboard_webhooks_v1.EnrichLeaderboardsRequest{Members: body})

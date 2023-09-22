@@ -3,11 +3,13 @@ module github.com/topfreegames/podium/leaderboard/v2
 go 1.20
 
 require (
-	github.com/go-redis/redis/v8 v8.8.2
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-redis/redismock/v8 v8.11.5
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.1
-	github.com/onsi/ginkgo v1.16.1
-	github.com/onsi/gomega v1.11.0
+	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/gomega v1.18.1
+	github.com/opentracing/opentracing-go v1.2.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/viper v1.7.1
 	github.com/topfreegames/extensions v8.5.0+incompatible
@@ -34,7 +36,6 @@ require (
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
-	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
@@ -43,9 +44,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	go.opentelemetry.io/otel v0.19.0 // indirect
-	go.opentelemetry.io/otel/metric v0.19.0 // indirect
-	go.opentelemetry.io/otel/trace v0.19.0 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect

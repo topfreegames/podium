@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/topfreegames/podium/leaderboard/v2/database"
 	"reflect"
 	"strconv"
 	"strings"
@@ -29,6 +30,7 @@ func GetDefaultConfig(configFile string) (*viper.Viper, error) {
 
 type (
 	PodiumConfig struct {
+		Redis      database.RedisOptions
 		Enrichment enriching.EnrichmentConfig
 	}
 )

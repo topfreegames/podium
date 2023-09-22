@@ -12,6 +12,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"net"
 	"net/http"
 	"os"
@@ -217,7 +218,23 @@ func (app *App) loadConfiguration() error {
 }
 
 func (app *App) configureEnrichment() {
-	enricher := enriching.NewEnricher(app.ParsedConfig.Enrichment, app.Logger)
+	// If a specific Redis instance is not provided, use the same one as the rest of the service.
+	if app.ParsedConfig.Enrichment.Cache == nil {
+		app.ParsedConfig.Enrichment.Cache = &enriching.Cache{RedisOptions: app.ParsedConfig.Redis}
+	}
+
+	addr := fmt.Sprintf("%s:%d", app.ParsedConfig.Redis.Host, app.ParsedConfig.Redis.Port)
+	if len(app.ParsedConfig.Redis.Addrs) > 0 {
+		addr = app.ParsedConfig.Redis.Addrs[0]
+	}
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: app.ParsedConfig.Redis.Password,
+	})
+
+	enrichCache := enriching.NewEnricherCache(app.Logger, redisClient)
+	enricher := enriching.NewEnricher(app.ParsedConfig.Enrichment, app.Logger, enrichCache)
 	app.Enricher = enriching.NewInstrumentedEnricher(enricher, app.DDStatsD)
 }
 
