@@ -13,21 +13,21 @@ import (
 // cacheKeyFormat is {tenantID}:{leaderboardID}:{memberID}
 const cacheKeyFormat = "leaderboards-enrich-caching:%s:%s:%s"
 
-type enricherCache struct {
+type enricherRedisCache struct {
 	redis *redis.Client
 }
 
-var _ enriching.EnricherCache = &enricherCache{}
+var _ enriching.EnricherCache = &enricherRedisCache{}
 
-func NewEnricherCache(
+func NewEnricherRedisCache(
 	redis *redis.Client,
 ) enriching.EnricherCache {
-	return &enricherCache{
+	return &enricherRedisCache{
 		redis: redis,
 	}
 }
 
-func (e *enricherCache) Get(
+func (e *enricherRedisCache) Get(
 	ctx context.Context,
 	tenantID,
 	leaderboardID string,
@@ -58,7 +58,7 @@ func (e *enricherCache) Get(
 	return dataMap, true, nil
 }
 
-func (e *enricherCache) Set(
+func (e *enricherRedisCache) Set(
 	ctx context.Context,
 	tenantID,
 	leaderboardID string,

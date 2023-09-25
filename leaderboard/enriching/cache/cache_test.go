@@ -50,7 +50,7 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetErr(errors.New("some error"))
 
-		cache := NewEnricherCache(redis)
+		cache := NewEnricherRedisCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(res).To(BeNil())
@@ -75,7 +75,7 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetVal([]interface{}{nil, nil})
 
-		cache := NewEnricherCache(redis)
+		cache := NewEnricherRedisCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(res).To(BeNil())
@@ -104,7 +104,7 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetVal(mgetExpectedResult)
 
-		cache := NewEnricherCache(redis)
+		cache := NewEnricherRedisCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(res).To(BeNil())
@@ -133,7 +133,7 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetVal(mgetExpectedResult)
 
-		cache := NewEnricherCache(redis)
+		cache := NewEnricherRedisCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		expectedResult := map[string]map[string]string{
@@ -158,7 +158,7 @@ var _ = Describe("Ericher cacheConfig Set tests", func() {
 	It("should set the data in redis", func() {
 		redis := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 
-		cache := NewEnricherCache(redis)
+		cache := NewEnricherRedisCache(redis)
 		members := []*model.Member{
 			{
 				PublicID: "member1",

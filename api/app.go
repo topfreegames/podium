@@ -232,7 +232,7 @@ func (app *App) configureEnrichment() {
 		Password: app.ParsedConfig.Enrichment.Cache.Password,
 	})
 
-	enrichCache := enrichercache.NewEnricherCache(redisClient)
+	enrichCache := enrichercache.NewEnricherRedisCache(redisClient)
 	enricher := enriching.NewEnricher(
 		enriching.WithLogger(app.Logger),
 		enriching.WithWebhookUrls(app.ParsedConfig.Enrichment.WebhookUrls),
