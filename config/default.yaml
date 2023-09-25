@@ -35,7 +35,10 @@ extensions:
 
 enrichment:
   webhook_urls:
-  ttl: 24h
+  cache:
+    ttl: 24h
+    addrs: "localhost:6739"
+    username: ""
   webhook_timeout: 500ms
   cloud_save:
     url:

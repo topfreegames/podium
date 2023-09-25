@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	mock_enriching "github.com/topfreegames/podium/leaderboard/v2/mocks"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
-	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 )
@@ -32,7 +31,8 @@ var _ = Describe("Enricher tests", func() {
 	It("should not enrich if no webhook url is configured and cloud save service is disabled", func() {
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 
-		enrich := NewEnricher(zap.NewNop(), cache,
+		enrich := NewEnricher(
+			cache,
 			WithCloudSaveDisabled(map[string]bool{tenantID: true}),
 		)
 
@@ -62,7 +62,10 @@ var _ = Describe("Enricher tests", func() {
 		})
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache, WithCloudSaveUrl(server.URL))
+		enrich := NewEnricher(
+			cache,
+			WithCloudSaveUrl(server.URL),
+		)
 
 		members := []*model.Member{
 			{
@@ -90,7 +93,10 @@ var _ = Describe("Enricher tests", func() {
 		})
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache, WithCloudSaveUrl(server.URL))
+		enrich := NewEnricher(
+			cache,
+			WithCloudSaveUrl(server.URL),
+		)
 
 		members := []*model.Member{
 			{
@@ -118,7 +124,10 @@ var _ = Describe("Enricher tests", func() {
 		})
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache, WithCloudSaveUrl(server.URL))
+		enrich := NewEnricher(
+			cache,
+			WithCloudSaveUrl(server.URL),
+		)
 
 		members := []*model.Member{
 			{
@@ -155,7 +164,7 @@ var _ = Describe("Enricher tests", func() {
 		})
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache,
+		enrich := NewEnricher(cache,
 			WithWebhookUrls(map[string]string{
 				tenantID: server.URL,
 			}),
@@ -187,7 +196,8 @@ var _ = Describe("Enricher tests", func() {
 		})
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache,
+		enrich := NewEnricher(
+			cache,
 			WithWebhookUrls(map[string]string{
 				tenantID: server.URL,
 			}),
@@ -217,7 +227,8 @@ var _ = Describe("Enricher tests", func() {
 		})
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache,
+		enrich := NewEnricher(
+			cache,
 			WithWebhookUrls(map[string]string{
 				tenantID: server.URL,
 			}),
@@ -254,7 +265,7 @@ var _ = Describe("Enricher tests", func() {
 
 	It("should return cached data if all members are cached", func() {
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache)
+		enrich := NewEnricher(cache)
 
 		members := []*model.Member{
 			{
@@ -293,7 +304,7 @@ var _ = Describe("Enricher tests", func() {
 		})
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(zap.NewNop(), cache,
+		enrich := NewEnricher(cache,
 			WithWebhookUrls(map[string]string{
 				tenantID: server.URL,
 			}),
