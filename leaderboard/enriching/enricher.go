@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/topfreegames/podium/leaderboard/v2/enriching/cloud-save"
 	podium_leaderboard_webhooks_v1 "github.com/topfreegames/podium/leaderboard/v2/enriching/proto/webhook/v1"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
 	"go.uber.org/zap"
@@ -176,7 +177,7 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 		ids[i] = m.PublicID
 	}
 
-	request := CloudSaveGetProfilesRequest{
+	request := cloud_save.CloudSaveGetProfilesRequest{
 		TenantID: tenantID,
 		IDs:      ids,
 	}
@@ -209,7 +210,7 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 		return nil, fmt.Errorf("cloud save returned %s response: %w", raw.Status, ErrEnrichmentCall)
 	}
 
-	res := &CloudSaveGetProfilesResponse{}
+	res := &cloud_save.CloudSaveGetProfilesResponse{}
 	if err := json.NewDecoder(raw.Body).Decode(res); err != nil {
 		return nil, fmt.Errorf("could not unmarshal cloud save response: %w", errors.Join(ErrEnrichmentCall, err))
 	}

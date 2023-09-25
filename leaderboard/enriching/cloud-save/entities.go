@@ -1,4 +1,4 @@
-package enriching
+package cloud_save
 
 type CloudSaveGetProfilesRequest struct {
 	TenantID string   `json:"tenant_id"`
