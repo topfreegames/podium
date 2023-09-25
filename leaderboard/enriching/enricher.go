@@ -56,6 +56,12 @@ func (e *enricherImpl) Enrich(
 		return members, nil
 	}
 
+	l := e.logger.With(
+		zap.String("method", "Enrich"),
+		zap.String("tenantID", tenantID),
+		zap.String("leaderboardID", leaderboardID),
+	)
+
 	tenantUrl, webHookExists := e.config.webhookUrls[tenantID]
 	cloudSaveDisabled := e.config.cloudSave.disabled[tenantID]
 
@@ -67,7 +73,8 @@ func (e *enricherImpl) Enrich(
 		members, err := e.enrichWithWebhook(ctx, tenantID, leaderboardID, members)
 
 		if err != nil {
-			return nil, err
+			l.Error("could not enrich with webhook", zap.Error(err))
+			return nil, fmt.Errorf("could not enrich with webhook: %w", err)
 		}
 
 		return members, nil
@@ -76,24 +83,29 @@ func (e *enricherImpl) Enrich(
 		members, err := e.enrichWithCloudSave(ctx, tenantID, members)
 
 		if err != nil {
-			return nil, err
+			l.Error("could not enrich with cloud save", zap.Error(err))
+			return nil, fmt.Errorf("could not enrich with cloud save: %w", err)
 		}
 
 		return members, nil
 	}
+
+	l.Debug(fmt.Sprintf("no webhook configured for tentantID '%s' and cloud save disabled. Skipping enrichment.", tenantID))
 
 	return members, nil
 }
 
 func (e *enricherImpl) enrichWithWebhook(
 	ctx context.Context,
-	tenantID,
+	url,
 	leaderboardID string,
 	members []*model.Member,
 ) ([]*model.Member, error) {
-	e.logger.Debug(fmt.Sprintf("calling webhook for tenantID '%s'.", tenantID))
-
-	tenantUrl := e.config.webhookUrls[tenantID]
+	l := e.logger.With(
+		zap.String("url", url),
+		zap.String("leaderboardID", leaderboardID),
+		zap.String("method", "enrichWithWebhook"),
+	)
 
 	body := membersModelToProto(leaderboardID, members)
 	jsonData, err := json.Marshal(podium_leaderboard_webhooks_v1.EnrichLeaderboardsRequest{Members: body})
@@ -101,7 +113,7 @@ func (e *enricherImpl) enrichWithWebhook(
 		return nil, fmt.Errorf("could not marshal request: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
-	webhookUrl, err := buildUrl(tenantUrl, enrichWebhookEndpoint)
+	webhookUrl, err := buildUrl(url, enrichWebhookEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("could not build webhook URL: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
@@ -114,7 +126,7 @@ func (e *enricherImpl) enrichWithWebhook(
 
 	req.Header.Set("Content-Type", "application/json")
 
-	e.logger.Debug(fmt.Sprintf("calling enrichment webhook '%s' for tenantID '%s'", webhookUrl, tenantID))
+	l.Debug(fmt.Sprintf("calling enrichment webhook '%s'", webhookUrl))
 	resp, err := e.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("could not complete request to webhook: %w", errors.Join(err, ErrEnrichmentCall))
@@ -145,6 +157,11 @@ func (e *enricherImpl) enrichWithWebhook(
 }
 
 func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string, members []*model.Member) ([]*model.Member, error) {
+	l := e.logger.With(
+		zap.String("method", "enrichWithCloudSave"),
+		zap.String("tenantID", tenantID),
+	)
+
 	if e.config.cloudSave.disabled[tenantID] {
 		e.logger.Debug(fmt.Sprintf("cloud save enrich disabled for tenant %s. Skipping enrichment.", tenantID))
 		return members, nil
@@ -155,7 +172,7 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 		return members, nil
 	}
 
-	e.logger.Debug(fmt.Sprintf("calling cloud save for tenantID '%s'", tenantID))
+	l.Debug(fmt.Sprintf("calling cloud save for tenantID '%s'", tenantID))
 
 	ids := make([]string, len(members))
 	for i, m := range members {
