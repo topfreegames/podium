@@ -13,6 +13,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	enrichercache "github.com/topfreegames/podium/leaderboard/v2/enriching/cache"
 	"net"
 	"net/http"
 	"os"
@@ -231,16 +232,26 @@ func (app *App) configureEnrichment() {
 		Password: app.ParsedConfig.Enrichment.Cache.Password,
 	})
 
-	enrichCache := enriching.NewEnricherCache(app.Logger, redisClient)
+	enrichCache := enrichercache.NewEnricherCache(redisClient)
 	enricher := enriching.NewEnricher(
-		enrichCache,
 		enriching.WithLogger(app.Logger),
 		enriching.WithWebhookUrls(app.ParsedConfig.Enrichment.WebhookUrls),
 		enriching.WithWebhookTimeout(app.ParsedConfig.Enrichment.WebhookTimeout),
 		enriching.WithCloudSaveUrl(app.ParsedConfig.Enrichment.CloudSave.Url),
 		enriching.WithCloudSaveDisabled(app.ParsedConfig.Enrichment.CloudSave.Disabled),
 	)
-	app.Enricher = enriching.NewInstrumentedEnricher(enricher, app.DDStatsD)
+	wrapped := enriching.NewInstrumentedEnricher(enricher, app.DDStatsD)
+
+	if !app.ParsedConfig.Enrichment.Cache.Disabled {
+		wrapped = enrichercache.NewCachedEnricher(
+			enrichCache,
+			enricher,
+			enrichercache.WithLogger(app.Logger),
+			enrichercache.WithTTL(app.ParsedConfig.Enrichment.Cache.TTL),
+		)
+	}
+
+	app.Enricher = wrapped
 }
 
 // OnErrorHandler handles panics

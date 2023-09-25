@@ -21,12 +21,10 @@ type enricherImpl struct {
 	config enrichmentConfig
 	logger *zap.Logger
 	client *http.Client
-	cache  EnricherCache
 }
 
 // NewEnricher returns a new Enricher implementation.
 func NewEnricher(
-	cache EnricherCache,
 	options ...EnricherOptions,
 ) Enricher {
 	config := newDefaultEnrichConfig()
@@ -36,7 +34,6 @@ func NewEnricher(
 		client: &http.Client{
 			Timeout: config.webhookTimeout,
 		},
-		cache: cache,
 	}
 
 	for _, opt := range options {
@@ -59,22 +56,6 @@ func (e *enricherImpl) Enrich(
 		return members, nil
 	}
 
-	cached, hit, err := e.cache.Get(ctx, tenantID, leaderboardID, members)
-	if err != nil {
-		e.logger.Error("could not get cached enrichment data", zap.Error(err))
-	}
-
-	if hit {
-		e.logger.Debug("returning cached enrich data")
-		for _, m := range members {
-			if metadata, exists := cached[m.PublicID]; exists {
-				m.Metadata = metadata
-			}
-		}
-
-		return members, nil
-	}
-
 	tenantUrl, webHookExists := e.config.webhookUrls[tenantID]
 	cloudSaveDisabled := e.config.cloudSave.disabled[tenantID]
 
@@ -83,21 +64,23 @@ func (e *enricherImpl) Enrich(
 	}
 
 	if webHookExists && tenantUrl != "" {
-		members, err = e.enrichWithWebhook(ctx, tenantID, leaderboardID, members)
+		members, err := e.enrichWithWebhook(ctx, tenantID, leaderboardID, members)
 
 		if err != nil {
 			return nil, err
 		}
+
+		return members, nil
 	} else if !cloudSaveDisabled {
 		e.logger.Debug(fmt.Sprintf("no webhook configured for tentantID '%s'. will call Cloud Save.", tenantID))
-		members, err = e.enrichWithCloudSave(ctx, tenantID, members)
+		members, err := e.enrichWithCloudSave(ctx, tenantID, members)
 
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	e.cache.Set(ctx, tenantID, leaderboardID, members, e.config.cache.ttl)
+		return members, nil
+	}
 
 	return members, nil
 }

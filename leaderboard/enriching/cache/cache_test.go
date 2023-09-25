@@ -1,4 +1,4 @@
-package enriching
+package cache
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
-	"go.uber.org/zap"
 )
 
 var _ = Describe("Members array to keys array test", func() {
@@ -34,7 +33,7 @@ var _ = Describe("Members array to keys array test", func() {
 	})
 })
 
-var _ = Describe("Enricher cache Get tests", func() {
+var _ = Describe("Enricher cacheConfig Get tests", func() {
 	tenantID := "tenantID"
 	leaderboardID := "leaderboardID"
 
@@ -51,7 +50,7 @@ var _ = Describe("Enricher cache Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetErr(errors.New("some error"))
 
-		cache := NewEnricherCache(zap.NewNop(), redis)
+		cache := NewEnricherCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(res).To(BeNil())
@@ -76,7 +75,7 @@ var _ = Describe("Enricher cache Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetVal([]interface{}{nil, nil})
 
-		cache := NewEnricherCache(zap.NewNop(), redis)
+		cache := NewEnricherCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(res).To(BeNil())
@@ -105,7 +104,7 @@ var _ = Describe("Enricher cache Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetVal(mgetExpectedResult)
 
-		cache := NewEnricherCache(zap.NewNop(), redis)
+		cache := NewEnricherCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(res).To(BeNil())
@@ -134,7 +133,7 @@ var _ = Describe("Enricher cache Get tests", func() {
 			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
 		).SetVal(mgetExpectedResult)
 
-		cache := NewEnricherCache(zap.NewNop(), redis)
+		cache := NewEnricherCache(redis)
 		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
 
 		expectedResult := map[string]map[string]string{
@@ -152,14 +151,14 @@ var _ = Describe("Enricher cache Get tests", func() {
 	})
 })
 
-var _ = Describe("Ericher cache Set tests", func() {
+var _ = Describe("Ericher cacheConfig Set tests", func() {
 	tenantID := "tenantID"
 	leaderboardID := "leaderboardID"
 
 	It("should set the data in redis", func() {
 		redis := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 
-		cache := NewEnricherCache(zap.NewNop(), redis)
+		cache := NewEnricherCache(redis)
 		members := []*model.Member{
 			{
 				PublicID: "member1",

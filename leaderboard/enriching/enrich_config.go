@@ -8,29 +8,22 @@ import (
 type (
 	enrichmentConfig struct {
 		// CloudSaveURL is the URL to call the Cloud Save service.
-		cloudSave cloudSaveConfig `mapstructure:"cloud_save"`
+		cloudSave cloudSaveConfig
 
 		// WebhookUrls contains the necessary parameters to call a webhook for a given game.
 		// The key should be the game tenantID.
-		webhookUrls map[string]string `mapstructure:"webhook_urls"`
+		webhookUrls map[string]string
 
 		// WebhookTimeout is the timeout for the webhook call.
-		webhookTimeout time.Duration `mapstructure:"webhook_timeout"`
-
-		cache *cache `mapstructure:"cache"`
-	}
-
-	cache struct {
-		// TTL is the time to live for the cached data.
-		ttl time.Duration `mapstructure:"ttl"`
+		webhookTimeout time.Duration
 	}
 
 	cloudSaveConfig struct {
 		// Enabled indicates whether the Cloud Save service should be used for enrichment.
-		disabled map[string]bool `mapstructure:"disabled"`
+		disabled map[string]bool
 
 		// URL is the URL to call the Cloud Save service.
-		url string `mapstructure:"url"`
+		url string
 	}
 )
 
@@ -41,9 +34,6 @@ func newDefaultEnrichConfig() enrichmentConfig {
 		},
 		webhookUrls:    map[string]string{},
 		webhookTimeout: 500 * time.Millisecond,
-		cache: &cache{
-			ttl: 24 * time.Hour,
-		},
 	}
 }
 

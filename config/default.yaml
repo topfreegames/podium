@@ -36,6 +36,7 @@ extensions:
 enrichment:
   webhook_urls:
   cache:
+    disabled: false
     ttl: 24h
     addrs: "localhost:6739"
     username: ""

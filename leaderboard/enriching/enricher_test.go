@@ -32,7 +32,6 @@ var _ = Describe("Enricher tests", func() {
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 
 		enrich := NewEnricher(
-			cache,
 			WithCloudSaveDisabled(map[string]bool{tenantID: true}),
 		)
 
@@ -61,9 +60,7 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{}"))
 		})
 
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 		enrich := NewEnricher(
-			cache,
 			WithCloudSaveUrl(server.URL),
 		)
 
@@ -75,10 +72,6 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID2",
 			},
 		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(nil, false, nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
@@ -92,9 +85,7 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("invalid"))
 		})
 
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 		enrich := NewEnricher(
-			cache,
 			WithCloudSaveUrl(server.URL),
 		)
 
@@ -106,10 +97,6 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID2",
 			},
 		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(nil, false, nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
@@ -123,9 +110,7 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{\"documents\": [{\"accountId\": \"publicID\", \"data\": {\"key\": \"value\"}}]}"))
 		})
 
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 		enrich := NewEnricher(
-			cache,
 			WithCloudSaveUrl(server.URL),
 		)
 
@@ -134,9 +119,6 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID",
 			},
 		}
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(nil, false, nil)
 
 		expectedResult := []*model.Member{
 			{
@@ -146,10 +128,6 @@ var _ = Describe("Enricher tests", func() {
 				},
 			},
 		}
-
-		cache.EXPECT().
-			Set(gomock.Any(), tenantID, leaderboardID, expectedResult, gomock.Any()).
-			Return(nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
@@ -163,8 +141,7 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{}"))
 		})
 
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(cache,
+		enrich := NewEnricher(
 			WithWebhookUrls(map[string]string{
 				tenantID: server.URL,
 			}),
@@ -178,10 +155,6 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID2",
 			},
 		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(nil, false, nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
@@ -195,9 +168,7 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("invalid"))
 		})
 
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 		enrich := NewEnricher(
-			cache,
 			WithWebhookUrls(map[string]string{
 				tenantID: server.URL,
 			}),
@@ -208,151 +179,12 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID",
 			},
 		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(nil, false, nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError(ErrEnrichmentCall))
 		Expect(res).To(BeNil())
-	})
-
-	It("should return members with metadata if call succeeds and update cache", func() {
-		mux.HandleFunc(enrichWebhookEndpoint, func(writer http.ResponseWriter, _ *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-			writer.Write([]byte("{\"members\": [{ \"id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }]}"))
-		})
-
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(
-			cache,
-			WithWebhookUrls(map[string]string{
-				tenantID: server.URL,
-			}),
-		)
-
-		members := []*model.Member{
-			{
-				PublicID: "publicID",
-			},
-		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(nil, false, nil)
-
-		expectedResult := []*model.Member{
-			{
-				PublicID: "publicID",
-				Metadata: map[string]string{
-					"key": "value",
-				},
-			},
-		}
-
-		cache.EXPECT().
-			Set(gomock.Any(), tenantID, leaderboardID, expectedResult, gomock.Any()).
-			Return(nil)
-
-		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(res).To(Equal(expectedResult))
-	})
-
-	It("should return cached data if all members are cached", func() {
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(cache)
-
-		members := []*model.Member{
-			{
-				PublicID: "publicID",
-			},
-		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(
-				map[string]map[string]string{
-					"publicID": {
-						"key": "value",
-					},
-				},
-				true, nil)
-
-		expectedResult := []*model.Member{
-			{
-				PublicID: "publicID",
-				Metadata: map[string]string{
-					"key": "value",
-				},
-			},
-		}
-
-		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(res).To(Equal(expectedResult))
-	})
-
-	It("should ignore cache if one or more members are not cached", func() {
-		mux.HandleFunc(enrichWebhookEndpoint, func(writer http.ResponseWriter, _ *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-			writer.Write([]byte("{\"members\": [{ \"id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }, { \"id\": \"publicID2\", \"metadata\": { \"key2\": \"value2\" } }]}"))
-		})
-
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(cache,
-			WithWebhookUrls(map[string]string{
-				tenantID: server.URL,
-			}),
-		)
-
-		members := []*model.Member{
-			{
-				PublicID: "publicID",
-			},
-			{
-				PublicID: "publicID2",
-			},
-		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(map[string]map[string]string{
-				"publicID": {
-					"key": "value",
-				},
-				"publicID2": {
-					"key2": "value2",
-				},
-			}, true, nil)
-
-		expectedResult := []*model.Member{
-			{
-				PublicID: "publicID",
-				Metadata: map[string]string{
-					"key": "value",
-				},
-			},
-			{
-				PublicID: "publicID2",
-				Metadata: map[string]string{
-					"key2": "value2",
-				},
-			},
-		}
-
-		cache.EXPECT().
-			Set(gomock.Any(), tenantID, leaderboardID, expectedResult, gomock.Any()).
-			Return(nil)
-
-		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(res).To(Equal(expectedResult))
 	})
 })
 

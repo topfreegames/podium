@@ -40,6 +40,7 @@ enrichment:
     dummy_tenant_id: "localhost:8080/"
   webhook_timeout: 500ms
   cache:
+    disabled: false
     ttl: 24h
     addrs: "localhost:6739"
     username: ""
