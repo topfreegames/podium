@@ -220,21 +220,26 @@ func (app *App) loadConfiguration() error {
 func (app *App) configureEnrichment() {
 	// If a specific Redis instance is not provided, use the same one as the rest of the service.
 	if app.ParsedConfig.Enrichment.Cache == nil {
-		app.ParsedConfig.Enrichment.Cache = &enriching.Cache{RedisOptions: app.ParsedConfig.Redis}
-	}
+		host := app.Config.GetString("redis.host")
+		port := app.Config.GetInt("redis.port")
 
-	addr := fmt.Sprintf("%s:%d", app.ParsedConfig.Redis.Host, app.ParsedConfig.Redis.Port)
-	if len(app.ParsedConfig.Redis.Addrs) > 0 {
-		addr = app.ParsedConfig.Redis.Addrs[0]
+		app.ParsedConfig.Enrichment.Cache = &config.Cache{Addr: fmt.Sprintf("%s:%d", host, port)}
 	}
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: app.ParsedConfig.Redis.Password,
+		Addr:     app.ParsedConfig.Enrichment.Cache.Addr,
+		Password: app.ParsedConfig.Enrichment.Cache.Password,
 	})
 
 	enrichCache := enriching.NewEnricherCache(app.Logger, redisClient)
-	enricher := enriching.NewEnricher(app.ParsedConfig.Enrichment, app.Logger, enrichCache)
+	enricher := enriching.NewEnricher(
+		enrichCache,
+		enriching.WithLogger(app.Logger),
+		enriching.WithWebhookUrls(app.ParsedConfig.Enrichment.WebhookUrls),
+		enriching.WithWebhookTimeout(app.ParsedConfig.Enrichment.WebhookTimeout),
+		enriching.WithCloudSaveUrl(app.ParsedConfig.Enrichment.CloudSave.Url),
+		enriching.WithCloudSaveDisabled(app.ParsedConfig.Enrichment.CloudSave.Disabled),
+	)
 	app.Enricher = enriching.NewInstrumentedEnricher(enricher, app.DDStatsD)
 }
 

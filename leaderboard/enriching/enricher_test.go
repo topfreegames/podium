@@ -30,19 +30,12 @@ var _ = Describe("Enricher tests", func() {
 	tenantID := "tenantID"
 
 	It("should not enrich if no webhook url is configured and cloud save service is disabled", func() {
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{
-				Disabled: map[string]bool{
-					tenantID: true,
-				},
-			},
-			Cache: &Cache{},
-		}
-
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache,
+			WithCloudSaveDisabled(map[string]bool{tenantID: true}),
+		)
+
 		members := []*model.Member{
 			{
 				PublicID: "publicID",
@@ -68,16 +61,8 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{}"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{
-				Url:      server.URL,
-				Disabled: map[string]bool{},
-			},
-		}
-
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache, WithCloudSaveUrl(server.URL))
 
 		members := []*model.Member{
 			{
@@ -104,15 +89,8 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("invalid"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{Url: server.URL,
-				Disabled: map[string]bool{},
-			},
-		}
-
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache, WithCloudSaveUrl(server.URL))
 
 		members := []*model.Member{
 			{
@@ -139,16 +117,8 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{\"documents\": [{\"accountId\": \"publicID\", \"data\": {\"key\": \"value\"}}]}"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{Url: server.URL,
-				Disabled: map[string]bool{},
-			},
-			Cache: &Cache{},
-		}
-
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache, WithCloudSaveUrl(server.URL))
 
 		members := []*model.Member{
 			{
@@ -184,14 +154,12 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{}"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{
-				tenantID: server.URL,
-			},
-		}
-
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache,
+			WithWebhookUrls(map[string]string{
+				tenantID: server.URL,
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -217,14 +185,13 @@ var _ = Describe("Enricher tests", func() {
 			writer.WriteHeader(http.StatusBadRequest)
 			writer.Write([]byte("invalid"))
 		})
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{
-				tenantID: server.URL,
-			},
-		}
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache,
+			WithWebhookUrls(map[string]string{
+				tenantID: server.URL,
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -248,15 +215,13 @@ var _ = Describe("Enricher tests", func() {
 			writer.WriteHeader(http.StatusOK)
 			writer.Write([]byte("{\"members\": [{ \"id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }]}"))
 		})
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{
-				tenantID: server.URL,
-			},
-			Cache: &Cache{},
-		}
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache,
+			WithWebhookUrls(map[string]string{
+				tenantID: server.URL,
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -288,12 +253,8 @@ var _ = Describe("Enricher tests", func() {
 	})
 
 	It("should return cached data if all members are cached", func() {
-		config := EnrichmentConfig{
-			Cache: &Cache{},
-		}
-
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache)
 
 		members := []*model.Member{
 			{
@@ -330,15 +291,13 @@ var _ = Describe("Enricher tests", func() {
 			writer.WriteHeader(http.StatusOK)
 			writer.Write([]byte("{\"members\": [{ \"id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }, { \"id\": \"publicID2\", \"metadata\": { \"key2\": \"value2\" } }]}"))
 		})
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{
-				tenantID: server.URL,
-			},
-			Cache: &Cache{},
-		}
 
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
-		enrich := NewEnricher(config, zap.NewNop(), cache)
+		enrich := NewEnricher(zap.NewNop(), cache,
+			WithWebhookUrls(map[string]string{
+				tenantID: server.URL,
+			}),
+		)
 
 		members := []*model.Member{
 			{
