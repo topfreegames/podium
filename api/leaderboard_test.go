@@ -1136,7 +1136,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(app, "/l/testkey/members/member_50/around", "tenant-id", tenantID)
+			status, body := Get(app, "/l/testkey/members/member_50/around", api.TenantIDHeaderKey, tenantID)
 
 			Expect(status).To(Equal(http.StatusOK), body)
 
@@ -1224,7 +1224,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(app, "/l/testkey/members/member_50/around", "tenant-id", tenantID)
+			status, body := Get(app, "/l/testkey/members/member_50/around", api.TenantIDHeaderKey, tenantID)
 
 			Expect(status).To(Equal(http.StatusInternalServerError), body)
 		})
@@ -1574,7 +1574,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			}
 
 			score := 50
-			status, body := Get(app, fmt.Sprintf("/l/testkey/scores/%d/around", score), "tenant-id", tenantID)
+			status, body := Get(app, fmt.Sprintf("/l/testkey/scores/%d/around", score), api.TenantIDHeaderKey, tenantID)
 			Expect(status).To(Equal(http.StatusOK), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
@@ -1655,7 +1655,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(app, "/l/testkey/members/member_50/around", "tenant-id", tenantID)
+			status, body := Get(app, "/l/testkey/members/member_50/around", api.TenantIDHeaderKey, tenantID)
 
 			Expect(status).To(Equal(http.StatusInternalServerError), body)
 		})
@@ -1973,7 +1973,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(app, "/l/testkey/top/1", "tenant-id", tenantID)
+			status, body := Get(app, "/l/testkey/top/1", api.TenantIDHeaderKey, tenantID)
 			Expect(status).To(Equal(http.StatusOK), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
@@ -2050,7 +2050,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(app, "/l/testkey/top/1", "tenant-id", tenantID)
+			status, body := Get(app, "/l/testkey/top/1", api.TenantIDHeaderKey, tenantID)
 			Expect(status).To(Equal(http.StatusInternalServerError), body)
 			var result map[string]interface{}
 			json.Unmarshal([]byte(body), &result)
@@ -2303,7 +2303,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(app, fmt.Sprintf("/l/%s/top-percent/10", leaderboardID), "tenant-id", tenantID)
+			status, body := Get(app, fmt.Sprintf("/l/%s/top-percent/10", leaderboardID), api.TenantIDHeaderKey, tenantID)
 			Expect(status).To(Equal(http.StatusOK), body)
 
 			var result map[string]interface{}
@@ -2375,7 +2375,7 @@ var _ = Describe("Leaderboard Handler", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			status, body := Get(app, fmt.Sprintf("/l/%s/top-percent/10", leaderboardID), "tenant-id", tenantID)
+			status, body := Get(app, fmt.Sprintf("/l/%s/top-percent/10", leaderboardID), api.TenantIDHeaderKey, tenantID)
 
 			Expect(status).To(Equal(http.StatusInternalServerError), body)
 		})
@@ -2746,7 +2746,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			status, body := Get(
 				app,
 				fmt.Sprintf("/l/%s/members?ids=member_10,member_20,member_30", leaderboardID),
-				"tenant-id", tenantID,
+				api.TenantIDHeaderKey, tenantID,
 			)
 			Expect(status).To(Equal(http.StatusOK), body)
 
@@ -2830,7 +2830,7 @@ var _ = Describe("Leaderboard Handler", func() {
 			status, body := Get(
 				app,
 				fmt.Sprintf("/l/%s/members?ids=member_10,member_20,member_30", leaderboardID),
-				"tenant-id", tenantID,
+				api.TenantIDHeaderKey, tenantID,
 			)
 			Expect(status).To(Equal(http.StatusInternalServerError), body)
 		})

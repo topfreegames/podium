@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	notFoundError   = "Could not find data for member"
-	defaultPageSize = 20
+	notFoundError     = "Could not find data for member"
+	defaultPageSize   = 20
+	TenantIDHeaderKey = "wildlife-platform-tenant-id"
 )
 
 func validateBulkUpsertScoresRequest(req *api.BulkUpsertScoresRequest) error {
@@ -436,9 +437,9 @@ func (app *App) GetAroundMember(ctx context.Context, req *api.GetAroundMemberReq
 		return nil, err
 	}
 
-	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
-	if tenantID != nil {
-		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+	tenantID, ok := tryGetTenantIDFromHeader(ctx)
+	if ok {
+		members, err = app.Enricher.Enrich(ctx, tenantID, req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
@@ -500,9 +501,9 @@ func (app *App) GetAroundScore(ctx context.Context, req *api.GetAroundScoreReque
 		return nil, err
 	}
 
-	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
-	if tenantID != nil {
-		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+	tenantID, ok := tryGetTenantIDFromHeader(ctx)
+	if ok {
+		members, err = app.Enricher.Enrich(ctx, tenantID, req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
@@ -575,9 +576,9 @@ func (app *App) GetTopMembers(ctx context.Context, req *api.GetTopMembersRequest
 		return nil, err
 	}
 
-	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
-	if tenantID != nil {
-		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+	tenantID, ok := tryGetTenantIDFromHeader(ctx)
+	if ok {
+		members, err = app.Enricher.Enrich(ctx, tenantID, req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
@@ -629,9 +630,9 @@ func (app *App) GetTopPercentage(ctx context.Context, req *api.GetTopPercentageR
 		return nil, err
 	}
 
-	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
-	if tenantID != nil {
-		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+	tenantID, ok := tryGetTenantIDFromHeader(ctx)
+	if ok {
+		members, err = app.Enricher.Enrich(ctx, tenantID, req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 
@@ -711,9 +712,9 @@ func (app *App) GetMembers(ctx context.Context, req *api.GetMembersRequest) (*ap
 		}
 	}
 
-	tenantID := metadata.ValueFromIncomingContext(ctx, "tenant-id")
-	if tenantID != nil {
-		members, err = app.Enricher.Enrich(ctx, tenantID[0], req.LeaderboardId, members)
+	tenantID, ok := tryGetTenantIDFromHeader(ctx)
+	if ok {
+		members, err = app.Enricher.Enrich(ctx, tenantID, req.LeaderboardId, members)
 		if err != nil {
 			lg.Error("Enriching members failed.", zap.Error(err))
 			app.AddError()
@@ -815,4 +816,18 @@ func (app *App) RemoveLeaderboard(ctx context.Context, req *api.RemoveLeaderboar
 	}
 
 	return &api.RemoveLeaderboardResponse{Success: true}, nil
+}
+
+func tryGetTenantIDFromHeader(ctx context.Context) (string, bool) {
+	tenantID := metadata.ValueFromIncomingContext(ctx, TenantIDHeaderKey)
+	if len(tenantID) != 0 {
+		return tenantID[0], true
+	}
+
+	tenantID = metadata.ValueFromIncomingContext(ctx, "tenant-id") // Wrong key, but currently being used
+	if len(tenantID) != 0 {
+		return tenantID[0], true
+	}
+
+	return "", false
 }
