@@ -43,7 +43,7 @@ type (
 		// WebhookTimeout is the timeout for the webhook call.
 		WebhookTimeout time.Duration `mapstructure:"webhook_timeout"`
 
-		Cache *Cache `mapstructure:"cache"`
+		Cache Cache `mapstructure:"cache"`
 	}
 
 	Cache struct {

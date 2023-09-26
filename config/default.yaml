@@ -38,7 +38,7 @@ enrichment:
   cache:
     disabled: false
     ttl: 24h
-    addrs: "localhost:6739"
+    addrs: ""
     username: ""
   webhook_timeout: 500ms
   cloud_save:

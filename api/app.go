@@ -220,11 +220,15 @@ func (app *App) loadConfiguration() error {
 
 func (app *App) configureEnrichment() {
 	// If a specific Redis instance is not provided, use the same one as the rest of the service.
-	if app.ParsedConfig.Enrichment.Cache == nil {
+	if app.ParsedConfig.Enrichment.Cache.Addr == "" {
 		host := app.Config.GetString("redis.host")
 		port := app.Config.GetInt("redis.port")
+		password := app.Config.GetString("redis.password")
 
-		app.ParsedConfig.Enrichment.Cache = &config.Cache{Addr: fmt.Sprintf("%s:%d", host, port)}
+		app.ParsedConfig.Enrichment.Cache = config.Cache{
+			Addr:     fmt.Sprintf("%s:%d", host, port),
+			Password: password,
+		}
 	}
 
 	redisClient := redis.NewClient(&redis.Options{
