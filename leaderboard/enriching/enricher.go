@@ -164,11 +164,6 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 		zap.String("tenantID", tenantID),
 	)
 
-	if e.config.cloudSave.enabled[tenantID] {
-		e.logger.Debug(fmt.Sprintf("cloud save enrich enabled for tenant %s. Skipping enrichment.", tenantID))
-		return members, nil
-	}
-
 	if e.config.cloudSave.url == "" {
 		e.logger.Debug("cloud Save URL not configured. Skipping enrichment.")
 		return members, nil
