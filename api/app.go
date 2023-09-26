@@ -237,6 +237,8 @@ func (app *App) configureEnrichment() {
 	})
 
 	enrichCache := enrichercache.NewEnricherRedisCache(redisClient)
+	enrichCache = enrichercache.NewInstrumentedCache(enrichCache, app.DDStatsD)
+	
 	enricher := enriching.NewEnricher(
 		enriching.WithLogger(app.Logger),
 		enriching.WithWebhookUrls(app.ParsedConfig.Enrichment.WebhookUrls),
