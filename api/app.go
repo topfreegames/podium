@@ -235,6 +235,7 @@ func (app *App) configureEnrichment() {
 		})
 
 		enrichCache := enrichercache.NewEnricherRedisCache(redisClient)
+		enrichCache = enrichercache.NewInstrumentedCache(enrichCache, app.DDStatsD)
 		app.Enricher = enrichercache.NewCachedEnricher(
 			enrichCache,
 			app.Enricher,
