@@ -47,9 +47,6 @@ type (
 	}
 
 	Cache struct {
-		// Disabled indicates whether the cache should be used.
-		Disabled bool `mapstructure:"disabled"`
-
 		// Add is the address for the cache.
 		Addr string `mapstructure:"addr"`
 
@@ -61,8 +58,8 @@ type (
 	}
 
 	CloudSaveConfig struct {
-		// Enabled indicates whether the Cloud Save service should be used for enrichment.
-		Disabled map[string]bool `mapstructure:"disabled"`
+		// Enabled indicates whether the Cloud Save service should be used for enrichment for each tenant.
+		Enabled map[string]bool `mapstructure:"disabled"`
 
 		// URL is the URL to call the Cloud Save service.
 		Url string `mapstructure:"url"`

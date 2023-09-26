@@ -44,7 +44,7 @@ func NewEnricher(
 }
 
 // Enrich enriches the members list with some metadata.
-// By default, it will call the Cloud Save service, unless it's disabled for the tenantID or if there's a webhook for the tenantID.
+// By default, it will call the Cloud Save service, unless it's enabled for the tenantID or if there's a webhook for the tenantID.
 // If there's a webhook configured for the tenantID, it will be called instead.
 func (e *enricherImpl) Enrich(
 	ctx context.Context,
@@ -63,9 +63,9 @@ func (e *enricherImpl) Enrich(
 	)
 
 	tenantUrl, webHookExists := e.config.webhookUrls[tenantID]
-	cloudSaveDisabled := e.config.cloudSave.disabled[tenantID]
+	cloudSaveEnabled := e.config.cloudSave.enabled[tenantID]
 
-	if !webHookExists && cloudSaveDisabled {
+	if !webHookExists && !cloudSaveEnabled {
 		return members, nil
 	}
 
@@ -78,7 +78,9 @@ func (e *enricherImpl) Enrich(
 		}
 
 		return members, nil
-	} else if !cloudSaveDisabled {
+	}
+
+	if cloudSaveEnabled {
 		e.logger.Debug(fmt.Sprintf("no webhook configured for tentantID '%s'. will call Cloud Save.", tenantID))
 		members, err := e.enrichWithCloudSave(ctx, tenantID, members)
 
@@ -90,7 +92,7 @@ func (e *enricherImpl) Enrich(
 		return members, nil
 	}
 
-	l.Debug(fmt.Sprintf("no webhook configured for tentantID '%s' and cloud save disabled. Skipping enrichment.", tenantID))
+	l.Debug(fmt.Sprintf("no webhook configured for tentantID '%s' and cloud save enabled. Skipping enrichment.", tenantID))
 
 	return members, nil
 }
@@ -162,8 +164,8 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 		zap.String("tenantID", tenantID),
 	)
 
-	if e.config.cloudSave.disabled[tenantID] {
-		e.logger.Debug(fmt.Sprintf("cloud save enrich disabled for tenant %s. Skipping enrichment.", tenantID))
+	if e.config.cloudSave.enabled[tenantID] {
+		e.logger.Debug(fmt.Sprintf("cloud save enrich enabled for tenant %s. Skipping enrichment.", tenantID))
 		return members, nil
 	}
 
@@ -193,6 +195,8 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 	if err != nil {
 		return nil, fmt.Errorf("could not build cloud save url: %w", errors.Join(ErrEnrichmentInternal, err))
 	}
+
+	l.Debug(fmt.Sprintf("calling cloud save endpoint '%s'", url))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {

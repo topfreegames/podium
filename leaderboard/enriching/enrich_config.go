@@ -20,7 +20,7 @@ type (
 
 	cloudSaveConfig struct {
 		// Enabled indicates whether the Cloud Save service should be used for enrichment.
-		disabled map[string]bool
+		enabled map[string]bool
 
 		// URL is the URL to call the Cloud Save service.
 		url string
@@ -30,7 +30,7 @@ type (
 func newDefaultEnrichConfig() enrichmentConfig {
 	return enrichmentConfig{
 		cloudSave: cloudSaveConfig{
-			disabled: map[string]bool{},
+			enabled: map[string]bool{},
 		},
 		webhookUrls:    map[string]string{},
 		webhookTimeout: 500 * time.Millisecond,
@@ -60,10 +60,10 @@ func WithWebhookTimeout(timeout time.Duration) EnricherOptions {
 	}
 }
 
-// WithCloudSaveDisabled sets the map of disabled Cloud Save for each tenantID.
-func WithCloudSaveDisabled(disabled map[string]bool) EnricherOptions {
+// WithCloudSaveEnabled sets the map of enabled Cloud Save for each tenantID.
+func WithCloudSaveEnabled(enabled map[string]bool) EnricherOptions {
 	return func(impl *enricherImpl) {
-		impl.config.cloudSave.disabled = disabled
+		impl.config.cloudSave.enabled = enabled
 	}
 }
 

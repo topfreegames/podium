@@ -28,12 +28,10 @@ var _ = Describe("Enricher tests", func() {
 	leaderboardID := "leaderboardID"
 	tenantID := "tenantID"
 
-	It("should not enrich if no webhook url is configured and cloud save service is disabled", func() {
+	It("should not enrich if no webhook url is configured and cloud save service is not enabled", func() {
 		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 
-		enrich := NewEnricher(
-			WithCloudSaveDisabled(map[string]bool{tenantID: true}),
-		)
+		enrich := NewEnricher()
 
 		members := []*model.Member{
 			{
@@ -62,6 +60,9 @@ var _ = Describe("Enricher tests", func() {
 
 		enrich := NewEnricher(
 			WithCloudSaveUrl(server.URL),
+			WithCloudSaveEnabled(map[string]bool{
+				tenantID: true,
+			}),
 		)
 
 		members := []*model.Member{
@@ -87,6 +88,9 @@ var _ = Describe("Enricher tests", func() {
 
 		enrich := NewEnricher(
 			WithCloudSaveUrl(server.URL),
+			WithCloudSaveEnabled(map[string]bool{
+				tenantID: true,
+			}),
 		)
 
 		members := []*model.Member{
@@ -112,6 +116,9 @@ var _ = Describe("Enricher tests", func() {
 
 		enrich := NewEnricher(
 			WithCloudSaveUrl(server.URL),
+			WithCloudSaveEnabled(map[string]bool{
+				tenantID: true,
+			}),
 		)
 
 		members := []*model.Member{

@@ -219,43 +219,29 @@ func (app *App) loadConfiguration() error {
 }
 
 func (app *App) configureEnrichment() {
-	// If a specific Redis instance is not provided, use the same one as the rest of the service.
-	if app.ParsedConfig.Enrichment.Cache.Addr == "" {
-		host := app.Config.GetString("redis.host")
-		port := app.Config.GetInt("redis.port")
-		password := app.Config.GetString("redis.password")
-
-		app.ParsedConfig.Enrichment.Cache = config.Cache{
-			Addr:     fmt.Sprintf("%s:%d", host, port),
-			Password: password,
-		}
-	}
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     app.ParsedConfig.Enrichment.Cache.Addr,
-		Password: app.ParsedConfig.Enrichment.Cache.Password,
-	})
-
-	enrichCache := enrichercache.NewEnricherRedisCache(redisClient)
 	enricher := enriching.NewEnricher(
 		enriching.WithLogger(app.Logger),
 		enriching.WithWebhookUrls(app.ParsedConfig.Enrichment.WebhookUrls),
 		enriching.WithWebhookTimeout(app.ParsedConfig.Enrichment.WebhookTimeout),
 		enriching.WithCloudSaveUrl(app.ParsedConfig.Enrichment.CloudSave.Url),
-		enriching.WithCloudSaveDisabled(app.ParsedConfig.Enrichment.CloudSave.Disabled),
+		enriching.WithCloudSaveEnabled(app.ParsedConfig.Enrichment.CloudSave.Enabled),
 	)
-	wrapped := enriching.NewInstrumentedEnricher(enricher, app.DDStatsD)
+	app.Enricher = enriching.NewInstrumentedEnricher(enricher, app.DDStatsD)
 
-	if !app.ParsedConfig.Enrichment.Cache.Disabled {
-		wrapped = enrichercache.NewCachedEnricher(
+	if app.ParsedConfig.Enrichment.Cache.Addr != "" {
+		redisClient := redis.NewClient(&redis.Options{
+			Addr:     app.ParsedConfig.Enrichment.Cache.Addr,
+			Password: app.ParsedConfig.Enrichment.Cache.Password,
+		})
+
+		enrichCache := enrichercache.NewEnricherRedisCache(redisClient)
+		app.Enricher = enrichercache.NewCachedEnricher(
 			enrichCache,
-			enricher,
+			app.Enricher,
 			enrichercache.WithLogger(app.Logger),
 			enrichercache.WithTTL(app.ParsedConfig.Enrichment.Cache.TTL),
 		)
 	}
-
-	app.Enricher = wrapped
 }
 
 // OnErrorHandler handles panics
