@@ -2,10 +2,11 @@ package enriching
 
 import (
 	"context"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	mock_enriching "github.com/topfreegames/podium/leaderboard/v2/mocks"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
-	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 )
@@ -27,17 +28,11 @@ var _ = Describe("Enricher tests", func() {
 	leaderboardID := "leaderboardID"
 	tenantID := "tenantID"
 
-	It("should not enrich if no webhook url is configured and cloud save service is disabled", func() {
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{
-				Disabled: map[string]bool{
-					tenantID: true,
-				},
-			},
-		}
+	It("should not enrich if no webhook url is configured and cloud save service is not enabled", func() {
+		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 
-		enrich := NewEnricher(config, zap.NewNop())
+		enrich := NewEnricher()
+
 		members := []*model.Member{
 			{
 				PublicID: "publicID",
@@ -46,6 +41,10 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID2",
 			},
 		}
+
+		cache.EXPECT().
+			Get(gomock.Any(), tenantID, leaderboardID, members).
+			Return(nil, false, nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 
@@ -59,15 +58,12 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{}"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{
-				Url:      server.URL,
-				Disabled: map[string]bool{},
-			},
-		}
-
-		enrich := NewEnricher(config, zap.NewNop())
+		enrich := NewEnricher(
+			WithCloudSaveUrl(server.URL),
+			WithCloudSaveEnabled(map[string]bool{
+				tenantID: true,
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -90,14 +86,12 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("invalid"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{Url: server.URL,
-				Disabled: map[string]bool{},
-			},
-		}
-
-		enrich := NewEnricher(config, zap.NewNop())
+		enrich := NewEnricher(
+			WithCloudSaveUrl(server.URL),
+			WithCloudSaveEnabled(map[string]bool{
+				tenantID: true,
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -120,13 +114,12 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{\"documents\": [{\"accountId\": \"publicID\", \"data\": {\"key\": \"value\"}}]}"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{},
-			CloudSave: CloudSaveConfig{Url: server.URL,
-				Disabled: map[string]bool{}},
-		}
-
-		enrich := NewEnricher(config, zap.NewNop())
+		enrich := NewEnricher(
+			WithCloudSaveUrl(server.URL),
+			WithCloudSaveEnabled(map[string]bool{
+				tenantID: true,
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -155,13 +148,11 @@ var _ = Describe("Enricher tests", func() {
 			writer.Write([]byte("{}"))
 		})
 
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{
+		enrich := NewEnricher(
+			WithWebhookUrls(map[string]string{
 				tenantID: server.URL,
-			},
-		}
-
-		enrich := NewEnricher(config, zap.NewNop())
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -183,13 +174,12 @@ var _ = Describe("Enricher tests", func() {
 			writer.WriteHeader(http.StatusBadRequest)
 			writer.Write([]byte("invalid"))
 		})
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{
-				tenantID: server.URL,
-			},
-		}
 
-		enrich := NewEnricher(config, zap.NewNop())
+		enrich := NewEnricher(
+			WithWebhookUrls(map[string]string{
+				tenantID: server.URL,
+			}),
+		)
 
 		members := []*model.Member{
 			{
@@ -202,40 +192,6 @@ var _ = Describe("Enricher tests", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError(ErrEnrichmentCall))
 		Expect(res).To(BeNil())
-	})
-
-	It("should return members with metadata if call succeeds", func() {
-		mux.HandleFunc(enrichWebhookEndpoint, func(writer http.ResponseWriter, _ *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-			writer.Write([]byte("{\"members\": [{ \"id\": \"publicID\", \"metadata\": { \"key\": \"value\" } }]}"))
-		})
-		config := EnrichmentConfig{
-			WebhookUrls: map[string]string{
-				tenantID: server.URL,
-			},
-		}
-
-		enrich := NewEnricher(config, zap.NewNop())
-
-		members := []*model.Member{
-			{
-				PublicID: "publicID",
-			},
-		}
-
-		expectedResult := []*model.Member{
-			{
-				PublicID: "publicID",
-				Metadata: map[string]string{
-					"key": "value",
-				},
-			},
-		}
-
-		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(res).To(Equal(expectedResult))
 	})
 })
 

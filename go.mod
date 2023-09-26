@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/getsentry/raven-go v0.0.0-20170918144728-1452f6376ddb
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/gosuri/uiprogress v0.0.0-20160202012259-a9f819bfc744
@@ -13,7 +14,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/newrelic/go-agent v1.11.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.11.0
+	github.com/onsi/gomega v1.18.1
 	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e
 	github.com/opentracing-contrib/go-stdlib v1.0.0
 	github.com/opentracing/opentracing-go v1.2.0
@@ -45,7 +46,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-pg/pg v8.0.7+incompatible // indirect
 	github.com/go-redis/redis v6.13.2+incompatible // indirect
-	github.com/go-redis/redis/v8 v8.8.2 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uilive v0.0.0-20160202011846-efb88ccd0599 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -65,9 +65,6 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	go.opentelemetry.io/otel v0.19.0 // indirect
-	go.opentelemetry.io/otel/metric v0.19.0 // indirect
-	go.opentelemetry.io/otel/trace v0.19.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect

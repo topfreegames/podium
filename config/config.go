@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/podium/leaderboard/v2/enriching"
 )
 
 // GetDefaultConfig configure viper to use the config file
@@ -29,7 +29,40 @@ func GetDefaultConfig(configFile string) (*viper.Viper, error) {
 
 type (
 	PodiumConfig struct {
-		Enrichment enriching.EnrichmentConfig
+		Enrichment EnrichmentConfig
+	}
+
+	EnrichmentConfig struct {
+		// CloudSaveURL is the URL to call the Cloud Save service.
+		CloudSave CloudSaveConfig `mapstructure:"cloud_save"`
+
+		// WebhookUrls contains the necessary parameters to call a webhook for a given game.
+		// The key should be the game tenantID.
+		WebhookUrls map[string]string `mapstructure:"webhook_urls"`
+
+		// WebhookTimeout is the timeout for the webhook call.
+		WebhookTimeout time.Duration `mapstructure:"webhook_timeout"`
+
+		Cache Cache `mapstructure:"cache"`
+	}
+
+	Cache struct {
+		// Add is the address for the cache.
+		Addr string `mapstructure:"addr"`
+
+		// Password is the password for the cache.
+		Password string `mapstructure:"password"`
+
+		// TTL is the time to live for the cached data.
+		TTL time.Duration `mapstructure:"ttl"`
+	}
+
+	CloudSaveConfig struct {
+		// Enabled indicates whether the Cloud Save service should be used for enrichment for each tenant.
+		Enabled map[string]bool `mapstructure:"disabled"`
+
+		// URL is the URL to call the Cloud Save service.
+		Url string `mapstructure:"url"`
 	}
 )
 

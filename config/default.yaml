@@ -35,7 +35,11 @@ extensions:
 
 enrichment:
   webhook_urls:
+  cache:
+    ttl: 24h
+    addrs: ""
+    username: ""
   webhook_timeout: 500ms
   cloud_save:
     url:
-    disabled:
+    enabled:

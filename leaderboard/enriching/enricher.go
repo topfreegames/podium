@@ -6,72 +6,108 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
-
 	podium_leaderboard_webhooks_v1 "github.com/topfreegames/podium/leaderboard/v2/enriching/proto/webhook/v1"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
 	"go.uber.org/zap"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
 const enrichWebhookEndpoint = "/leaderboards/enrich"
 const cloudSaveEndpoint = "/get-public-documents/wildlife-platform-player-profile"
 
-type (
-	EnrichmentConfig struct {
-		// CloudSaveURL is the URL to call the Cloud Save service.
-		CloudSave CloudSaveConfig `mapstructure:"cloud_save"`
-
-		// WebhookUrls contains the necessary parameters to call a webhook for a given game.
-		// The key should be the game tenantID.
-		WebhookUrls map[string]string `mapstructure:"webhook_urls"`
-
-		// WebhookTimeout is the timeout for the webhook call.
-		WebhookTimeout time.Duration `mapstructure:"webhook_timeout,default=2s"`
-	}
-
-	CloudSaveConfig struct {
-		// Enabled indicates whether the Cloud Save service should be used for enrichment.
-		Disabled map[string]bool `mapstructure:"disabled"`
-
-		// URL is the URL to call the Cloud Save service.
-		Url string `mapstructure:"url"`
-	}
-)
-
 type enricherImpl struct {
-	config EnrichmentConfig
+	config enrichmentConfig
 	logger *zap.Logger
 	client *http.Client
 }
 
 // NewEnricher returns a new Enricher implementation.
-func NewEnricher(config EnrichmentConfig, logger *zap.Logger) Enricher {
-	return &enricherImpl{
+func NewEnricher(
+	options ...EnricherOptions,
+) Enricher {
+	config := newDefaultEnrichConfig()
+	e := &enricherImpl{
 		config: config,
-		logger: logger,
+		logger: zap.NewNop(),
 		client: &http.Client{
-			Timeout: config.WebhookTimeout,
+			Timeout: config.webhookTimeout,
 		},
 	}
+
+	for _, opt := range options {
+		opt(e)
+	}
+
+	return e
 }
 
-// Enrich enriches the members list with some metadata. By default, it will call the Cloud Save service.
-// If there's a webhook configured for the tenantID, it will call it instead.
-func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID string, members []*model.Member) ([]*model.Member, error) {
+// Enrich enriches the members list with some metadata.
+// By default, it will call the Cloud Save service, unless it's enabled for the tenantID or if there's a webhook for the tenantID.
+// If there's a webhook configured for the tenantID, it will be called instead.
+func (e *enricherImpl) Enrich(
+	ctx context.Context,
+	tenantID,
+	leaderboardID string,
+	members []*model.Member,
+) ([]*model.Member, error) {
 	if len(members) == 0 {
 		return members, nil
 	}
 
-	tenantUrl, exists := e.config.WebhookUrls[tenantID]
-	if !exists {
-		e.logger.Debug(fmt.Sprintf("no webhook configured for tentantID '%s'. will call Cloud Save.", tenantID))
-		return e.enrichWithCloudSave(ctx, tenantID, members)
+	l := e.logger.With(
+		zap.String("method", "Enrich"),
+		zap.String("tenantID", tenantID),
+		zap.String("leaderboardID", leaderboardID),
+	)
+
+	tenantUrl, webHookExists := e.config.webhookUrls[tenantID]
+	cloudSaveEnabled := e.config.cloudSave.enabled[tenantID]
+
+	if !webHookExists && !cloudSaveEnabled {
+		return members, nil
 	}
 
-	e.logger.Debug(fmt.Sprintf("calling webhook for tenantID '%s'.", tenantID))
+	if webHookExists && tenantUrl != "" {
+		members, err := e.enrichWithWebhook(ctx, tenantUrl, leaderboardID, members)
+
+		if err != nil {
+			l.Error("could not enrich with webhook", zap.Error(err))
+			return nil, fmt.Errorf("could not enrich with webhook: %w", err)
+		}
+
+		return members, nil
+	}
+
+	if cloudSaveEnabled {
+		e.logger.Debug(fmt.Sprintf("no webhook configured for tentantID '%s'. will call Cloud Save.", tenantID))
+		members, err := e.enrichWithCloudSave(ctx, tenantID, members)
+
+		if err != nil {
+			l.Error("could not enrich with cloud save", zap.Error(err))
+			return nil, fmt.Errorf("could not enrich with cloud save: %w", err)
+		}
+
+		return members, nil
+	}
+
+	l.Debug(fmt.Sprintf("no webhook configured for tentantID '%s' and cloud save enabled. Skipping enrichment.", tenantID))
+
+	return members, nil
+}
+
+func (e *enricherImpl) enrichWithWebhook(
+	ctx context.Context,
+	url,
+	leaderboardID string,
+	members []*model.Member,
+) ([]*model.Member, error) {
+	l := e.logger.With(
+		zap.String("url", url),
+		zap.String("leaderboardID", leaderboardID),
+		zap.String("method", "enrichWithWebhook"),
+	)
 
 	body := membersModelToProto(leaderboardID, members)
 	jsonData, err := json.Marshal(podium_leaderboard_webhooks_v1.EnrichLeaderboardsRequest{Members: body})
@@ -79,7 +115,7 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 		return nil, fmt.Errorf("could not marshal request: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
 
-	webhookUrl, err := buildUrl(tenantUrl, enrichWebhookEndpoint)
+	webhookUrl, err := buildUrl(url, enrichWebhookEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("could not build webhook URL: %w", errors.Join(err, ErrEnrichmentInternal))
 	}
@@ -92,7 +128,7 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 
 	req.Header.Set("Content-Type", "application/json")
 
-	e.logger.Debug(fmt.Sprintf("calling enrichment webhook '%s' for tenantID '%s'", webhookUrl, tenantID))
+	l.Debug(fmt.Sprintf("calling enrichment webhook '%s'", webhookUrl))
 	resp, err := e.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("could not complete request to webhook: %w", errors.Join(err, ErrEnrichmentCall))
@@ -123,17 +159,17 @@ func (e *enricherImpl) Enrich(ctx context.Context, tenantID, leaderboardID strin
 }
 
 func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string, members []*model.Member) ([]*model.Member, error) {
-	if e.config.CloudSave.Disabled[tenantID] {
-		e.logger.Debug(fmt.Sprintf("cloud save enrich disabled for tenant %s. Skipping enrichment.", tenantID))
-		return members, nil
-	}
+	l := e.logger.With(
+		zap.String("method", "enrichWithCloudSave"),
+		zap.String("tenantID", tenantID),
+	)
 
-	if e.config.CloudSave.Url == "" {
+	if e.config.cloudSave.url == "" {
 		e.logger.Debug("cloud Save URL not configured. Skipping enrichment.")
 		return members, nil
 	}
 
-	e.logger.Debug(fmt.Sprintf("calling cloud save for tenantID '%s'", tenantID))
+	l.Debug(fmt.Sprintf("calling cloud save for tenantID '%s'", tenantID))
 
 	ids := make([]string, len(members))
 	for i, m := range members {
@@ -150,10 +186,12 @@ func (e *enricherImpl) enrichWithCloudSave(ctx context.Context, tenantID string,
 		return nil, fmt.Errorf("could not marshal request: %w", errors.Join(ErrEnrichmentInternal, err))
 	}
 
-	url, err := buildUrl(e.config.CloudSave.Url, cloudSaveEndpoint)
+	url, err := buildUrl(e.config.cloudSave.url, cloudSaveEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("could not build cloud save url: %w", errors.Join(ErrEnrichmentInternal, err))
 	}
+
+	l.Debug(fmt.Sprintf("calling cloud save endpoint '%s'", url))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {

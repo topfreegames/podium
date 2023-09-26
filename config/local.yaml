@@ -2,6 +2,8 @@ healthcheck:
   workingText: WORKING
 
 redis:
+  addrs:
+    - localhost:6379
   host: localhost
   port: 6379
   password: ""
@@ -37,6 +39,10 @@ enrichment:
   webhook_urls:
     dummy_tenant_id: "localhost:8080/"
   webhook_timeout: 500ms
+  cache:
+    ttl: 24h
+    addrs: "localhost:6739"
+    username: ""
   cloud_save:
     url: "localhost:8888/"
-    disabled:
+    enabled:
