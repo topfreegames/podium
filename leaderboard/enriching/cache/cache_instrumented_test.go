@@ -13,7 +13,6 @@ import (
 
 var _ = Describe("Instrumented enrich cache Get tests", func() {
 	tenantID := "tenant-id"
-	leaderboardID := "leaderboard-id"
 	members := []*model.Member{
 		{
 			PublicID: "member1",
@@ -31,13 +30,13 @@ var _ = Describe("Instrumented enrich cache Get tests", func() {
 		impl := mock_enriching.NewMockEnricherCache(ctrl)
 		metricsReporter := mock_extensions.NewMockMetricsReporter(ctrl)
 
-		impl.EXPECT().Get(gomock.Any(), tenantID, leaderboardID, members).Return(result, true, nil)
+		impl.EXPECT().Get(gomock.Any(), tenantID, members).Return(result, true, nil)
 		metricsReporter.EXPECT().Increment(enrichmentCacheGets).Return(nil)
 		metricsReporter.EXPECT().Increment(enrichmentCacheHits).Return(nil)
 		metricsReporter.EXPECT().Timing(enrichmentCacheGetTimingMilli, gomock.Any()).Return(nil)
 
 		instrumentedCache := NewInstrumentedCache(impl, metricsReporter)
-		res, hit, err := instrumentedCache.Get(context.Background(), tenantID, leaderboardID, members)
+		res, hit, err := instrumentedCache.Get(context.Background(), tenantID, members)
 
 		Expect(res).To(Equal(result))
 		Expect(hit).To(BeTrue())
@@ -49,12 +48,12 @@ var _ = Describe("Instrumented enrich cache Get tests", func() {
 		impl := mock_enriching.NewMockEnricherCache(ctrl)
 		metricsReporter := mock_extensions.NewMockMetricsReporter(ctrl)
 
-		impl.EXPECT().Get(gomock.Any(), tenantID, leaderboardID, members).Return(nil, false, nil)
+		impl.EXPECT().Get(gomock.Any(), tenantID, members).Return(nil, false, nil)
 		metricsReporter.EXPECT().Increment(enrichmentCacheGets).Return(nil)
 		metricsReporter.EXPECT().Timing(enrichmentCacheGetTimingMilli, gomock.Any()).Return(nil)
 
 		instrumentedCache := NewInstrumentedCache(impl, metricsReporter)
-		res, hit, err := instrumentedCache.Get(context.Background(), tenantID, leaderboardID, members)
+		res, hit, err := instrumentedCache.Get(context.Background(), tenantID, members)
 		Expect(res).To(BeNil())
 		Expect(hit).To(BeFalse())
 		Expect(err).To(BeNil())
@@ -65,13 +64,13 @@ var _ = Describe("Instrumented enrich cache Get tests", func() {
 		impl := mock_enriching.NewMockEnricherCache(ctrl)
 		metricsReporter := mock_extensions.NewMockMetricsReporter(ctrl)
 
-		impl.EXPECT().Get(gomock.Any(), tenantID, leaderboardID, members).Return(nil, false, errors.New("error"))
+		impl.EXPECT().Get(gomock.Any(), tenantID, members).Return(nil, false, errors.New("error"))
 		metricsReporter.EXPECT().Increment(enrichmentCacheGets).Return(nil)
 		metricsReporter.EXPECT().Increment(enrichmentCacheGetErrors).Return(nil)
 		metricsReporter.EXPECT().Timing(enrichmentCacheGetTimingMilli, gomock.Any()).Return(nil)
 
 		instrumentedCache := NewInstrumentedCache(impl, metricsReporter)
-		res, hit, err := instrumentedCache.Get(context.Background(), tenantID, leaderboardID, members)
+		res, hit, err := instrumentedCache.Get(context.Background(), tenantID, members)
 
 		Expect(res).To(BeNil())
 		Expect(hit).To(BeFalse())
@@ -81,7 +80,6 @@ var _ = Describe("Instrumented enrich cache Get tests", func() {
 
 var _ = Describe("Instrumented enrich cache Set tests", func() {
 	tenantID := "tenant-id"
-	leaderboardID := "leaderboard-id"
 	members := []*model.Member{
 		{
 			PublicID: "member1",
@@ -96,12 +94,12 @@ var _ = Describe("Instrumented enrich cache Set tests", func() {
 		impl := mock_enriching.NewMockEnricherCache(ctrl)
 		metricsReporter := mock_extensions.NewMockMetricsReporter(ctrl)
 
-		impl.EXPECT().Set(gomock.Any(), tenantID, leaderboardID, members, gomock.Any()).Return(nil)
+		impl.EXPECT().Set(gomock.Any(), tenantID, members, gomock.Any()).Return(nil)
 		metricsReporter.EXPECT().Increment(enrichmentCacheSets).Return(nil)
 		metricsReporter.EXPECT().Timing(enrichmentCacheSetTimingMilli, gomock.Any()).Return(nil)
 
 		instrumentedCache := NewInstrumentedCache(impl, metricsReporter)
-		err := instrumentedCache.Set(context.Background(), tenantID, leaderboardID, members, 0)
+		err := instrumentedCache.Set(context.Background(), tenantID, members, 0)
 
 		Expect(err).To(BeNil())
 	})
@@ -111,13 +109,13 @@ var _ = Describe("Instrumented enrich cache Set tests", func() {
 		impl := mock_enriching.NewMockEnricherCache(ctrl)
 		metricsReporter := mock_extensions.NewMockMetricsReporter(ctrl)
 
-		impl.EXPECT().Set(gomock.Any(), tenantID, leaderboardID, members, gomock.Any()).Return(errors.New("error"))
+		impl.EXPECT().Set(gomock.Any(), tenantID, members, gomock.Any()).Return(errors.New("error"))
 		metricsReporter.EXPECT().Increment(enrichmentCacheSets).Return(nil)
 		metricsReporter.EXPECT().Increment(enrichmentCacheSetErrors).Return(nil)
 		metricsReporter.EXPECT().Timing(enrichmentCacheSetTimingMilli, gomock.Any()).Return(nil)
 
 		instrumentedCache := NewInstrumentedCache(impl, metricsReporter)
-		err := instrumentedCache.Set(context.Background(), tenantID, leaderboardID, members, 0)
+		err := instrumentedCache.Set(context.Background(), tenantID, members, 0)
 
 		Expect(err).To(HaveOccurred())
 	})

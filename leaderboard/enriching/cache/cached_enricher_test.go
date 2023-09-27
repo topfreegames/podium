@@ -34,7 +34,7 @@ var _ = Describe("Enricher with cache tests", func() {
 			},
 		}
 		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
+			Get(gomock.Any(), tenantID, members).
 			Return(nil, false, nil)
 
 		enricher.EXPECT().
@@ -42,7 +42,7 @@ var _ = Describe("Enricher with cache tests", func() {
 			Return(expectedResult, nil)
 
 		cache.EXPECT().
-			Set(gomock.Any(), tenantID, leaderboardID, expectedResult, 24*time.Hour).
+			Set(gomock.Any(), tenantID, expectedResult, 24*time.Hour).
 			Return(nil)
 
 		wrapper := NewCachedEnricher(cache, enricher)
@@ -72,11 +72,11 @@ var _ = Describe("Enricher with cache tests", func() {
 		}
 
 		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
+			Get(gomock.Any(), tenantID, members).
 			Return(nil, false, nil)
 
 		cache.EXPECT().
-			Set(gomock.Any(), tenantID, leaderboardID, expectedResult, 24*time.Hour).
+			Set(gomock.Any(), tenantID, expectedResult, 24*time.Hour).
 			Return(errors.New("error"))
 
 		enricher.EXPECT().
@@ -111,7 +111,7 @@ var _ = Describe("Enricher with cache tests", func() {
 		}
 
 		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
+			Get(gomock.Any(), tenantID, members).
 			Return(map[string]map[string]string{
 				"publicID": {
 					"key": "value",

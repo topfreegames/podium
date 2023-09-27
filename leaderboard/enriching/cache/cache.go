@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// cacheKeyFormat is {tenantID}:{leaderboardID}:{memberID}
-const cacheKeyFormat = "leaderboards-enrich-caching:%s:%s:%s"
+// cacheKeyFormat is {tenantID}:{memberID}
+const cacheKeyFormat = "leaderboards-enrich-caching:%s:%s"
 
 type enricherRedisCache struct {
 	redis *redis.Client
@@ -29,11 +29,10 @@ func NewEnricherRedisCache(
 
 func (e *enricherRedisCache) Get(
 	ctx context.Context,
-	tenantID,
-	leaderboardID string,
+	tenantID string,
 	members []*model.Member,
 ) (map[string]map[string]string, bool, error) {
-	keys := getKeysFromMemberArray(tenantID, leaderboardID, members)
+	keys := getKeysFromMemberArray(tenantID, members)
 	dataArray, err := e.redis.MGet(ctx, keys...).Result()
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get data from cacheConfig: %w", err)
@@ -60,12 +59,11 @@ func (e *enricherRedisCache) Get(
 
 func (e *enricherRedisCache) Set(
 	ctx context.Context,
-	tenantID,
-	leaderboardID string,
+	tenantID string,
 	members []*model.Member,
 	ttl time.Duration,
 ) error {
-	keys := getKeysFromMemberArray(tenantID, leaderboardID, members)
+	keys := getKeysFromMemberArray(tenantID, members)
 	pipe := e.redis.TxPipeline()
 	for i, member := range members {
 		if member.Metadata != nil {
@@ -85,10 +83,10 @@ func (e *enricherRedisCache) Set(
 	return nil
 }
 
-func getKeysFromMemberArray(tenantID, leaderboardID string, members []*model.Member) []string {
+func getKeysFromMemberArray(tenantID string, members []*model.Member) []string {
 	keys := make([]string, len(members))
 	for i, member := range members {
-		keys[i] = fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, member.PublicID)
+		keys[i] = fmt.Sprintf(cacheKeyFormat, tenantID, member.PublicID)
 	}
 	return keys
 }

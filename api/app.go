@@ -242,7 +242,11 @@ func (app *App) configureEnrichment() {
 			enrichercache.WithLogger(app.Logger),
 			enrichercache.WithTTL(app.ParsedConfig.Enrichment.Cache.TTL),
 		)
+
+		app.Logger.Info("Enrichment cache configured successfully.")
 	}
+
+	app.Logger.Info("Enrichment configured successfully.")
 }
 
 // OnErrorHandler handles panics

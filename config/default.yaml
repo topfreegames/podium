@@ -37,8 +37,8 @@ enrichment:
   webhook_urls:
   cache:
     ttl: 24h
-    addrs: ""
-    username: ""
+    addr: ""
+    password: ""
   webhook_timeout: 500ms
   cloud_save:
     url:

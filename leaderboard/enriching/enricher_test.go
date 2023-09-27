@@ -2,10 +2,8 @@ package enriching
 
 import (
 	"context"
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	mock_enriching "github.com/topfreegames/podium/leaderboard/v2/mocks"
 	"github.com/topfreegames/podium/leaderboard/v2/model"
 	"net/http"
 	"net/http/httptest"
@@ -29,7 +27,6 @@ var _ = Describe("Enricher tests", func() {
 	tenantID := "tenantID"
 
 	It("should not enrich if no webhook url is configured and cloud save service is not enabled", func() {
-		cache := mock_enriching.NewMockEnricherCache(gomock.NewController(GinkgoT()))
 
 		enrich := NewEnricher()
 
@@ -41,10 +38,6 @@ var _ = Describe("Enricher tests", func() {
 				PublicID: "publicID2",
 			},
 		}
-
-		cache.EXPECT().
-			Get(gomock.Any(), tenantID, leaderboardID, members).
-			Return(nil, false, nil)
 
 		res, err := enrich.Enrich(context.Background(), tenantID, leaderboardID, members)
 

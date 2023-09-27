@@ -41,8 +41,8 @@ enrichment:
   webhook_timeout: 500ms
   cache:
     ttl: 24h
-    addrs: "localhost:6739"
-    username: ""
+    addr: "localhost:6739"
+    password: ""
   cloud_save:
     url: "localhost:8888/"
     enabled:

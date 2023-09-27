@@ -59,7 +59,7 @@ type (
 
 	CloudSaveConfig struct {
 		// Enabled indicates whether the Cloud Save service should be used for enrichment for each tenant.
-		Enabled map[string]bool `mapstructure:"disabled"`
+		Enabled map[string]bool `mapstructure:"enabled"`
 
 		// URL is the URL to call the Cloud Save service.
 		Url string `mapstructure:"url"`
