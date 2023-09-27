@@ -38,19 +38,17 @@ func NewInstrumentedCache(
 
 func (c *instrumentedCache) Get(
 	ctx context.Context,
-	tenantID,
-	leaderboardID string,
+	tenantID string,
 	members []*model.Member,
 ) (map[string]map[string]string, bool, error) {
 	start := time.Now()
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "podium.enriching_cache", opentracing.Tags{
-		"tenant_id":      tenantID,
-		"leaderboard_id": leaderboardID,
+		"tenant_id": tenantID,
 	})
 	defer span.Finish()
 
-	metadata, hit, err := c.impl.Get(ctx, tenantID, leaderboardID, members)
+	metadata, hit, err := c.impl.Get(ctx, tenantID, members)
 
 	c.metricsReporter.Increment(enrichmentCacheGets)
 	c.metricsReporter.Timing(enrichmentCacheGetTimingMilli, time.Since(start))
@@ -71,21 +69,19 @@ func (c *instrumentedCache) Get(
 
 func (c *instrumentedCache) Set(
 	ctx context.Context,
-	tenantID,
-	leaderboardID string,
+	tenantID string,
 	members []*model.Member,
 	ttl time.Duration,
 ) error {
 	start := time.Now()
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "podium.enriching_cache", opentracing.Tags{
-		"tenant_id":      tenantID,
-		"leaderboard_id": leaderboardID,
-		"ttl":            ttl,
+		"tenant_id": tenantID,
+		"ttl":       ttl,
 	})
 	defer span.Finish()
 
-	err := c.impl.Set(ctx, tenantID, leaderboardID, members, ttl)
+	err := c.impl.Set(ctx, tenantID, members, ttl)
 
 	c.metricsReporter.Increment(enrichmentCacheSets)
 	c.metricsReporter.Timing(enrichmentCacheSetTimingMilli, time.Since(start))

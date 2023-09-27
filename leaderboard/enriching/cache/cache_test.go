@@ -13,7 +13,6 @@ import (
 
 var _ = Describe("Members array to keys array test", func() {
 	tenantID := "tenantID"
-	leaderboardID := "leaderboardID"
 
 	It("should return keys correctly", func() {
 		members := []*model.Member{
@@ -25,17 +24,16 @@ var _ = Describe("Members array to keys array test", func() {
 			},
 		}
 
-		keys := getKeysFromMemberArray(tenantID, leaderboardID, members)
+		keys := getKeysFromMemberArray(tenantID, members)
 
 		Expect(keys).To(HaveLen(2))
-		Expect(keys[0]).To(Equal("leaderboards-enrich-caching:tenantID:leaderboardID:member1"))
-		Expect(keys[1]).To(Equal("leaderboards-enrich-caching:tenantID:leaderboardID:member2"))
+		Expect(keys[0]).To(Equal("leaderboards-enrich-caching:tenantID:member1"))
+		Expect(keys[1]).To(Equal("leaderboards-enrich-caching:tenantID:member2"))
 	})
 })
 
 var _ = Describe("Enricher cacheConfig Get tests", func() {
 	tenantID := "tenantID"
-	leaderboardID := "leaderboardID"
 
 	It("should return false and error if redis fails", func() {
 		redis, redisMock := redismock.NewClientMock()
@@ -47,11 +45,11 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 		}
 
 		redisMock.ExpectMGet(
-			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
+			getKeysFromMemberArray(tenantID, members)...,
 		).SetErr(errors.New("some error"))
 
 		cache := NewEnricherRedisCache(redis)
-		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
+		res, hit, err := cache.Get(context.Background(), tenantID, members)
 
 		Expect(res).To(BeNil())
 		Expect(hit).To(BeFalse())
@@ -72,11 +70,11 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 		}
 
 		redisMock.ExpectMGet(
-			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
+			getKeysFromMemberArray(tenantID, members)...,
 		).SetVal([]interface{}{nil, nil})
 
 		cache := NewEnricherRedisCache(redis)
-		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
+		res, hit, err := cache.Get(context.Background(), tenantID, members)
 
 		Expect(res).To(BeNil())
 		Expect(hit).To(BeFalse())
@@ -101,11 +99,11 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 		}
 
 		redisMock.ExpectMGet(
-			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
+			getKeysFromMemberArray(tenantID, members)...,
 		).SetVal(mgetExpectedResult)
 
 		cache := NewEnricherRedisCache(redis)
-		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
+		res, hit, err := cache.Get(context.Background(), tenantID, members)
 
 		Expect(res).To(BeNil())
 		Expect(hit).To(BeFalse())
@@ -130,11 +128,11 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 		}
 
 		redisMock.ExpectMGet(
-			getKeysFromMemberArray(tenantID, leaderboardID, members)...,
+			getKeysFromMemberArray(tenantID, members)...,
 		).SetVal(mgetExpectedResult)
 
 		cache := NewEnricherRedisCache(redis)
-		res, hit, err := cache.Get(context.Background(), tenantID, leaderboardID, members)
+		res, hit, err := cache.Get(context.Background(), tenantID, members)
 
 		expectedResult := map[string]map[string]string{
 			"member1": {
@@ -153,7 +151,6 @@ var _ = Describe("Enricher cacheConfig Get tests", func() {
 
 var _ = Describe("Ericher cacheConfig Set tests", func() {
 	tenantID := "tenantID"
-	leaderboardID := "leaderboardID"
 
 	It("should set the data in redis", func() {
 		redis := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
@@ -174,20 +171,20 @@ var _ = Describe("Ericher cacheConfig Set tests", func() {
 			},
 		}
 
-		err := cache.Set(context.Background(), tenantID, leaderboardID, members, 0)
+		err := cache.Set(context.Background(), tenantID, members, 0)
 
-		res, err := redis.Get(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member1")).Result()
+		res, err := redis.Get(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, "member1")).Result()
 		Expect(res).To(Equal("{\"key1\":\"value1\"}"))
 		Expect(err).To(BeNil())
 
-		res, err = redis.Get(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member2")).Result()
+		res, err = redis.Get(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, "member2")).Result()
 		Expect(res).To(Equal("{\"key2\":\"value2\"}"))
 		Expect(err).To(BeNil())
 	})
 
 	AfterEach(func() {
 		redis := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
-		redis.Del(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member1"))
-		redis.Del(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, leaderboardID, "member2"))
+		redis.Del(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, "member1"))
+		redis.Del(context.Background(), fmt.Sprintf(cacheKeyFormat, tenantID, "member2"))
 	})
 })

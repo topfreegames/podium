@@ -50,7 +50,7 @@ func (e *cachedEnricher) Enrich(
 		zap.String("leaderboardID", leaderboardID),
 	)
 
-	cached, hit, err := e.cache.Get(ctx, tenantID, leaderboardID, members)
+	cached, hit, err := e.cache.Get(ctx, tenantID, members)
 	if err != nil {
 		l.Error("could not get cached enrichment data", zap.Error(err))
 	}
@@ -72,7 +72,7 @@ func (e *cachedEnricher) Enrich(
 		return nil, err
 	}
 
-	err = e.cache.Set(ctx, tenantID, leaderboardID, members, e.config.ttl)
+	err = e.cache.Set(ctx, tenantID, members, e.config.ttl)
 	if err != nil {
 		l.Error("could not set cached enrichment data", zap.Error(err))
 	}
