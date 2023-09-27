@@ -67,6 +67,7 @@ func (e *enricherImpl) Enrich(
 	cloudSaveEnabled := e.config.cloudSave.enabled[tenantID]
 
 	if !webHookExists && !cloudSaveEnabled {
+		l.Debug(fmt.Sprintf("no webhook configured for tentantID '%s' and cloud save not enabled. Skipping enrichment.", tenantID))
 		return members, nil
 	}
 
