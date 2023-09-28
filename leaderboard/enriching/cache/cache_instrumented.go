@@ -43,7 +43,7 @@ func (c *instrumentedCache) Get(
 ) (map[string]map[string]string, bool, error) {
 	start := time.Now()
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "podium.enriching_cache", opentracing.Tags{
+	span, ctx := opentracing.StartSpanFromContext(ctx, "podium.enriching_cache.get", opentracing.Tags{
 		"tenant_id": tenantID,
 	})
 	defer span.Finish()
@@ -75,7 +75,7 @@ func (c *instrumentedCache) Set(
 ) error {
 	start := time.Now()
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "podium.enriching_cache", opentracing.Tags{
+	span, ctx := opentracing.StartSpanFromContext(ctx, "podium.enriching_cache.set", opentracing.Tags{
 		"tenant_id": tenantID,
 		"ttl":       ttl,
 	})

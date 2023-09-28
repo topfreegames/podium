@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/topfreegames/podium/leaderboard/v2/enriching"
@@ -64,20 +65,28 @@ func (e *enricherRedisCache) Set(
 	ttl time.Duration,
 ) error {
 	keys := getKeysFromMemberArray(tenantID, members)
-	pipe := e.redis.TxPipeline()
-	for i, member := range members {
-		if member.Metadata != nil {
-			marshaled, err := json.Marshal(member.Metadata)
-			if err != nil {
-				return fmt.Errorf("failed to marshal metadata: %w", err)
+	cmds, err := e.redis.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		for i, member := range members {
+			if member.Metadata != nil {
+				marshaled, err := json.Marshal(member.Metadata)
+				if err != nil {
+					return fmt.Errorf("failed to marshal metadata: %w", err)
+				}
+				pipe.Set(ctx, keys[i], marshaled, ttl)
 			}
-			pipe.Set(ctx, keys[i], marshaled, ttl)
 		}
-	}
+		return nil
+	})
 
-	_, err := pipe.Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to set members in cacheConfig: %w", err)
+		cmdErrors := []error{}
+		for _, cmd := range cmds {
+			if cmd.Err() != nil {
+				cmdErrors = append(cmdErrors, cmd.Err())
+			}
+		}
+		cmdError := errors.Join(cmdErrors...)
+		return fmt.Errorf("failed to set members in cache: %w", errors.Join(err, cmdError))
 	}
 
 	return nil
