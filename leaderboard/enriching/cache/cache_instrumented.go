@@ -12,7 +12,7 @@ import (
 const (
 	enrichmentCacheGetTimingMilli = "enrichment_cache_get_duration_milliseconds"
 	enrichmentCacheGets           = "enrichment_cache_gets"
-	enrichmentCacheHits           = "enrichment_cache_gets"
+	enrichmentCacheHits           = "enrichment_cache_hits"
 	enrichmentCacheGetErrors      = "enrichment_cache_get_errors"
 	enrichmentCacheSetTimingMilli = "enrichment_cache_set_duration_milliseconds"
 	enrichmentCacheSets           = "enrichment_cache_sets"
