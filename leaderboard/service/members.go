@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"math"
 	"strconv"
 	"time"
 
@@ -68,9 +69,12 @@ func (s *Service) setMembersPreviousRank(ctx context.Context, leaderboard string
 func (s *Service) persistMembers(ctx context.Context, leaderboard string, members []*model.Member) error {
 	databaseMembers := make([]*database.Member, 0, len(members))
 	for _, member := range members {
+		frac := float64(math.MaxInt64-time.Now().UnixNano()) / 1e19
+		score := float64(member.Score) + frac
+
 		databaseMembers = append(databaseMembers, &database.Member{
 			Member: member.PublicID,
-			Score:  float64(member.Score),
+			Score:  score,
 		})
 	}
 
